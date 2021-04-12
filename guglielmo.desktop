@@ -1,0 +1,8 @@
+#!/usr/bin/env xdg-open
+[Desktop Entry]
+Name=guglielmo
+Exec=guglielmo
+Icon=guglielmo
+Type=Application
+Categories=AudioVideo;
+Comment=A FM, DAB/DAB+ decoder using Qt and C++

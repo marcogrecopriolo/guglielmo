@@ -1,0 +1,11 @@
+<RCC>
+    <qresource prefix="/">
+	<file alias="AUTHORS">AUTHORS</file>
+	<file alias="guglielmo.ico">icons/guglielmo.ico</file>
+	<file alias="menubutton.png">icons/menubutton.png</file>
+	<file alias="recordbutton.png">icons/recordbutton.png</file>
+	<file alias="recordbuttonred.png">icons/recordbuttonred.png</file>
+	<file alias="settings.png">icons/settings.png</file>
+	<file alias="copyright.png">icons/copyright.png</file>
+    </qresource>
+</RCC>

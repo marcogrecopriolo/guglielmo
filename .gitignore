@@ -1,0 +1,7 @@
+Makefile
+moc*.cpp
+*.o
+appimage
+build
+*bin
+*pro.user

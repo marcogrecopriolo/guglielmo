@@ -1,0 +1,628 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>guglielmo</class>
+ <widget class="QWidget" name="guglielmo">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>540</width>
+    <height>380</height>
+   </rect>
+  </property>
+  <property name="sizePolicy">
+   <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+    <horstretch>0</horstretch>
+    <verstretch>0</verstretch>
+   </sizepolicy>
+  </property>
+  <property name="windowTitle">
+   <string>guglielmo</string>
+  </property>
+  <widget class="QWidget" name="dabWidget" native="true">
+   <property name="geometry">
+    <rect>
+     <x>290</x>
+     <y>30</y>
+     <width>240</width>
+     <height>300</height>
+    </rect>
+   </property>
+   <widget class="QLabel" name="ensembleId">
+    <property name="geometry">
+     <rect>
+      <x>20</x>
+      <y>20</y>
+      <width>200</width>
+      <height>32</height>
+     </rect>
+    </property>
+    <property name="font">
+     <font>
+      <pointsize>12</pointsize>
+      <weight>75</weight>
+      <italic>true</italic>
+      <bold>true</bold>
+     </font>
+    </property>
+    <property name="text">
+     <string/>
+    </property>
+    <property name="alignment">
+     <set>Qt::AlignCenter</set>
+    </property>
+   </widget>
+   <widget class="QListView" name="ensembleDisplay">
+    <property name="geometry">
+     <rect>
+      <x>30</x>
+      <y>60</y>
+      <width>180</width>
+      <height>180</height>
+     </rect>
+    </property>
+    <property name="sizePolicy">
+     <sizepolicy hsizetype="Preferred" vsizetype="MinimumExpanding">
+      <horstretch>0</horstretch>
+      <verstretch>0</verstretch>
+     </sizepolicy>
+    </property>
+    <property name="editTriggers">
+     <set>QAbstractItemView::NoEditTriggers</set>
+    </property>
+   </widget>
+   <widget class="QComboBox" name="channelSelector">
+    <property name="geometry">
+     <rect>
+      <x>80</x>
+      <y>250</y>
+      <width>80</width>
+      <height>40</height>
+     </rect>
+    </property>
+    <property name="sizePolicy">
+     <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+      <horstretch>0</horstretch>
+      <verstretch>0</verstretch>
+     </sizepolicy>
+    </property>
+    <property name="font">
+     <font>
+      <pointsize>10</pointsize>
+     </font>
+    </property>
+    <property name="toolTip">
+     <string>channel selector</string>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="nextChanButton">
+    <property name="geometry">
+     <rect>
+      <x>200</x>
+      <y>250</y>
+      <width>40</width>
+      <height>40</height>
+     </rect>
+    </property>
+    <property name="toolTip">
+     <string>select the next service or channel</string>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="prevChanButton">
+    <property name="geometry">
+     <rect>
+      <x>0</x>
+      <y>250</y>
+      <width>40</width>
+      <height>40</height>
+     </rect>
+    </property>
+    <property name="toolTip">
+     <string>select the previous service or channel</string>
+    </property>
+   </widget>
+  </widget>
+  <widget class="QWidget" name="fmWidget" native="true">
+   <property name="geometry">
+    <rect>
+     <x>290</x>
+     <y>30</y>
+     <width>240</width>
+     <height>300</height>
+    </rect>
+   </property>
+   <widget class="QwtKnob" name="frequencyKnob">
+    <property name="geometry">
+     <rect>
+      <x>30</x>
+      <y>60</y>
+      <width>180</width>
+      <height>180</height>
+     </rect>
+    </property>
+    <property name="font">
+     <font>
+      <pointsize>1</pointsize>
+     </font>
+    </property>
+    <property name="toolTip">
+     <string>adjust the frequency</string>
+    </property>
+    <property name="lowerBound">
+     <double>87.000000000000000</double>
+    </property>
+    <property name="upperBound">
+     <double>108.900000000000006</double>
+    </property>
+    <property name="scaleMaxMajor">
+     <number>0</number>
+    </property>
+    <property name="scaleMaxMinor">
+     <number>0</number>
+    </property>
+    <property name="value">
+     <double>87.000000000000000</double>
+    </property>
+    <property name="totalSteps">
+     <UInt>219</UInt>
+    </property>
+    <property name="singleSteps">
+     <UInt>1</UInt>
+    </property>
+    <property name="pageSteps">
+     <UInt>10</UInt>
+    </property>
+    <property name="wrapping">
+     <bool>false</bool>
+    </property>
+    <property name="knobStyle">
+     <enum>QwtKnob::Styled</enum>
+    </property>
+    <property name="knobWidth">
+     <number>0</number>
+    </property>
+    <property name="totalAngle">
+     <double>1440.000000000000000</double>
+    </property>
+    <property name="numTurns">
+     <number>4</number>
+    </property>
+    <property name="markerStyle">
+     <enum>QwtKnob::Dot</enum>
+    </property>
+    <property name="markerSize">
+     <number>8</number>
+    </property>
+   </widget>
+   <widget class="QLCDNumber" name="frequencyLCD">
+    <property name="geometry">
+     <rect>
+      <x>60</x>
+      <y>20</y>
+      <width>120</width>
+      <height>32</height>
+     </rect>
+    </property>
+    <property name="toolTip">
+     <string>current frequency</string>
+    </property>
+    <property name="frameShape">
+     <enum>QFrame::Panel</enum>
+    </property>
+    <property name="frameShadow">
+     <enum>QFrame::Sunken</enum>
+    </property>
+    <property name="lineWidth">
+     <number>3</number>
+    </property>
+    <property name="smallDecimalPoint">
+     <bool>false</bool>
+    </property>
+    <property name="digitCount">
+     <number>6</number>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="scanBackButton">
+    <property name="geometry">
+     <rect>
+      <x>0</x>
+      <y>250</y>
+      <width>40</width>
+      <height>40</height>
+     </rect>
+    </property>
+    <property name="toolTip">
+     <string>scan for the previous station</string>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="stopScanButton">
+    <property name="geometry">
+     <rect>
+      <x>80</x>
+      <y>250</y>
+      <width>80</width>
+      <height>40</height>
+     </rect>
+    </property>
+    <property name="toolTip">
+     <string>stop the current scan</string>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="scanForwardButton">
+    <property name="geometry">
+     <rect>
+      <x>200</x>
+      <y>250</y>
+      <width>40</width>
+      <height>40</height>
+     </rect>
+    </property>
+    <property name="toolTip">
+     <string>scan for the next station</string>
+    </property>
+   </widget>
+  </widget>
+  <widget class="QLabel" name="stereoLabel">
+   <property name="geometry">
+    <rect>
+     <x>10</x>
+     <y>10</y>
+     <width>80</width>
+     <height>20</height>
+    </rect>
+   </property>
+   <property name="frameShape">
+    <enum>QFrame::Panel</enum>
+   </property>
+   <property name="frameShadow">
+    <enum>QFrame::Sunken</enum>
+   </property>
+   <property name="lineWidth">
+    <number>3</number>
+   </property>
+   <property name="text">
+    <string/>
+   </property>
+   <property name="alignment">
+    <set>Qt::AlignCenter</set>
+   </property>
+  </widget>
+  <widget class="QLabel" name="serviceLabel">
+   <property name="geometry">
+    <rect>
+     <x>10</x>
+     <y>40</y>
+     <width>280</width>
+     <height>32</height>
+    </rect>
+   </property>
+   <property name="font">
+    <font>
+     <pointsize>14</pointsize>
+     <weight>75</weight>
+     <italic>true</italic>
+     <bold>true</bold>
+    </font>
+   </property>
+   <property name="text">
+    <string/>
+   </property>
+  </widget>
+  <widget class="QLabel" name="dynamicLabel">
+   <property name="geometry">
+    <rect>
+     <x>10</x>
+     <y>90</y>
+     <width>280</width>
+     <height>160</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string/>
+   </property>
+   <property name="alignment">
+    <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignTop</set>
+   </property>
+   <property name="wordWrap">
+    <bool>true</bool>
+   </property>
+  </widget>
+  <widget class="QComboBox" name="presetSelector">
+   <property name="geometry">
+    <rect>
+     <x>340</x>
+     <y>330</y>
+     <width>140</width>
+     <height>40</height>
+    </rect>
+   </property>
+   <property name="sizePolicy">
+    <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+     <horstretch>0</horstretch>
+     <verstretch>0</verstretch>
+    </sizepolicy>
+   </property>
+   <property name="font">
+    <font>
+     <kerning>false</kerning>
+    </font>
+   </property>
+   <property name="toolTip">
+    <string>select any of the presets</string>
+   </property>
+   <property name="sizeAdjustPolicy">
+    <enum>QComboBox::AdjustToContentsOnFirstShow</enum>
+   </property>
+   <property name="minimumContentsLength">
+    <number>10</number>
+   </property>
+   <item>
+    <property name="text">
+     <string>Presets</string>
+    </property>
+   </item>
+  </widget>
+  <widget class="QPushButton" name="addPresetButton">
+   <property name="geometry">
+    <rect>
+     <x>290</x>
+     <y>330</y>
+     <width>40</width>
+     <height>40</height>
+    </rect>
+   </property>
+   <property name="toolTip">
+    <string>add this station to the presets</string>
+   </property>
+   <property name="text">
+    <string>M+</string>
+   </property>
+  </widget>
+  <widget class="QPushButton" name="deletePresetButton">
+   <property name="geometry">
+    <rect>
+     <x>490</x>
+     <y>330</y>
+     <width>40</width>
+     <height>40</height>
+    </rect>
+   </property>
+   <property name="toolTip">
+    <string>delete this station from the presets</string>
+   </property>
+   <property name="text">
+    <string>M-</string>
+   </property>
+  </widget>
+  <widget class="QPushButton" name="playButton">
+   <property name="geometry">
+    <rect>
+     <x>150</x>
+     <y>330</y>
+     <width>40</width>
+     <height>40</height>
+    </rect>
+   </property>
+  </widget>
+  <widget class="QPushButton" name="recordButton">
+   <property name="geometry">
+    <rect>
+     <x>100</x>
+     <y>330</y>
+     <width>40</width>
+     <height>40</height>
+    </rect>
+   </property>
+  </widget>
+  <widget class="QwtKnob" name="volumeKnob">
+   <property name="geometry">
+    <rect>
+     <x>10</x>
+     <y>285</y>
+     <width>80</width>
+     <height>80</height>
+    </rect>
+   </property>
+   <property name="font">
+    <font>
+     <pointsize>1</pointsize>
+     <kerning>false</kerning>
+    </font>
+   </property>
+   <property name="toolTip">
+    <string>volume</string>
+   </property>
+   <property name="upperBound">
+    <double>100.000000000000000</double>
+   </property>
+   <property name="scaleMaxMajor">
+    <number>0</number>
+   </property>
+   <property name="scaleMaxMinor">
+    <number>0</number>
+   </property>
+   <property name="stepAlignment">
+    <bool>false</bool>
+   </property>
+   <property name="knobStyle">
+    <enum>QwtKnob::Styled</enum>
+   </property>
+   <property name="markerStyle">
+    <enum>QwtKnob::Dot</enum>
+   </property>
+  </widget>
+  <widget class="QwtKnob" name="squelchKnob">
+   <property name="geometry">
+    <rect>
+     <x>200</x>
+     <y>285</y>
+     <width>80</width>
+     <height>80</height>
+    </rect>
+   </property>
+   <property name="font">
+    <font>
+     <pointsize>1</pointsize>
+     <kerning>false</kerning>
+    </font>
+   </property>
+   <property name="toolTip">
+    <string>mute the sound while the signal is poor</string>
+   </property>
+   <property name="lowerBound">
+    <double>0.000000000000000</double>
+   </property>
+   <property name="upperBound">
+    <double>100.000000000000000</double>
+   </property>
+   <property name="scaleMaxMajor">
+    <number>0</number>
+   </property>
+   <property name="scaleMaxMinor">
+    <number>0</number>
+   </property>
+   <property name="value">
+    <double>0.000000000000000</double>
+   </property>
+   <property name="stepAlignment">
+    <bool>false</bool>
+   </property>
+   <property name="knobStyle">
+    <enum>QwtKnob::Styled</enum>
+   </property>
+   <property name="markerStyle">
+    <enum>QwtKnob::Dot</enum>
+   </property>
+  </widget>
+  <widget class="QPushButton" name="DABButton">
+   <property name="geometry">
+    <rect>
+     <x>100</x>
+     <y>280</y>
+     <width>40</width>
+     <height>40</height>
+    </rect>
+   </property>
+   <property name="toolTip">
+    <string>switch to DAB mode</string>
+   </property>
+   <property name="text">
+    <string>DAB</string>
+   </property>
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+  </widget>
+  <widget class="QPushButton" name="FMButton">
+   <property name="geometry">
+    <rect>
+     <x>150</x>
+     <y>280</y>
+     <width>40</width>
+     <height>40</height>
+    </rect>
+   </property>
+   <property name="toolTip">
+    <string>switch to FM mode</string>
+   </property>
+   <property name="text">
+    <string>FM</string>
+   </property>
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+  </widget>
+  <widget class="QwtThermo" name="signalStrength">
+   <property name="geometry">
+    <rect>
+     <x>100</x>
+     <y>10</y>
+     <width>80</width>
+     <height>20</height>
+    </rect>
+   </property>
+   <property name="toolTip">
+    <string>signal strength</string>
+   </property>
+   <property name="orientation">
+    <enum>Qt::Horizontal</enum>
+   </property>
+   <property name="scalePosition">
+    <enum>QwtThermo::NoScale</enum>
+   </property>
+   <property name="borderWidth">
+    <number>3</number>
+   </property>
+   <property name="pipeWidth">
+    <number>20</number>
+   </property>
+  </widget>
+  <widget class="QwtThermo" name="signalQuality">
+   <property name="geometry">
+    <rect>
+     <x>190</x>
+     <y>10</y>
+     <width>80</width>
+     <height>20</height>
+    </rect>
+   </property>
+   <property name="toolTip">
+    <string>signal quality</string>
+   </property>
+   <property name="orientation">
+    <enum>Qt::Horizontal</enum>
+   </property>
+   <property name="scalePosition">
+    <enum>QwtThermo::NoScale</enum>
+   </property>
+   <property name="borderWidth">
+    <number>3</number>
+   </property>
+   <property name="pipeWidth">
+    <number>20</number>
+   </property>
+  </widget>
+  <widget class="QToolButton" name="menuButton">
+   <property name="geometry">
+    <rect>
+     <x>500</x>
+     <y>10</y>
+     <width>32</width>
+     <height>32</height>
+    </rect>
+   </property>
+   <property name="toolTip">
+    <string extracomment="open menu"/>
+   </property>
+   <property name="layoutDirection">
+    <enum>Qt::RightToLeft</enum>
+   </property>
+   <property name="text">
+    <string notr="true">...</string>
+   </property>
+   <property name="shortcut">
+    <string notr="true"/>
+   </property>
+   <property name="popupMode">
+    <enum>QToolButton::InstantPopup</enum>
+   </property>
+   <property name="autoRaise">
+    <bool>true</bool>
+   </property>
+  </widget>
+ </widget>
+ <customwidgets>
+  <customwidget>
+   <class>QwtKnob</class>
+   <extends>QWidget</extends>
+   <header>qwt_knob.h</header>
+  </customwidget>
+  <customwidget>
+   <class>QwtThermo</class>
+   <extends>QWidget</extends>
+   <header>qwt_thermo.h</header>
+  </customwidget>
+ </customwidgets>
+ <resources/>
+ <connections/>
+</ui>
