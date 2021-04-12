@@ -1,4 +1,10 @@
+## Guglielmo
+
 Guglielmo implements a simple FM and DAB receiver based on Qt and the Qt-dab and sdr-j-fm packages.
+
+The primary reason it is being developed is there is a lack of media centre quality Open Source
+Software Defined Radios, most of the packages out there concentrating more on hobbyist features,
+such as signal and content monitoring.
 
 Usage
 -----
@@ -21,6 +27,8 @@ It's only active in FM mode.
 
 On the right, the widgets change between DAB and FM modes.
 
+![DAB screen](/images/dab.png)
+
 In DAB mode, top to bottom, there's the channel name, a list of all the services (AKA stations) in
 the current channel, a channel selector, and the previous and next buttons.
 
@@ -28,6 +36,8 @@ Previous and next switch to the previous or next service, if there's a previous 
 select, or the previous or next channel if already at either end of the service list.
 
 Or you can switch service or channel using the appropriate selectors.
+
+![FM screen](/images/fm.png)
 
 FM mode sports a frequency display, and a large, old style, frequency knob.
 
@@ -46,6 +56,10 @@ M- removes the current station from the presets, if it had been previously added
 
 The burger menu button at the top right activates the about and settings windows.
 
+![settings screen](/images/settings.png)
+
+Settings are pretty much self explanatory.
+
 Building
 --------
 
@@ -57,6 +71,7 @@ Run qmake (or qmake-qt5, depending on the qt5 installation), then make, and you'
 the bin directory appropriate for your port (eg linux-bin).
 
 For cmake:
+
 	mkdir build
 	cd build
 	cmake .. -DXXX=ON -DYYY=ON ... -DZZZ=ON
