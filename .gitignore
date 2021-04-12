@@ -1,7 +1,11 @@
 Makefile
+*stash
 moc*.cpp
 *.o
 appimage
+appdir
+*AppImage
+squash*
 build
 *bin
 *pro.user
