@@ -8,8 +8,8 @@ Software Defined Radios: most of the packages out there focus more on hobbyist f
 such as signal and content monitoring, leaving out media features like a volume slider or MPRIS control.
 
 Yes, I have blown the ribbon tweeter fuses on my maggies because my previous go to SDR DAB receiver
-started at full blast, and I run my media centre headless, and I don't really want to scramble for a VNC
-session when I want to stop the music, when I could simply use KDE connect on my phone.
+started at full blast, and I run my media centre headless: I don't really want to scramble for a _VNC_
+session when I want to stop the music, when I could simply use _KDE connect_ on my phone.
 
 There is also a distinct lack of FM SDR receivers, which is disappointing, since, at least in the UK,
 for reasons of cost, most stations transmit at a fairly poor bitRate, if not downright in mono, and
@@ -93,9 +93,28 @@ The actual themes depend on the platform and the build.
 
 #### Sound
 
+Choose the sound plugin (Qt or Portaudio), and in case of PortAudio, the output port.
+
 #### FM
 
+This controls some of the FM settings, most notably
+
+- the FM decoder
+- the de-emphasis filter (use 50µs unless you are in the US)
+- the parameters for the low pass filter
+
 #### Device
+
+This tab offers a combo box selecting any of the available devices, and for each of the devices
+
+- Automatic Gain Control
+- Device gain
+- LNA gain (if the device is equipped with a low noise amplifier)
+
+The gains range from 0 to 100 and are remapped internally to suit each device.
+The defaults are mid range.
+
+Note that when AGC is selected, any change to the IF gain will only take place after AGC is turned off.
 
 ## Building
 
