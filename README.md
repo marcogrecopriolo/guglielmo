@@ -4,8 +4,16 @@
 Guglielmo implements a simple FM and DAB receiver based on Qt and the Qt-dab and sdr-j-fm packages.
 
 The primary reason it is being developed is there is a lack of media centre quality Open Source
-Software Defined Radios, most of the packages out there concentrating more on hobbyist features,
-such as signal and content monitoring.
+Software Defined Radios: most of the packages out there focus more on hobbyist features,
+such as signal and content monitoring, leaving out media features like a volume slider or MPRIS control.
+
+Yes, I have blown the ribbon tweeter fuses on my maggies because my previous go to SDR DAB receiver
+started at full blast, and I run my media centre headless, and I don't really want to scramble for a VNC
+session when I want to stop the music, when I could simply use KDE connect on my phone.
+
+There is also a distinct lack of FM SDR receivers, which is disappointing, since, at least in the UK,
+for reasons of cost, most stations transmit at a fairly poor bitRate, if not downright in mono, and
+FM stations seem to still be a better proposition in terms of sound quality.
 
 ## Usage
 
@@ -70,7 +78,24 @@ The burger menu button at the top right activates the about and settings windows
 
 ![settings screen](/images/settings.png)
 
-Settings are pretty much self explanatory.
+Currently there are 4 tabs, controlling
+
+- the UI interface 
+- the sound output
+- FM settings
+- device settings
+
+There's no tweakable DAB settings on offer.
+
+#### UI
+
+The actual themes depend on the platform and the build.
+
+#### Sound
+
+#### FM
+
+#### Device
 
 ## Building
 
