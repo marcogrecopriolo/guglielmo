@@ -72,7 +72,7 @@ The burger menu button at the top right activates the about and settings windows
 
 Settings are pretty much self explanatory.
 
-### Building
+## Building
 
 The executable is created either with qmake or cmake.
 
@@ -92,7 +92,7 @@ where XXX, YYY and ZZZ are the mnemonics for the devices to include.
 
 At this moment in time, the only device tested is the SDR RTL stick, and the only build linux.
 
-### TODO
+## TODO
 
 - recording
 - FM scanning
@@ -103,7 +103,7 @@ At this moment in time, the only device tested is the SDR RTL stick, and the onl
 - cleanup the source, remove objects that are not needed, consolidate buffer usage
 - make loading settings more resilient to duff values
 
-#### Acknowledgements
+## Acknowledgements, copyright, etc...
 
 The backends have wholesale lifted from Qt-dab and Sdr-j-fm by Jan van Katwijk and
 various other contributors.
