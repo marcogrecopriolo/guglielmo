@@ -26,6 +26,7 @@
 
 // there's a group per device, named like the device
 
+#define	GROUP_UI	"ui"
 #define	GROUP_SOUND	"sound"
 #define	GROUP_DAB	"dab"
 #define	GROUP_FM	"fm"
@@ -48,6 +49,10 @@
 
 #define GEN_FM			"FM"
 #define GEN_DAB			"DAB"
+
+// ui
+#define UI_THEME		"theme"
+#define UI_DEF_THEME		""
 
 // dab
 #define DAB_THRESHOLD		"threshold"

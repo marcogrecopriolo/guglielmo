@@ -111,7 +111,7 @@ void RadioInterface::handleSettingsAction() {
 	    settingsUi.latencySpinBox->setValue(latency);
 	}
 
-	// FM
+	// FM tab
 	settingsUi.decoderComboBox->setCurrentIndex(FMdecoder);
 	if (deemphasis == 1)
 	    settingsUi.deemphasisComboBox->setCurrentIndex(0);
@@ -137,7 +137,7 @@ void RadioInterface::handleSettingsAction() {
 	settingsDialog->connect(settingsUi.fmDegreeFilterSpinBox, SIGNAL(valueChanged(int)),
         	this, SLOT(setFMDegree(int)));
 
-	// Device
+	// Device tab
 	for (const auto dev: deviceList) {
 		settingsUi.deviceComboBox->addItem(dev.deviceName);
 		if (inputDevice == dev.device)
@@ -181,6 +181,9 @@ void RadioInterface::handleSettingsAction() {
 
 void RadioInterface::settingsClose(void) {
     // Ui tab
+    settings->beginGroup(GROUP_UI);
+    settings->setValue(UI_THEME, QApplication::style()->objectName().toLower());
+    settings->endGroup();
 
     // Sound tab
     settings->beginGroup(GROUP_SOUND);

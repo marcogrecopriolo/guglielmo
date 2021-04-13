@@ -112,6 +112,13 @@ RadioInterface::RadioInterface (QSettings *Si, QWidget	 *parent):
     ensembleDisplay->setModel(&ensembleModel);
 
     // Settings
+    // UI
+    settings->beginGroup(GROUP_UI);
+    QString theme = settings->value(UI_THEME, "").toString();
+    if (theme != "")
+	QApplication::setStyle(theme);
+    settings->endGroup();
+
     // DAB
     DABprocessor = nullptr;
     settings->beginGroup(GROUP_DAB);
@@ -125,7 +132,7 @@ RadioInterface::RadioInterface (QSettings *Si, QWidget	 *parent):
     serviceOrder = settings->value(DAB_SERVICE_ORDER, DAB_DEF_SERVICE_ORDER).toInt();
     settings->endGroup();
 
-    // FIXME FM settings
+    // FM settings
     FMprocessor = nullptr;
     RDSdecoder = nullptr;
     settings->beginGroup(GROUP_FM);

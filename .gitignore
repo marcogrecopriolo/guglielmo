@@ -1,6 +1,9 @@
 Makefile
 *stash
 moc*.cpp
+moc*.h
+ui*.h
+qrc*.cpp
 *.o
 appdir
 *AppImage
