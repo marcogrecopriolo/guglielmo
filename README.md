@@ -1,4 +1,5 @@
-## Guglielmo
+![guglielmo](/images/guglielmo.png)
+# Guglielmo
 
 Guglielmo implements a simple FM and DAB receiver based on Qt and the Qt-dab and sdr-j-fm packages.
 
@@ -6,10 +7,48 @@ The primary reason it is being developed is there is a lack of media centre qual
 Software Defined Radios, most of the packages out there concentrating more on hobbyist features,
 such as signal and content monitoring.
 
-Usage
------
+## Usage
 
-Should be quite simple:
+The main window is divided in two: the right side changes depending on the mode, DAB or FM, the left
+side being common to both.
+
+### DAB
+
+![DAB screen](/images/dab.png)
+
+In DAB mode, top to bottom, there's the channel name, a list of all the services (AKA stations) in
+the current channel, a channel selector, and the previous and next buttons.
+
+Previous and next switch to the previous or next service, if there's a previous or next service to
+select, or the previous or next channel if already at either end of the service list.
+
+Or you can switch service or channel using the appropriate selectors.
+
+### FM
+
+![FM screen](/images/fm.png)
+
+FM mode sports a frequency display, and a large, old style, frequency knob.
+
+Turn it either way to select the frequency.
+
+The knob turns several times, much like in the analog days of old.
+
+Below there's a scan down, scan up and stop scan buttons, which can be used to find the previous or
+next FM station.
+
+### Presets
+
+![presets](/images/presets.png)
+
+The preset controls are at the bottom of the right widget.
+
+The central selector is used to choose the next preset.
+
+Provided that there's a DAB service selected, or in FM mode, M+ adds the current service or frequency
+to the presets, whileM- removes the current station from the presets, if it had been previously added.
+
+### Left widget
 
 On the top left, find the stereo, signal strength and signal quality indicators.
 
@@ -25,34 +64,7 @@ The squelch is a control that silences the sound when the signal is poor.
 The higher the value, the better the signal quality has to be for any sound to be played.
 It's only active in FM mode.
 
-On the right, the widgets change between DAB and FM modes.
-
-![DAB screen](/images/dab.png)
-
-In DAB mode, top to bottom, there's the channel name, a list of all the services (AKA stations) in
-the current channel, a channel selector, and the previous and next buttons.
-
-Previous and next switch to the previous or next service, if there's a previous or next service to
-select, or the previous or next channel if already at either end of the service list.
-
-Or you can switch service or channel using the appropriate selectors.
-
-![FM screen](/images/fm.png)
-
-FM mode sports a frequency display, and a large, old style, frequency knob.
-
-Turn it either way to select the frequency.
-
-The knob turns several times, much like in the analog days of old.
-
-Below there's a scan down, scan up and stop scan buttons, which can be used to find the previous or
-next FM station.
-
-The preset controls are at the bottom.
-
-M+ adds the current service or frequency to the presets.
-
-M- removes the current station from the presets, if it had been previously added.
+### Settings
 
 The burger menu button at the top right activates the about and settings windows.
 
@@ -60,8 +72,7 @@ The burger menu button at the top right activates the about and settings windows
 
 Settings are pretty much self explanatory.
 
-Building
---------
+### Building
 
 The executable is created either with qmake or cmake.
 
@@ -81,8 +92,7 @@ where XXX, YYY and ZZZ are the mnemonics for the devices to include.
 
 At this moment in time, the only device tested is the SDR RTL stick, and the only build linux.
 
-TODO
-----
+### TODO
 
 - recording
 - FM scanning
@@ -93,8 +103,7 @@ TODO
 - cleanup the source, remove objects that are not needed, consolidate buffer usage
 - make loading settings more resilient to duff values
 
-Acknowledgements
-----------------
+#### Acknowledgements
 
 The backends have wholesale lifted from Qt-dab and Sdr-j-fm by Jan van Katwijk and
 various other contributors.
@@ -111,7 +120,3 @@ Marconi facing left portrait dated 1908.
 
 As with the rest of this package, you are free to use it within the limits of the GPL v2
 license - just make sure that you acknowledge my original work wherever you use it.
-
-Marco Greco
-
-marco greco priolo at gmail dot com
