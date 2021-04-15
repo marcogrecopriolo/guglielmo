@@ -135,6 +135,7 @@ RadioInterface::RadioInterface (QSettings *Si, QWidget	 *parent):
     // FM settings
     FMprocessor = nullptr;
     RDSdecoder = nullptr;
+    scanTimer = nullptr;
     settings->beginGroup(GROUP_FM);
     buffersSize = settings->value(FM_BUFFERS_SIZE, FM_DEF_BUFFERS_SIZE).toInt();
     workingRate = settings->value(FM_WORKING_RATE, FM_DEF_WORKING_RATE).toInt();
@@ -143,6 +144,7 @@ RadioInterface::RadioInterface (QSettings *Si, QWidget	 *parent):
     repeatRate = settings->value(FM_REPEAT_RATE, FM_DEF_REPEAT_RATE).toInt();
     filterDepth = settings->value(FM_FILTER_DEPTH, FM_DEF_FILTER_DEPTH).toInt();
     FMthreshold = settings->value(FM_THRESHOLD, FM_DEF_THRESHOLD).toInt();
+    scanInterval = settings->value(FM_SCAN_INTERVAL, FM_DEF_SCAN_INTERVAL).toInt();
 
     FMfilter = settings->value(FM_FILTER, FM_DEF_FILTER).toInt();
     FMdegree = settings->value(FM_DEGREE, FM_DEF_DEGREE).toInt();
@@ -210,6 +212,7 @@ RadioInterface::RadioInterface (QSettings *Si, QWidget	 *parent):
 
     playing = false;
     recording = false;
+    scanning = false;
     isFM = (settings->value(GEN_TUNER_MODE, GEN_DEF_TUNER_MODE).toString() == GEN_FM);
     if (isFM)
 	toFM();
@@ -254,6 +257,7 @@ RadioInterface::RadioInterface (QSettings *Si, QWidget	 *parent):
 	channelSelector->setCurrentIndex(i);
     setPlaying();
     setRecording();
+    setScanning();
 
     ficSuccess = 0;
     ficBlocks = 0;
@@ -355,6 +359,8 @@ void RadioInterface::terminateProcess() {
     if (FMprocessor != nullptr)
 	delete FMprocessor;
     delete RDSdecoder;
+    if (scanTimer != nullptr)
+	delete scanTimer;
     if (settingsDialog != nullptr)
 	delete settingsDialog;
 }
@@ -496,6 +502,88 @@ void RadioInterface::newAudio(int amount, int rate) {
     }
 }
 
+//	scans
+
+//	controls
+
+void RadioInterface::startFMscan(bool down) {
+    if (down) {
+	if (FMfreq <= MIN_FM)
+	    return;
+	scanIncrement = -1;
+    } else {
+	if (FMfreq >= MAX_FM)
+	    return;
+	scanIncrement = 1;
+    }
+    if (scanTimer == nullptr) {
+	scanTimer = new QTimer();
+	scanTimer->setInterval(scanInterval);
+	connect(scanTimer, SIGNAL(timeout()),
+		this, SLOT(nextFrequency()));
+    }
+    stopFM();
+    playing = false;
+    recording = false;
+    scanning = true;
+    cleanScreen();
+    setPlaying();
+    setRecording();
+    setScanning();
+    FMfreq = (FMfreq*10+scanIncrement)/10;
+    frequencyKnob->setValue(double(FMfreq));
+    frequencyLCD->display(int(FMfreq*1000));
+    FMprocessor->set_localOscillator(0);
+    inputDevice->restartReader(int(FMfreq*1000000));
+    FMprocessor->start();
+    FMprocessor->startScanning();
+    scanTimer->start();
+}
+
+// FIXME ideally stopping a scan and switching frequency should be serialized
+void RadioInterface::stopFMscan() {
+    if (scanTimer != nullptr && scanTimer->isActive())
+	scanTimer->stop();
+    scanning = false;
+    FMprocessor->stopScanning();
+    stopFM();
+    setPlaying();
+    setRecording();
+    setScanning();
+}
+
+//	slots
+
+void RadioInterface::nextFrequency(void) {
+    if (FMfreq <= MIN_FM || FMfreq >= MAX_FM) {
+	stopFMscan();
+    } else {
+	FMprocessor->stopScanning();
+	FMprocessor->stop();
+	inputDevice->stopReader();
+	FMfreq = (FMfreq*10+scanIncrement)/10;
+	frequencyKnob->setValue(double(FMfreq));
+	frequencyLCD->display(int(FMfreq*1000));
+	FMprocessor->set_localOscillator(0);
+	inputDevice->restartReader(int(FMfreq*1000000));
+	FMprocessor->start();
+	FMprocessor->startScanning();
+	scanTimer->start();
+    }
+}
+
+void RadioInterface::scanDone(void) {
+    scanTimer->stop();
+    FMprocessor->stopScanning();
+    scanning = false;
+    stopFM();
+    playing = true;
+    startFM(int(FMfreq*1000000));
+    setPlaying();
+    setRecording();
+    setScanning();
+}
+
 //	visual elements
 
 //	slots exercised by the processors
@@ -568,9 +656,6 @@ void RadioInterface::showStrength(float strength) {
     else
 	signalStrength->setFillBrush(QBrush(Qt::green));
     signalStrength->setValue(strength);
-}
-
-void RadioInterface::scanDone(void) {
 }
 
 void RadioInterface::showQuality(bool b) {
@@ -757,16 +842,16 @@ void RadioInterface::handleDeleteFMPreset() {
 void RadioInterface::stopDABService() {
     presetSelector->setCurrentIndex (0);
     if (currentService.valid) {
-	   audiodata ad;
+	audiodata ad;
 
-	   DABprocessor->dataforAudioService (currentService.serviceName, &ad);
-	   DABprocessor->stopService(&ad);
-	   usleep(1000);
-	   soundOut->stop();
-	   playing = false;
-	   recording = false;
-	   setPlaying();
-	   setRecording();
+	DABprocessor->dataforAudioService (currentService.serviceName, &ad);
+	DABprocessor->stopService(&ad);
+	usleep(1000);
+	soundOut->stop();
+	playing = false;
+	recording = false;
+	setPlaying();
+	setRecording();
     }
     currentService.valid = false;
     cleanScreen();
@@ -969,23 +1054,48 @@ void RadioInterface::startFM(int32_t freq) {
 void RadioInterface::stopFM() {
     if (inputDevice == nullptr || FMprocessor == nullptr)
 	return;
+    if (scanning)
+	stopFMscan();
     inputDevice->stopReader();
     FMprocessor->stop();
     soundOut->stop();
     playing = false;
     recording = false;
+    scanning = false;
     setPlaying();
     setRecording();
+    setScanning();
     cleanScreen();
 }
 
 void RadioInterface::handleScanDown() {
+    startFMscan(true);
 }
 
 void RadioInterface::handleScanUp() {
+    startFMscan(false);
 }
 
 void RadioInterface::handleStopScan() {
+    stopFMscan();
+}
+
+void RadioInterface::setScanning() {
+    if (scanning) {
+	scanBackButton->setEnabled(false);
+	scanForwardButton->setEnabled(false);
+	addPresetButton->setEnabled(false);
+	deletePresetButton->setEnabled(false);
+	frequencyKnob->setEnabled(false);
+	stopScanButton->setEnabled(true);
+    } else {
+	scanBackButton->setEnabled(true);
+	scanForwardButton->setEnabled(true);
+	addPresetButton->setEnabled(true);
+	deletePresetButton->setEnabled(true);
+	frequencyKnob->setEnabled(true);
+	stopScanButton->setEnabled(false);
+    }
 }
 
 void RadioInterface::handleFMfrequency(double freq) {
@@ -1018,7 +1128,7 @@ void RadioInterface::handlePauseButton() {
 }
 
 void RadioInterface::setPlaying() {
-    if (inputDevice != nullptr && (isFM || currentService.valid)) {
+    if (inputDevice != nullptr && ((isFM && !scanning) || (!isFM && currentService.valid))) {
 	playButton->setEnabled(true);
 	if (playing) {
 	    connect(playButton, SIGNAL(clicked (void)),
@@ -1046,14 +1156,14 @@ void RadioInterface::handleRecordButton() {
 }
 
 void RadioInterface::handleStopRecordButton() {
-   disconnect(recordButton, SIGNAL(clicked(void)),
+    disconnect(recordButton, SIGNAL(clicked(void)),
 		this, SLOT(handleStopRecordButton(void)));
-   recording = false;
-   setRecording();
+    recording = false;
+    setRecording();
 }
 
 void RadioInterface::setRecording() {
-    if (inputDevice != nullptr && (isFM || currentService.valid)) {
+    if (inputDevice != nullptr && ((isFM && !scanning) || (!isFM && currentService.valid))) {
 	recordButton->setEnabled(true);
 	if (recording) {
 	    connect(recordButton, SIGNAL(clicked(void)),
@@ -1081,11 +1191,13 @@ void RadioInterface::handleDABButton() {
     stopFM();
     playing = false;
     recording = false;
+    scanning = false;
     toDAB();
     currentService.valid = (currentService.serviceName != "");
     startDAB(channelSelector->currentText());
     setPlaying();
     setRecording();
+    setScanning();
 }
 
 void RadioInterface::toDAB() {

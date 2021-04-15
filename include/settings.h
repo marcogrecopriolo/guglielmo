@@ -78,6 +78,7 @@
 #define FM_REPEAT_RATE		"repeatRate"
 #define FM_FILTER_DEPTH		"filterDepth"
 #define FM_THRESHOLD		"threshold"
+#define FM_SCAN_INTERVAL	"scanInterval"
 
 #define FM_FILTER		"filter"
 #define FM_DEGREE		"degree"
@@ -92,6 +93,7 @@
 #define FM_DEF_REPEAT_RATE	"5"
 #define FM_DEF_FILTER_DEPTH	"5"
 #define FM_DEF_THRESHOLD	"20"
+#define FM_DEF_SCAN_INTERVAL	"1000"
 
 #define FM_DEF_FILTER		"0"
 #define FM_DEF_DEGREE		"15"

@@ -28,6 +28,7 @@
 #include <QComboBox>
 #include <QLabel>
 #include <QSettings>
+#include <QTimer>
 #include "ui_guglielmo.h"
 #include "ui_settings.h"
 #include "constants.h"
@@ -96,6 +97,7 @@ private:
     int16_t repeatRate;
     int16_t filterDepth;
     int16_t FMthreshold;
+    int scanInterval;
 
     int FMdecoder;
     int deemphasis;
@@ -127,8 +129,11 @@ private:
     bool isFM;
     bool playing;
     bool recording;
+    bool scanning;
     int16_t ficBlocks;
     int16_t ficSuccess;
+    QTimer *scanTimer;
+    double scanIncrement;
 
 // audio
     audioBase *soundOut;
@@ -145,11 +150,14 @@ private:
     void startDABService(dabService *);
     void stopDABService();
     void startFM(int32_t);
-    void stopFM	();
+    void stopFM();
+    void startFMscan(bool);
+    void stopFMscan();
     void toFM();
     void toDAB();
     void setPlaying();
     void setRecording();
+    void setScanning();
     void cleanScreen();
     void terminateProcess();
 
@@ -208,5 +216,8 @@ private slots:
     void setFMDegree(int);
 
     void setDevice(int);
+
+// scan
+    void nextFrequency();
 };
 #endif		// __RADIO_H__
