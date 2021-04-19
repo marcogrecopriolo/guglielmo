@@ -138,9 +138,8 @@ At this moment in time, the only device tested is the SDR RTL stick, and the onl
 
 ## TODO
 
-- recording
-- FM scanning
 - integrate Qt audio with pulseaudio
+- improve on volume management
 - RDS is very signal sensitive at moment
 - debug support
 - MPRIS support

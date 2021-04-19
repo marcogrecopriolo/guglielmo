@@ -43,8 +43,6 @@ public:
 	void		restart		(void);
 	void		setVolume	(qreal);
 	void		audioOutput	(float *, int32_t);
-        int32_t         putSample               (DSPCOMPLEX);
-        int32_t         putSamples              (DSPCOMPLEX *, int32_t);
 private:
 	void		setParams	(int32_t);
 	QAudioFormat	AudioFormat;

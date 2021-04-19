@@ -42,10 +42,10 @@ virtual	void		restart();
 virtual	void		setVolume		(qreal);
 
 	void		audioOut		(int16_t *, int32_t, int);
+	int32_t putSample    (DSPCOMPLEX v);
+	int32_t putSamples    (DSPCOMPLEX *v, int32_t n);
 	void		startDumping		(SNDFILE *);
 	void		stopDumping();
-virtual int32_t putSample    (DSPCOMPLEX v);
-virtual int32_t putSamples    (DSPCOMPLEX *v, int32_t n);
 private:
 	void		audioOut_16000		(int16_t *, int32_t);
 	void		audioOut_24000		(int16_t *, int32_t);

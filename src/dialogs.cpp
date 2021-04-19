@@ -26,6 +26,7 @@
 #include <QStyleFactory>
 #include <QFile>
 #include <QTextStream>
+#include <QFileDialog>
 #include <QDebug>
 #include "Qt-audio.h"
 #include "audiosink.h"
@@ -44,6 +45,24 @@ bool yesNo(QWidget *parent) {
 // generic warning
 void warning(QWidget *parent, QString what) {
      QMessageBox::warning(parent, QWidget::tr("Warning"), what);
+}
+
+// open write file
+QString chooseFileName(QWidget *parent, QSettings *settings, QString what, QString filters, QString state, QString fileName ) {
+    QFileDialog *saveDialog = new QFileDialog(parent);
+    settings->beginGroup(GROUP_DIALOGS);
+    QByteArray saveState = settings->value(state, "").toByteArray();
+    settings->endGroup();
+    saveDialog->restoreState(saveState);
+    QString selectedFilter = saveDialog->selectedNameFilter();
+    QString out = saveDialog->getSaveFileName(parent, what, saveDialog->directory().filePath(fileName), filters, &selectedFilter);
+
+    // FIXME the current filter is not saved
+    settings->beginGroup(GROUP_DIALOGS);
+    saveState = saveDialog->saveState();
+    settings->setValue(state, saveState);
+    settings->endGroup();
+    return out;
 }
 
 // "about" window

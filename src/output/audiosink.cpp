@@ -233,29 +233,6 @@ void	audioSink::audioOutput	(float *b, int32_t amount) {
 	_O_Buffer. putDataIntoBuffer (b, 2 * amount);
 }
 
-int32_t audioSink::putSample    (DSPCOMPLEX v) {
-float	b[2];
-	b[0] = real (v) * volume;
-	b[1] = imag (v) * volume;
-        _O_Buffer       . putDataIntoBuffer (&b, 2);
-}
-
-int32_t audioSink::putSamples   (DSPCOMPLEX *V, int32_t n) {
-float   *buffer = (float *)alloca (2 * n * sizeof (float));
-int32_t i;
-int32_t available = _O_Buffer . GetRingBufferWriteAvailable ();
-
-        if (2 * n > available)
-           n = (available / 2) & ~01;
-        for (i = 0; i < n; i ++) {
-           buffer [2 * i] = real (V [i]) * volume;
-           buffer [2 * i + 1] = imag (V [i]) * volume;
-        }
-
-        _O_Buffer       . putDataIntoBuffer (buffer, 2 * n);
-        return n;
-}
-
 QString audioSink::outputChannelwithRate (int16_t ch, int32_t rate) {
 const PaDeviceInfo *deviceInfo;
 QString name = QString ("");

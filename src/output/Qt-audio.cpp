@@ -54,18 +54,6 @@ void	Qt_Audio::audioOutput (float *fragment, int32_t size) {
 	}
 }
 
-int32_t Qt_Audio::putSample    (DSPCOMPLEX v) {
-        return putSamples (&v, int32_t(1));
-}
-
-int32_t Qt_Audio::putSamples           (DSPCOMPLEX *V, int32_t n) {
-        if (theAudioDevice != nullptr) {
-           Buffer -> putDataIntoBuffer (V, 2 * n);
-           return n;
-        }
-        return int32_t(0);
-}
-
 void	Qt_Audio::setParams (int outputRate) {
 	if (theAudioOutput != nullptr) {
 	   delete theAudioOutput;

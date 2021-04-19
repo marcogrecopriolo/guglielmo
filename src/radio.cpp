@@ -21,6 +21,7 @@
 #include <QMenu>
 #include <QStringList>
 #include <QCloseEvent>
+#include <QFileInfo>
 #include <fstream>
 #include "constants.h"
 #include "settings.h"
@@ -340,7 +341,7 @@ void RadioInterface::terminateProcess() {
     settings->setValue(GEN_FM_FREQUENCY, FMfreq);
     settings->setValue(GEN_TUNER_MODE, isFM? GEN_FM: GEN_DAB);
     settings->setValue(GEN_VOLUME, int(volumeKnob->value()));
-    settings->setValue(GEN_SQUELCH, 100-int(squelchKnob->value()));
+    settings->setValue(GEN_SQUELCH, int(squelchKnob->value()));
     settings->beginWriteArray(GROUP_PRESETS);
 
     // skip 'presets'
@@ -524,7 +525,6 @@ void RadioInterface::startFMscan(bool down) {
     }
     stopFM();
     playing = false;
-    recording = false;
     scanning = true;
     cleanScreen();
     setPlaying();
@@ -740,7 +740,7 @@ void RadioInterface::handlePresetSelector(const QString &preset) {
 	return;
     }
     playing = false;
-    recording = false;
+    stopRecording();
 
     if (list.at(0) == "FM") {
 	bool ok;
@@ -849,7 +849,7 @@ void RadioInterface::stopDABService() {
 	usleep(1000);
 	soundOut->stop();
 	playing = false;
-	recording = false;
+	stopRecording();
 	setPlaying();
 	setRecording();
     }
@@ -879,10 +879,10 @@ void RadioInterface::handleSelectService(QModelIndex ind) {
 void RadioInterface::startDABService(dabService *s) {
     QString serviceName = s->serviceName;
 
-    if (currentService. valid) {
+    if (currentService.valid) {
 	fprintf (stderr, "service %s is still valid\n",
 		currentService.serviceName.toLatin1().data());
-	stopDABService ();
+	stopDABService();
     }
 
     ficBlocks = 0;
@@ -932,7 +932,7 @@ void RadioInterface::stopDAB() {
     if (inputDevice == nullptr || DABprocessor == nullptr)
 	return;
     playing = false;
-    recording = false;
+    stopRecording();
     setPlaying();
     setRecording();
     soundOut->stop();
@@ -1060,8 +1060,8 @@ void RadioInterface::stopFM() {
     FMprocessor->stop();
     soundOut->stop();
     playing = false;
-    recording = false;
     scanning = false;
+    stopRecording();
     setPlaying();
     setRecording();
     setScanning();
@@ -1149,17 +1149,61 @@ void RadioInterface::setPlaying() {
 }
 
 void RadioInterface::handleRecordButton() {
+    QString outputFileName;
+    QString baseFileName;
+    QString ext;
+    SF_INFO sfInfo;
+
+    if (isFM)
+	baseFileName = "FM:" + QString::number(FMfreq*1000);
+    else if (currentService.valid)
+	baseFileName = currentService.serviceName;
+    else
+	baseFileName = "";
+    if ((outputFileName = chooseFileName(this, settings, tr("Record to"),
+		tr("Waveform Audio File (*.wav);; Free Lossless Audio Codec (*.flac);; Ogg Vorbis (*.ogg)"),
+		DIALOGS_RECORDING, baseFileName.trimmed())) != "") {
+	memset(&sfInfo, 0, sizeof(sfInfo));
+	sfInfo.samplerate = 48000;
+	sfInfo.channels = 2;
+	ext = QFileInfo(outputFileName).suffix().toLower();
+	if (ext == "wav")
+	    sfInfo.format = SF_FORMAT_WAV | SF_FORMAT_PCM_16;
+	else if (ext == "flac")
+	    sfInfo.format = SF_FORMAT_FLAC | SF_FORMAT_PCM_16;
+	else if (ext == "ogg")
+	    sfInfo.format = SF_FORMAT_OGG | SF_FORMAT_VORBIS;
+
+	// sf_open fails if the format wasn't set properly
+	// we use this for unknown extension types
+	recordingFile = sf_open(outputFileName.toUtf8().data(), SFM_WRITE, &sfInfo);
+	if (recordingFile != nullptr) {
+	    if (!playing)
+		handlePlayButton();
+	    recording = true;
+	    soundOut->startDumping(recordingFile);
+	} else
+	    warning(this, tr("could not start recording"));
+    }
     disconnect(recordButton, SIGNAL(clicked(void)),
 		this, SLOT(handleRecordButton(void)));
-    recording = true;
     setRecording();
 }
 
 void RadioInterface::handleStopRecordButton() {
     disconnect(recordButton, SIGNAL(clicked(void)),
 		this, SLOT(handleStopRecordButton(void)));
-    recording = false;
+    stopRecording();
     setRecording();
+}
+
+void RadioInterface::stopRecording() {
+    if (recording) {
+	soundOut->stopDumping();
+	sf_close(recordingFile);
+	recordingFile = nullptr;
+	recording = false;
+    }
 }
 
 void RadioInterface::setRecording() {
@@ -1189,8 +1233,8 @@ void RadioInterface::handleDABButton() {
     if (!isFM)
 	return;
     stopFM();
+    stopRecording();
     playing = false;
-    recording = false;
     scanning = false;
     toDAB();
     currentService.valid = (currentService.serviceName != "");
@@ -1221,8 +1265,8 @@ void RadioInterface::handleFMButton() {
     if (isFM)
 	return;
     stopDAB();
+    stopRecording();
     playing = false;
-    recording = false;
     toFM();
     setPlaying();
     setRecording();

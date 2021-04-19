@@ -31,6 +31,7 @@
 #define	GROUP_DAB	"dab"
 #define	GROUP_FM	"fm"
 #define	GROUP_PRESETS	"presets"	// this is an array, but still
+#define GROUP_DIALOGS	"dialogs"
 
 // keys
 
@@ -124,4 +125,7 @@
 #define DEV_DEF_AGC		"0"
 #define DEV_DEF_IF_GAIN		"50"
 #define DEV_DEF_LNA_GAIN	"50"
+
+// dialogs
+#define DIALOGS_RECORDING	"recording"
 #endif		// __SETTINGS_H__

@@ -29,6 +29,7 @@
 #include <QLabel>
 #include <QSettings>
 #include <QTimer>
+#include <sndfile.h>
 #include "ui_guglielmo.h"
 #include "ui_settings.h"
 #include "constants.h"
@@ -41,6 +42,8 @@
 // dialogs
 void warning(QWidget *parent, QString what);
 bool yesNo(QWidget *parent);
+QString chooseFileName(QWidget *parent, QSettings *settings, QString what, QString filters,
+			QString state, QString fileName);
 
 class audioBase;
 
@@ -121,6 +124,7 @@ private:
     fmProcessor *FMprocessor;
     rdsDecoder *RDSdecoder;
     deviceHandler *inputDevice;
+    SNDFILE *recordingFile;
     int deviceUiControls;
     QString deviceName;
     int ifGain;
@@ -157,6 +161,7 @@ private:
     void toDAB();
     void setPlaying();
     void setRecording();
+    void stopRecording();
     void setScanning();
     void cleanScreen();
     void terminateProcess();

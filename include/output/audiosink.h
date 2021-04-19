@@ -48,8 +48,6 @@ public:
 	bool		selectDevice		(int16_t);
 	bool		selectDefaultDevice();
 	int32_t		missed();
-        int32_t         putSample               (DSPCOMPLEX);
-        int32_t         putSamples              (DSPCOMPLEX *, int32_t);
 private:
 	int16_t		numberofDevices();
 	QString		outputChannelwithRate	(int16_t, int32_t);

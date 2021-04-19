@@ -49,6 +49,28 @@ void	audioBase::stop() {
 void	audioBase::setVolume(qreal v) {
 }
 
+
+int32_t audioBase::putSample    (DSPCOMPLEX v) {
+        return putSamples (&v, int32_t(1));
+}
+
+int32_t audioBase::putSamples   (DSPCOMPLEX *V, int32_t amount) {
+float   *buffer = (float *)alloca (2 * amount * sizeof (float));
+int32_t i;
+
+        for (i = 0; i < amount; i ++) {
+           buffer [2 * i] = real (V [i]);
+           buffer [2 * i + 1] = imag (V [i]);
+        }
+
+	myLocker. lock();
+	if (dumpFile != nullptr)
+	   sf_writef_float (dumpFile, (float *)buffer, amount);
+	myLocker. unlock();
+	audioOutput (buffer, amount);
+        return amount;
+}
+
 //	This one is a hack for handling different baudrates coming from
 //	the aac decoder. call is from the GUI, triggered by the
 //	aac decoder or the mp3 decoder
@@ -190,16 +212,4 @@ void	audioBase::audioOutput	(float *v, int32_t amount) {
 	fprintf (stderr, "xx");
 	(void)v;
 	(void)amount;
-}
-
-int32_t audioBase::putSample    (DSPCOMPLEX v) {
-        return putSamples (&v, int32_t(1));
-}
-
-int32_t audioBase::putSamples   (DSPCOMPLEX *V, int32_t n) {
-
-//
-//      The putSamples function is the one that really should be
-//      reimplemented in the offsprings of this class
-        return int32_t(0);
 }
