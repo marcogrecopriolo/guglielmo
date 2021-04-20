@@ -97,7 +97,9 @@ void	Qt_Audio::restart	(void) {
 }
 
 void	Qt_Audio::setVolume	(qreal v) {
-	volume = v;
+	volume = QAudio::convertVolume(v,
+                                QAudio::LogarithmicVolumeScale,
+                                QAudio::LinearVolumeScale);
 	if (theAudioOutput == nullptr) {
 	   return;
 	}

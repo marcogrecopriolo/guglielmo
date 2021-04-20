@@ -120,14 +120,14 @@ void RadioInterface::handleSettingsAction() {
         	this, SLOT(setSoundOutput(int)));
 	settingsDialog->connect(settingsUi.latencySpinBox, SIGNAL(valueChanged(int)),
         	this, SLOT(setLatency(int)));
+	settingsUi.latencySpinBox->setValue(latency);
+	settingsUi.modeComboBox->setCurrentIndex(1);
     	if (isQtAudio) {
 	    settingsUi.modeComboBox->setCurrentIndex(0);
 	    settingsUi.alsaWidget->hide();
 	} else {
-	    settingsUi.modeComboBox->setCurrentIndex(1);
 	    ((audioSink *) soundOut)->setupChannels(settingsUi.outputComboBox);
 	    settingsUi.outputComboBox->setCurrentIndex(soundChannel);
-	    settingsUi.latencySpinBox->setValue(latency);
 	}
 
 	// FM tab
@@ -259,6 +259,7 @@ void RadioInterface::setSoundMode(const QString &mode) {
 
 	// FIXME audiosink requires that the combobox be populated every time
 //	if (settingsUi.outputComboBox->currentIndex() < 0) {
+	    settingsUi.outputComboBox->clear();
 	    ((audioSink *) soundOut)->setupChannels(settingsUi.outputComboBox);
 	    settingsUi.outputComboBox->setCurrentIndex(soundChannel);
 //	}
@@ -277,6 +278,7 @@ void RadioInterface::setSoundMode(const QString &mode) {
 }
 
 void RadioInterface::setSoundOutput(int c) {
+    soundChannel = c;
     ((audioSink *) soundOut)->selectDevice(int16_t(c));
 }
 
