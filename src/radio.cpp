@@ -140,7 +140,6 @@ RadioInterface::RadioInterface (QSettings *Si, QWidget	 *parent):
     settings->beginGroup(GROUP_FM);
     buffersSize = settings->value(FM_BUFFERS_SIZE, FM_DEF_BUFFERS_SIZE).toInt();
     workingRate = settings->value(FM_WORKING_RATE, FM_DEF_WORKING_RATE).toInt();
-    audioRate = settings->value(FM_AUDIO_RATE, FM_DEF_AUDIO_RATE).toInt();
     averageCount = settings->value(FM_AVERAGE_COUNT, FM_DEF_AVERAGE_COUNT).toInt();
     repeatRate = settings->value(FM_REPEAT_RATE, FM_DEF_REPEAT_RATE).toInt();
     filterDepth = settings->value(FM_FILTER_DEPTH, FM_DEF_FILTER_DEPTH).toInt();
@@ -157,6 +156,7 @@ RadioInterface::RadioInterface (QSettings *Si, QWidget	 *parent):
     settings->beginGroup(GROUP_SOUND);
     isQtAudio = (settings->value(SOUND_MODE, SOUND_DEF_MODE).toString() == SOUND_QT);
     latency = settings->value(SOUND_LATENCY, SOUND_DEF_LATENCY).toInt();
+    audioRate = settings->value(SOUND_AUDIO_RATE, SOUND_DEF_AUDIO_RATE).toInt();
     soundChannel = settings->value(SOUND_CHANNEL, SOUND_DEF_CHANNEL).toInt();
     if (isQtAudio) {
 	soundOut = new Qt_Audio;
@@ -844,7 +844,7 @@ void RadioInterface::stopDABService() {
     if (currentService.valid) {
 	audiodata ad;
 
-	DABprocessor->dataforAudioService (currentService.serviceName, &ad);
+	DABprocessor->dataforAudioService(currentService.serviceName, &ad);
 	DABprocessor->stopService(&ad);
 	usleep(1000);
 	soundOut->stop();
@@ -879,7 +879,7 @@ void RadioInterface::handleSelectService(QModelIndex ind) {
 void RadioInterface::startDABService(dabService *s) {
     QString serviceName = s->serviceName;
 
-    if (currentService.valid) {
+    if (playing && !isFM && currentService.valid) {
 	fprintf (stderr, "service %s is still valid\n",
 		currentService.serviceName.toLatin1().data());
 	stopDABService();
@@ -912,8 +912,7 @@ void RadioInterface::startDABService(dabService *s) {
 		setPlaying();
 		setRecording();
 	    } else
-		fprintf(stderr, "%s not supported\n",
-	                            serviceName.toLatin1().data());
+		warning(this, tr(BAD_SERVICE));
 	    return;
 	}
     }
@@ -1164,7 +1163,7 @@ void RadioInterface::handleRecordButton() {
 		tr("Waveform Audio File (*.wav);; Free Lossless Audio Codec (*.flac);; Ogg Vorbis (*.ogg)"),
 		DIALOGS_RECORDING, baseFileName.trimmed())) != "") {
 	memset(&sfInfo, 0, sizeof(sfInfo));
-	sfInfo.samplerate = 48000;
+	sfInfo.samplerate = audioRate;
 	sfInfo.channels = 2;
 	ext = QFileInfo(outputFileName).suffix().toLower();
 	if (ext == "wav")

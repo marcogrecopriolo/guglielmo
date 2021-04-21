@@ -74,7 +74,6 @@
 // fm
 #define FM_BUFFERS_SIZE		"buffersSize"
 #define FM_WORKING_RATE		"workingRate"
-#define FM_AUDIO_RATE		"audioRate"
 #define FM_AVERAGE_COUNT	"averageCount"
 #define FM_REPEAT_RATE		"repeatRate"
 #define FM_FILTER_DEPTH		"filterDepth"
@@ -89,7 +88,6 @@
 
 #define FM_DEF_BUFFERS_SIZE	"512"
 #define FM_DEF_WORKING_RATE	"48000"
-#define FM_DEF_AUDIO_RATE	"48000"
 #define FM_DEF_AVERAGE_COUNT	"5"
 #define FM_DEF_REPEAT_RATE	"5"
 #define FM_DEF_FILTER_DEPTH	"5"
@@ -106,10 +104,12 @@
 #define SOUND_MODE		"soundMode"
 #define SOUND_LATENCY		"latency"
 #define SOUND_CHANNEL		"soundChannel"
+#define SOUND_AUDIO_RATE	"audioRate"
 
 #define SOUND_DEF_MODE		"Qt"
 #define SOUND_DEF_LATENCY	"5"
 #define SOUND_DEF_CHANNEL	"0"
+#define SOUND_DEF_AUDIO_RATE	"48000"
 
 #define SOUND_QT		"Qt"
 #define SOUND_PORTAUDIO		"Portaudio"
