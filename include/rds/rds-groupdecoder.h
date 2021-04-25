@@ -96,9 +96,7 @@ signals:
 	void	setMusicSpeechFlag	(int);
 	void	clearMusicSpeechFlag	(void);
 	void	setPiCode		(int);
-	void	clearStationLabel	(void);
 	void	setStationLabel		(const QString &);
-	void	clearRadioText		(void);
 	void	setRadioText		(const QString &);
 	void	setAFDisplay		(int);
 };

@@ -135,7 +135,6 @@ RadioInterface::RadioInterface (QSettings *Si, QWidget	 *parent):
 
     // FM settings
     FMprocessor = nullptr;
-    RDSdecoder = nullptr;
     scanTimer = nullptr;
     settings->beginGroup(GROUP_FM);
     buffersSize = settings->value(FM_BUFFERS_SIZE, FM_DEF_BUFFERS_SIZE).toInt();
@@ -359,7 +358,6 @@ void RadioInterface::terminateProcess() {
 	delete DABprocessor;
     if (FMprocessor != nullptr)
 	delete FMprocessor;
-    delete RDSdecoder;
     if (scanTimer != nullptr)
 	delete scanTimer;
     if (settingsDialog != nullptr)

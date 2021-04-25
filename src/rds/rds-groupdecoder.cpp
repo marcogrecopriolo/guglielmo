@@ -71,8 +71,8 @@ void	rdsGroupDecoder::reset (void) {
 	          NUM_OF_CHARS_RADIOTEXT * sizeof (char));
 	textABflag		= -1; // Not defined
 	textSegmentRegister	= 0;
-	clearRadioText		();
-	clearStationLabel	();
+	setRadioText		("");
+	setStationLabel		("");
 	clearMusicSpeechFlag	();
 	setPTYCode		(0);
 	setPiCode		(0);
@@ -206,7 +206,7 @@ uint16_t	i;
 	if (textABflag != new_txtABflag) {
 	   textABflag = new_txtABflag;
 //	If the textA/B has changed, we clear the old displayed message ...
-	   clearRadioText ();
+	   setRadioText ("");
 
 //	... and we check if we have received a continous stream of segments
 //	in which case we show the text

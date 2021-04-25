@@ -122,7 +122,6 @@ private:
 // devices, processors
     dabProcessor *DABprocessor;
     fmProcessor *FMprocessor;
-    rdsDecoder *RDSdecoder;
     deviceHandler *inputDevice;
     SNDFILE *recordingFile;
     int deviceUiControls;
