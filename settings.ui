@@ -10,7 +10,7 @@
     <x>0</x>
     <y>0</y>
     <width>500</width>
-    <height>400</height>
+    <height>420</height>
    </rect>
   </property>
   <property name="font">
@@ -27,11 +27,11 @@
      <x>10</x>
      <y>10</y>
      <width>480</width>
-     <height>330</height>
+     <height>350</height>
     </rect>
    </property>
    <property name="currentIndex">
-    <number>0</number>
+    <number>2</number>
    </property>
    <widget class="QWidget" name="uiTab">
     <attribute name="title">
@@ -505,6 +505,48 @@
       <number>15</number>
      </property>
     </widget>
+    <widget class="QLabel" name="fmAudioGainLabel">
+     <property name="geometry">
+      <rect>
+       <x>10</x>
+       <y>260</y>
+       <width>100</width>
+       <height>40</height>
+      </rect>
+     </property>
+     <property name="font">
+      <font>
+       <pointsize>11</pointsize>
+      </font>
+     </property>
+     <property name="text">
+      <string>Audio gain</string>
+     </property>
+    </widget>
+    <widget class="QSpinBox" name="fmAudioGainSpinBox">
+     <property name="geometry">
+      <rect>
+       <x>120</x>
+       <y>260</y>
+       <width>60</width>
+       <height>40</height>
+      </rect>
+     </property>
+     <property name="font">
+      <font>
+       <pointsize>11</pointsize>
+      </font>
+     </property>
+     <property name="minimum">
+      <number>1</number>
+     </property>
+     <property name="maximum">
+      <number>200</number>
+     </property>
+     <property name="value">
+      <number>100</number>
+     </property>
+    </widget>
    </widget>
    <widget class="QWidget" name="deviceTab">
     <attribute name="title">
@@ -646,7 +688,7 @@
    <property name="geometry">
     <rect>
      <x>390</x>
-     <y>350</y>
+     <y>370</y>
      <width>90</width>
      <height>40</height>
     </rect>

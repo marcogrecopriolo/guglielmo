@@ -374,6 +374,7 @@ int	result = my_airspy_set_sensitivity_gain (device, theGain * MAX_GAIN / 100);
 	   return;
 	}
 	ifGain = theGain;
+	emit configurationChanged();
 }
 
 //
@@ -387,8 +388,10 @@ int result = my_airspy_set_mixer_agc (device, b);
 	if (result != AIRSPY_SUCCESS) {
 	   printf ("airspy_set_mixer_agc () failed: %s (%d)\n",
 	            my_airspy_error_name ((airspy_error)result), result);
+	   return;
 	} else
 		agcControl = (b != 0);
+	emit configurationChanged();
 }
 
 

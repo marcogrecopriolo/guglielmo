@@ -116,6 +116,8 @@
 	this	-> max_freq_deviation	= 0.95 * (0.5 * fmRate);
 	this	-> norm_freq_deviation	= 0.6 * max_freq_deviation;
 	this	-> audioGain		= 0;
+	this	-> audioGainAverage	= 0;
+	this	-> audioGainCnt		= 0;
 //
 	noiseLevel	= 0;
 	pilotLevel	= 0;
@@ -183,6 +185,8 @@
 	         myRadioInterface, SLOT (showSoundMode (bool)));
 	connect (this, SIGNAL (scanresult (void)),
 	         myRadioInterface, SLOT (scanDone (void)));
+	connect (myRig, SIGNAL (configurationChanged (void)),
+	         this, SLOT (handleConfigurationChange (void)));
 	squelchValue		= 0;
 	old_squelchValue	= 0;
 
@@ -339,6 +343,11 @@ void	fmProcessor::stopScanning	(void) {
 	scanning	= false;
 }
 
+void	fmProcessor::handleConfigurationChange	(void) {
+	audioGainAverage	= 0;
+	audioGainCnt		= 0;
+}
+
 //
 //	In this variant, we have a separate thread for the
 //	fm processing
@@ -357,7 +366,6 @@ int32_t		lfCount	= 0;
 int32_t		amount;
 squelch		mySquelch (1, workingRate / 10, workingRate / 20, workingRate); 
 int32_t		audioAmount;
-float		audioGainAverage	= 0;
 int32_t		scanPointer	= 0;
 common_fft	*scan_fft  	= new common_fft (1024);
 DSPCOMPLEX	*scanBuffer	= scan_fft -> getVector ();
@@ -441,14 +449,19 @@ int		localP		= 0;
 	      if (abs (v) > peakLevel)
 	         peakLevel = abs (v);
 	      if (++peakLevelcnt >= fmRate / 4) {
+		 DSPFLOAT	tmpGain = 0;
 	         DSPFLOAT	ratio	= 
 	                          max_freq_deviation / norm_freq_deviation;
 	         if (peakLevel > 0)
-	            this -> audioGain	= 
+	            tmpGain	=
 	                  (ratio / peakLevel) / AUDIO_FREQ_DEV_PROPORTION;
-	         if (audioGain <= 0.1)
-	            audioGain = 0.1;
-	         audioGain	= 0.99 * audioGainAverage + 0.01 * audioGain;
+	         if (tmpGain <= 0.1)
+	            tmpGain = 0.1;
+
+		 // avoid compiler warning on undefined autoincrement value
+		 audioGainAverage *= audioGainCnt;
+		 audioGainCnt++;
+	         audioGain	= (audioGainAverage + tmpGain) / audioGainCnt;
 	         audioGainAverage = audioGain;
 	         peakLevelcnt	= 0;
 //	         fprintf (stderr, "peakLevel = %f\n", peakLevel);

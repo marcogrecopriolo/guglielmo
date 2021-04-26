@@ -245,6 +245,7 @@ void	rtlsdrHandler::setIfGain (int gain) {
 	ifGain = gain;
 	rtlsdr_set_tuner_gain (device,
 	                        gains [gain * gainsCount / 100]);
+	emit configurationChanged();
 }
 //
 void	rtlsdrHandler::setAgcControl	(int v) {
@@ -252,6 +253,7 @@ void	rtlsdrHandler::setAgcControl	(int v) {
 	rtlsdr_set_agc_mode (device, v);
 	rtlsdr_set_tuner_gain (device,
 	             gains [(int)(ifGain * gainsCount / 100)]);
+	emit configurationChanged();
 }
 
 //

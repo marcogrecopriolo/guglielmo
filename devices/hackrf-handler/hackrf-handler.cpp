@@ -124,6 +124,7 @@ int	res;
 	      return;
 	   }
 	lnaGain		= newGain;
+	emit configurationChanged();
 }
 
 void	hackrfHandler::setIfGain	(int newGain) {
@@ -134,6 +135,7 @@ int	res;
 	      return;
 	   }
 	vgaGain		= newGain;
+	emit configurationChanged();
 }
 
 static std::complex<float>buffer [32 * 32768];

@@ -109,6 +109,9 @@ public:
 public slots:
 	void		setIfGain		(int);
 
+signals:
+	void    	configurationChanged    (void);
+
 private:
 	QString		deviceModel;
 

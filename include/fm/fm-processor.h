@@ -175,6 +175,8 @@ virtual	void		run		(void);
 	DSPCOMPLEX	audioGainCorrection	(DSPCOMPLEX);
 	DSPFLOAT	Volume;
 	DSPFLOAT	audioGain;
+	DSPFLOAT	audioGainAverage;
+	int		audioGainCnt;
 	int32_t		max_freq_deviation;
 	int32_t		norm_freq_deviation;
 	DSPFLOAT	omega_demod;
@@ -259,6 +261,8 @@ virtual	void		run		(void);
 	      
 	pilotRecovery	*pilotRecover;
 
+private slots:
+	void		handleConfigurationChange	(void);
 signals:
 	void		setPLLisLocked		(bool);
 	void		hfBufferLoaded		(void);

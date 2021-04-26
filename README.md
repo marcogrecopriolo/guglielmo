@@ -139,7 +139,6 @@ At this moment in time, the only device tested is the SDR RTL stick, and the onl
 ## TODO
 
 - integrate Qt audio with pulseaudio
-- improve on volume management
 - RDS is very signal sensitive at moment
 - debug support
 - MPRIS support
@@ -151,8 +150,8 @@ At this moment in time, the only device tested is the SDR RTL stick, and the onl
 The backends have wholesale lifted from Qt-dab and Sdr-j-fm by Jan van Katwijk and
 various other contributors.
 
-I have merely integrated the two processors and adapted the devices to work against
-the guglielmo interface.
+I have merely integrated the two processors, adapted the devices to work against the
+guglielmo interface, fixed a few bugs and improved a few things.
 
 The few icons not included in the Qt default style have been taken from freesvg.org.
 

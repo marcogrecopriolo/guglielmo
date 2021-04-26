@@ -330,6 +330,7 @@ int ret;
 	      fprintf (stderr,
 	               "could not set hardware gain to %d\n", newGain);
 	}
+	emit configurationChanged();
 }
 
 void	plutoHandler::setAgcControl	(int m) {
@@ -367,6 +368,7 @@ int ret;
 	                                          gainControl);
 	   }
 	}
+	emit configurationChanged();
 }
 
 bool	plutoHandler::restartReader	(int32_t freq) {

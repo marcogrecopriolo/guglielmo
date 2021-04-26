@@ -84,6 +84,9 @@ public slots:
 	void		setIfGain	(int);
 	void		setLnaGain	(int);
 
+signals:
+	void    	configurationChanged    (void);
+
 private:
 	bool                    load_hackrfFunctions    (void);
 	pfn_hackrf_init         hackrf_init;

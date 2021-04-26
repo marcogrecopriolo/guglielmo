@@ -246,6 +246,7 @@ rdsBlockSynchronizer::SyncResult
 	SyncResult result = (rdsCurrentBlock == RDSGroup::BLOCK_D)?
 	                         RDS_COMPLETE_GROUP : RDS_BUFFERING;
 	setNextBlock ();
+	setRDSisSynchronized	(true);
 	return result;
 }
 //
@@ -278,6 +279,7 @@ uint32_t	syndrome	= 0;
 //	go for the next block
 	rdsBitsinBlock		= 0;
 	setNextBlock ();
+	setRDSisSynchronized	(false);
 	return RDS_BUFFERING;
 }
 

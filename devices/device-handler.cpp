@@ -65,3 +65,6 @@ void    deviceHandler::setLnaGain      (int g) {
 
 void    deviceHandler::setAgcControl  (int v) {
 }
+
+void    deviceHandler::configurationChanged(void) {
+}

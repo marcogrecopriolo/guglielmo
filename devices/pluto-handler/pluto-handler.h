@@ -57,6 +57,9 @@ public slots:
 	void		setIfGain		(int);
 	void		setAgcControl		(int);
 
+signals:
+	void    	configurationChanged    (void);
+
 private:
 	RingBuffer<std::complex<float>>	_I_Buffer;
 	int			gainControl;

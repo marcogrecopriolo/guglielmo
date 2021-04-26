@@ -145,16 +145,19 @@ void RadioInterface::handleSettingsAction() {
 	else
 	    settingsUi.fmFilterComboBox->setCurrentText(QString::number(FMfilter/1000));
 	settingsUi.fmDegreeFilterSpinBox->setValue(FMdegree);
+	settingsUi.fmAudioGainSpinBox->setValue(FMaudioGain);
 	settingsDialog->connect(settingsUi.decoderComboBox, SIGNAL(activated(int)),
-        	this, SLOT(setDecoder(int)));
+		this, SLOT(setDecoder(int)));
 	settingsDialog->connect(settingsUi.deemphasisComboBox, SIGNAL(activated(const QString &)),
-        	this, SLOT(setDeemphasis(const QString &)));
+		this, SLOT(setDeemphasis(const QString &)));
 	settingsDialog->connect(settingsUi.lowPassComboBox, SIGNAL(activated(const QString &)),
-        	this, SLOT(setLowPassFilter(const QString &)));
+		this, SLOT(setLowPassFilter(const QString &)));
 	settingsDialog->connect(settingsUi.fmFilterComboBox, SIGNAL(activated(const QString &)),
-        	this, SLOT(setFMFilter(const QString &)));
+		this, SLOT(setFMFilter(const QString &)));
 	settingsDialog->connect(settingsUi.fmDegreeFilterSpinBox, SIGNAL(valueChanged(int)),
-        	this, SLOT(setFMDegree(int)));
+		this, SLOT(setFMDegree(int)));
+	settingsDialog->connect(settingsUi.fmAudioGainSpinBox, SIGNAL(valueChanged(int)),
+		this, SLOT(setFMaudioGain(int)));
 
 	// Device tab
 	for (const auto dev: deviceList) {
@@ -218,6 +221,7 @@ void RadioInterface::settingsClose(void) {
     settings->setValue(FM_DECODER, FMdecoder);
     settings->setValue(FM_DEEMPHASIS, deemphasis);
     settings->setValue(FM_LOW_PASS_FILTER, lowPassFilter);
+    settings->setValue(FM_AUDIO_GAIN, FMaudioGain);
     settings->endGroup();
 
     // Device tab
@@ -339,6 +343,11 @@ void RadioInterface::setFMFilter(const QString &v) {
 void RadioInterface::setFMDegree(int degree) {
     FMprocessor->setBandfilterDegree(degree);
     FMdegree = degree;
+}
+
+void RadioInterface::setFMaudioGain(int gain) {
+    FMprocessor->setVolume(gain);
+    FMaudioGain = gain;
 }
 
 void RadioInterface::setDevice(int d) {

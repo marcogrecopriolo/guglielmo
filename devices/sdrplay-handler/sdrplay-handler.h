@@ -110,6 +110,9 @@ public slots:
 	void		setLnaGain		(int);
 	void		setAgcControl		(int);
 
+signals:
+	void    	configurationChanged    (void);
+
 private:
 	int		GRdB;
 	int		lnaGain;

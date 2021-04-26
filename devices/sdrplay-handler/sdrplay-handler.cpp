@@ -204,12 +204,14 @@ mir_sdr_ErrT    err;
 	   return;
 
         err     =  my_mir_sdr_RSP_SetGr (newGRdB * MAX_GAIN / 100 + MIN_GAIN, lnaGain * lnaGainMax / 100, 1, 0);
-        if (err != mir_sdr_Success)
+        if (err != mir_sdr_Success) {
            fprintf (stderr, "Error at set_ifgain %s (%d %d)\n",
                              errorCodes (err). toLatin1 (). data (),
 	                     newGRdB, lnaGain);
-	else
+	   return;
+	} else
 		GRdB = newGRdB;
+	emit configurationChanged();
 }
 
 void    sdrplayHandler::setLnaGain (int lnaState) {
@@ -221,11 +223,13 @@ mir_sdr_ErrT err;
         err     = my_mir_sdr_AgcControl (agcMode ? mir_sdr_AGC_100HZ :
                                          mir_sdr_AGC_DISABLE,
                                          -30, 0, 0, 0, 0, lnaState * lnaGainMax / 100);
-        if (err != mir_sdr_Success)
+        if (err != mir_sdr_Success) {
            fprintf (stderr, "Error at set_lnagainReduction %s\n",
                                errorCodes (err). toLatin1 (). data ());
-	else
+	   return;
+	} else
 		lnaGain = lnaState;
+	emit configurationChanged();
 }
 
 void    sdrplayHandler::setAgcControl (int dummy) {
@@ -234,6 +238,7 @@ void    sdrplayHandler::setAgcControl (int dummy) {
                                          mir_sdr_AGC_DISABLE,
                                -30,
                                0, 0, 0, 0, lnaGain * lnaGainMax / 100);
+	emit configurationChanged();
 }
 
 static

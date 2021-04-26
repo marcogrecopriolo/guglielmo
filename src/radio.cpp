@@ -150,6 +150,7 @@ RadioInterface::RadioInterface (QSettings *Si, QWidget	 *parent):
     FMdecoder = settings->value(FM_DECODER, FM_DEF_DECODER).toInt();
     deemphasis = settings->value(FM_DEEMPHASIS, FM_DEF_DEEMPHASIS).toInt();
     lowPassFilter = settings->value(FM_LOW_PASS_FILTER, FM_DEF_LOW_PASS_FILTER).toInt();
+    FMaudioGain = settings->value(FM_AUDIO_GAIN, FM_DEF_AUDIO_GAIN).toInt();
     settings->endGroup();
 
     settings->beginGroup(GROUP_SOUND);
@@ -323,6 +324,7 @@ void RadioInterface::makeFMprocessor() {
     FMprocessor->setFMdecoder(fm_Demodulator::fm_demod(FMdecoder));
     FMprocessor->setDeemphasis(deemphasis);
     FMprocessor->setLFcutoff(lowPassFilter);
+    FMprocessor->setVolume(FMaudioGain);
 }
 
 void RadioInterface::terminateProcess() {
@@ -1037,6 +1039,8 @@ void RadioInterface::handlePrevChanButton() {
 void RadioInterface::startFM(int32_t freq) {
     if (inputDevice == nullptr || FMprocessor == nullptr)
 	return;
+    ficBlocks = 0;
+    ficSuccess = 0;
     FMprocessor->set_localOscillator(0);
     FMprocessor->resetRds();
     FMprocessor->start();
@@ -1053,6 +1057,8 @@ void RadioInterface::stopFM() {
 	return;
     if (scanning)
 	stopFMscan();
+    ficBlocks = 0;
+    ficSuccess = 0;
     inputDevice->stopReader();
     FMprocessor->stop();
     soundOut->stop();

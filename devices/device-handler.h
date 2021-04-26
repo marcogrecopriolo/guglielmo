@@ -51,6 +51,9 @@ virtual		void	setAgcControl	(int);
 //
 protected:
 		int32_t	vfoFrequency;
+
+signals:
+virtual		void	configurationChanged	(void);
 };
 #endif
 

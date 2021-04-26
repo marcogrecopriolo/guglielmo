@@ -107,6 +107,7 @@ private:
     int lowPassFilter;
     int FMfilter;
     int FMdegree;
+    int FMaudioGain;
 
 // UI
     QDialog *settingsDialog;
@@ -218,6 +219,7 @@ private slots:
     void setLowPassFilter(const QString &);
     void setFMFilter(const QString &);
     void setFMDegree(int);
+    void setFMaudioGain(int);
 
     void setDevice(int);
 

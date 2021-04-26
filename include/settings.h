@@ -84,7 +84,8 @@
 #define FM_DEGREE		"degree"
 #define FM_DECODER		"decoder"
 #define FM_DEEMPHASIS		"deemphasis"
-#define FM_LOW_PASS_FILTER	"threshold"
+#define FM_LOW_PASS_FILTER	"lowPass"
+#define FM_AUDIO_GAIN		"audioGain"
 
 #define FM_DEF_BUFFERS_SIZE	"512"
 #define FM_DEF_WORKING_RATE	"48000"
@@ -99,6 +100,7 @@
 #define FM_DEF_DECODER		"3"
 #define FM_DEF_DEEMPHASIS	"50"
 #define FM_DEF_LOW_PASS_FILTER	"-1"
+#define FM_DEF_AUDIO_GAIN	"75"
 
 // sound
 #define SOUND_MODE		"soundMode"

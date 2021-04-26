@@ -84,6 +84,9 @@ public slots:
 	void            setIfGain	(int);
         void            setAgcControl	(int);
 
+signals:
+	void    	configurationChanged    (void);
+
 private:
 	bool		agcControl;
 	int		ifGain;

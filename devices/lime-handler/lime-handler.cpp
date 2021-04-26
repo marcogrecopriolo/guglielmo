@@ -152,6 +152,7 @@ void	limeHandler::setIfGain		(int g) {
 float_type gg;
 	LMS_SetGaindB (theDevice, LMS_CH_RX, 0, g * MAX_GAIN / 100);
 	LMS_GetNormalizedGain (theDevice, LMS_CH_RX, 0, &gg);
+	emit configurationChanged();
 }
 
 bool	limeHandler::restartReader	(int32_t freq) {
