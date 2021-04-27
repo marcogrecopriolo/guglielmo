@@ -136,26 +136,26 @@ void RadioInterface::handleSettingsAction() {
 	    settingsUi.deemphasisComboBox->setCurrentIndex(0);
 	else
 	    settingsUi.deemphasisComboBox->setCurrentText(QString::number(deemphasis));
-	if (lowPassFilter < 0)
-	    settingsUi.lowPassComboBox->setCurrentIndex(0);
-	else
-	    settingsUi.lowPassComboBox->setCurrentText(QString::number(lowPassFilter));
 	if (FMfilter == 0.95*fmRate)
 	    settingsUi.fmFilterComboBox->setCurrentIndex(0);
 	else
 	    settingsUi.fmFilterComboBox->setCurrentText(QString::number(FMfilter/1000));
 	settingsUi.fmDegreeFilterSpinBox->setValue(FMdegree);
+	if (lowPassFilter < 0)
+	    settingsUi.lowPassComboBox->setCurrentIndex(0);
+	else
+	    settingsUi.lowPassComboBox->setCurrentText(QString::number(lowPassFilter));
 	settingsUi.fmAudioGainSpinBox->setValue(FMaudioGain);
 	settingsDialog->connect(settingsUi.decoderComboBox, SIGNAL(activated(int)),
 		this, SLOT(setDecoder(int)));
 	settingsDialog->connect(settingsUi.deemphasisComboBox, SIGNAL(activated(const QString &)),
 		this, SLOT(setDeemphasis(const QString &)));
-	settingsDialog->connect(settingsUi.lowPassComboBox, SIGNAL(activated(const QString &)),
-		this, SLOT(setLowPassFilter(const QString &)));
 	settingsDialog->connect(settingsUi.fmFilterComboBox, SIGNAL(activated(const QString &)),
 		this, SLOT(setFMFilter(const QString &)));
 	settingsDialog->connect(settingsUi.fmDegreeFilterSpinBox, SIGNAL(valueChanged(int)),
 		this, SLOT(setFMDegree(int)));
+	settingsDialog->connect(settingsUi.lowPassComboBox, SIGNAL(activated(const QString &)),
+		this, SLOT(setLowPassFilter(const QString &)));
 	settingsDialog->connect(settingsUi.fmAudioGainSpinBox, SIGNAL(valueChanged(int)),
 		this, SLOT(setFMaudioGain(int)));
 
@@ -197,6 +197,8 @@ void RadioInterface::handleSettingsAction() {
     settingsUi.lowPassComboBox->setEnabled(FMprocessor != nullptr);
     settingsUi.fmFilterComboBox->setEnabled(FMprocessor != nullptr);
     settingsUi.fmDegreeFilterSpinBox->setEnabled(FMprocessor != nullptr);
+    settingsUi.lowPassComboBox->setEnabled(FMprocessor != nullptr);
+    settingsUi.fmAudioGainSpinBox->setEnabled(FMprocessor != nullptr);
 
     settingsDialog->show();
 }
@@ -324,14 +326,6 @@ void RadioInterface::setDeemphasis(const QString &v) {
     FMprocessor->setDeemphasis((int32_t) deemphasis);
 }
 
-void RadioInterface::setLowPassFilter(const QString &v) {
-    if (v == "None")
-	lowPassFilter = -1;
-    else
-	lowPassFilter = v.toInt();
-    FMprocessor->setLFcutoff((int32_t) lowPassFilter);
-}
-
 void RadioInterface::setFMFilter(const QString &v) {
     if (v == "None")
 	FMfilter = 0.95*fmRate;
@@ -343,6 +337,14 @@ void RadioInterface::setFMFilter(const QString &v) {
 void RadioInterface::setFMDegree(int degree) {
     FMprocessor->setBandfilterDegree(degree);
     FMdegree = degree;
+}
+
+void RadioInterface::setLowPassFilter(const QString &v) {
+    if (v == "None")
+	lowPassFilter = -1;
+    else
+	lowPassFilter = v.toInt();
+    FMprocessor->setLFcutoff((int32_t) lowPassFilter);
 }
 
 void RadioInterface::setFMaudioGain(int gain) {
