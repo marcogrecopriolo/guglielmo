@@ -95,6 +95,8 @@ int16_t	length;
 	rdsLastSyncSlope	= 0;
 	rdsLastSync		= 0;
 	rdsLastData		= 0;
+	rdsPrevSync		= 0;
+	rdsPrevData		= 0;
 	previousBit		= false;
 
 	my_rdsGroup		= new RDSGroup		();
@@ -151,20 +153,29 @@ void	rdsDecoder::doDecode (DSPFLOAT v, DSPFLOAT *m, RdsMode mode) {
 void	rdsDecoder::doDecode1 (DSPFLOAT v, DSPFLOAT *m) {
 DSPFLOAT	rdsMag;
 DSPFLOAT	rdsSlope	= 0;
-bool		bit;
+bool		bit, prevBit, thisBit;
 
 	v	= Match (v);
 	rdsMag	= sharpFilter	-> Pass (v * v);
 	*m	= (20 * rdsMag + 1.0);
 	rdsSlope	= rdsMag - rdsLastSync;
+	rdsPrevSync	= rdsLastSync;
 	rdsLastSync	= rdsMag;
 	if ((rdsSlope < 0.0) && (rdsLastSyncSlope >= 0.0)) {
 //	top of the sine wave: get the data
 	   bit = rdsLastData >= 0;
+
+	   // vote on the bit using the previous and next sample
+	   thisBit = v >= 0;
+	   prevBit = rdsPrevData >= 0;
+	   if (bit != prevBit && bit != thisBit)
+		bit = prevBit;
+
 	   processBit (bit ^ previousBit);
 	   previousBit = bit;
 	}
 
+	rdsPrevData = rdsLastData;
 	rdsLastData = v;
 	rdsLastSyncSlope	= rdsSlope;
 	my_rdsBlockSync -> resetResyncErrorCounter ();

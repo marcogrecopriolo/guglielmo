@@ -90,7 +90,9 @@ private:
 	BandPassIIR		*sharpFilter;
 	DSPFLOAT		rdsLastSyncSlope;
 	DSPFLOAT		rdsLastSync;
+	DSPFLOAT		rdsPrevSync;
 	DSPFLOAT		rdsLastData;
+	DSPFLOAT		rdsPrevData;
 	bool			previousBit;
 	DSPFLOAT		*syncBuffer;
 	int16_t			p;
