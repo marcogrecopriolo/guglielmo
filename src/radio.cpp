@@ -711,19 +711,21 @@ void RadioInterface::handleSquelch(double val) {
 //	preset selection
 
 static
-void addPreset(QComboBox *presetSelector, QString preset) {
+void addPreset(QComboBox *presetSelector, QString preset, QString comment) {
 
     // don't add duplicates
     for (int i = 0; i < presetSelector->count(); i ++)
-	if (presetSelector->itemText(i) == preset)
+	if (presetSelector->itemText(i).contains(preset))
 	    return;
+    if (comment != "")
+	preset = preset + ":" + comment;
     presetSelector->addItem(preset);
 }
 
 static
 void deletePreset(QComboBox *presetSelector, QString preset) {
     for (int i = 0; i < presetSelector->count(); i ++)
-	if (presetSelector->itemText(i) == preset) {
+	if (presetSelector->itemText(i).contains(preset)) {
 	    presetSelector->removeItem(i);
 	    return;
 	}
@@ -734,7 +736,7 @@ void RadioInterface::handlePresetSelector(const QString &preset) {
 	return;
 
     QStringList list = preset.split(":", QString::SkipEmptyParts);
-    if (list.length() != 2) {
+    if (list.length() != 2 && list.length() != 3) {
 	warning(this, tr(BAD_PRESET));
 	deletePreset(presetSelector, preset);
 	return;
@@ -819,7 +821,7 @@ void RadioInterface::handleAddDABPreset() {
     if (currentService.serviceName.at(1) == ' ')
 	return;
 
-    addPreset(presetSelector, channelSelector->currentText() + ":" + currentService.serviceName);
+    addPreset(presetSelector, channelSelector->currentText() + ":" + currentService.serviceName, "");
 }
 
 void RadioInterface::handleDeleteDABPreset() {
@@ -830,7 +832,7 @@ void RadioInterface::handleDeleteDABPreset() {
 }
 
 void RadioInterface::handleAddFMPreset() {
-    addPreset(presetSelector, "FM:" + QString::number(FMfreq));
+    addPreset(presetSelector, "FM:" + QString::number(FMfreq), serviceLabel->text().trimmed());
 }
 
 void RadioInterface::handleDeleteFMPreset() {
