@@ -1298,6 +1298,7 @@ void RadioInterface::toFM() {
 
 void RadioInterface::cleanScreen() {
     serviceLabel->clear();
+    ensembleId->clear();
     dynamicLabel->clear();
     presetSelector->setCurrentIndex(0);
     stereoLabel->setStyleSheet(stereoStyle);

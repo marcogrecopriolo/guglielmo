@@ -36,7 +36,9 @@
 	theAudioOutput	= nullptr;
 	setParams (outputRate);
 	volume          = 0.5;
-	theAudioOutput  -> setVolume(volume);
+	if (theAudioOutput != nullptr) {
+	   theAudioOutput  -> setVolume(volume);
+	}
 }
 
 	Qt_Audio::~Qt_Audio(void) {
@@ -69,7 +71,7 @@ void	Qt_Audio::setParams (int outputRate) {
 
 	QAudioDeviceInfo info(QAudioDeviceInfo::defaultOutputDevice());
 	if (!info. isFormatSupported(AudioFormat)) {
-	   fprintf (stderr, "Audio: Sorry, format cannot be handled");
+	   fprintf (stderr, "Audio: Sorry, format cannot be handled\n");
 	   return;
 	}
 
