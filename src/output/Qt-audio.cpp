@@ -84,35 +84,37 @@ void	Qt_Audio::setParams (int outputRate) {
 }
 
 void	Qt_Audio::stop (void) {
-	if (theAudioDevice == nullptr)
-	   return;
-	theAudioDevice	-> stop();
-	theAudioOutput	-> stop();
+	if (theAudioDevice != nullptr) {
+	   theAudioDevice	-> stop();
+	   if (theAudioOutput != nullptr)
+	       theAudioOutput	-> stop();
+	}
 }
 
 void	Qt_Audio::restart	(void) {
-	if (theAudioDevice == nullptr)
-	   return;
-	theAudioDevice	-> start();
-	theAudioOutput	-> start (theAudioDevice);
-	theAudioOutput  -> setVolume(volume);
+	if (theAudioDevice != nullptr) {
+	   theAudioDevice	-> start();
+	   if (theAudioOutput != nullptr) {
+	      theAudioOutput	-> start (theAudioDevice);
+	      theAudioOutput	-> setVolume(volume);
+	   }
+	}
 }
 
 void	Qt_Audio::setVolume	(qreal v) {
 	volume = QAudio::convertVolume(v,
                                 QAudio::LogarithmicVolumeScale,
                                 QAudio::LinearVolumeScale);
-	if (theAudioOutput == nullptr) {
-	   return;
-	}
-	theAudioOutput  -> setVolume(volume);
+	if (theAudioOutput != nullptr)
+	   theAudioOutput  -> setVolume(volume);
 }
 
 void	Qt_Audio::handleStateChanged (QAudio::State newState) {
 	currentState = newState;
 	switch (currentState) {
 	   case QAudio::IdleState:
-	      theAudioOutput -> stop();
+	      if (theAudioOutput != nullptr)
+		 theAudioOutput -> stop();
 	      break;
 
 	   default:
