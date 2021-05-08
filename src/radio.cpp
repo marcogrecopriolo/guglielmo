@@ -137,10 +137,7 @@ RadioInterface::RadioInterface (QSettings *Si, QWidget	 *parent):
     FMprocessor = nullptr;
     scanTimer = nullptr;
     settings->beginGroup(GROUP_FM);
-    buffersSize = settings->value(FM_BUFFERS_SIZE, FM_DEF_BUFFERS_SIZE).toInt();
     workingRate = settings->value(FM_WORKING_RATE, FM_DEF_WORKING_RATE).toInt();
-    averageCount = settings->value(FM_AVERAGE_COUNT, FM_DEF_AVERAGE_COUNT).toInt();
-    repeatRate = settings->value(FM_REPEAT_RATE, FM_DEF_REPEAT_RATE).toInt();
     filterDepth = settings->value(FM_FILTER_DEPTH, FM_DEF_FILTER_DEPTH).toInt();
     FMthreshold = settings->value(FM_THRESHOLD, FM_DEF_THRESHOLD).toInt();
     scanInterval = settings->value(FM_SCAN_INTERVAL, FM_DEF_SCAN_INTERVAL).toInt();
@@ -303,18 +300,19 @@ int32_t mapRates(int32_t inputRate) {
 }
 
 void RadioInterface::makeFMprocessor() {
+    int32_t inputRate;
+
     if (inputDevice == nullptr)
 	return;
     inputRate = inputDevice->getRate();
     fmRate = mapRates(inputRate);
     if (FMfilter <= 0)
 	FMfilter = 0.95*fmRate;
-    FMprocessor = new fmProcessor(inputDevice, this, inputRate,
-				fmRate, workingRate, audioRate, buffersSize,
-				averageCount, repeatRate,
-				filterDepth, FMthreshold);
+    FMprocessor = new fmProcessor(inputDevice, this, inputRate, fmRate,
+				  workingRate, audioRate, filterDepth, FMthreshold);
     FMprocessor->setSink(soundOut);
     FMprocessor->setfmRdsSelector(rdsDecoder::RDS1);
+    FMprocessor->setfmRdsDemod(fmProcessor::FM_RDS_NOPILOT);
     FMprocessor->setfmMode(true);
     FMprocessor->setSoundBalance(0);
     FMprocessor->setSoundMode(fmProcessor::S_STEREO);

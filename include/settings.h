@@ -72,10 +72,7 @@
 #define DAB_DEF_SERVICE_ORDER	0
 
 // fm
-#define FM_BUFFERS_SIZE		"buffersSize"
 #define FM_WORKING_RATE		"workingRate"
-#define FM_AVERAGE_COUNT	"averageCount"
-#define FM_REPEAT_RATE		"repeatRate"
 #define FM_FILTER_DEPTH		"filterDepth"
 #define FM_THRESHOLD		"threshold"
 #define FM_SCAN_INTERVAL	"scanInterval"
@@ -87,10 +84,7 @@
 #define FM_LOW_PASS_FILTER	"lowPass"
 #define FM_AUDIO_GAIN		"audioGain"
 
-#define FM_DEF_BUFFERS_SIZE	"512"
 #define FM_DEF_WORKING_RATE	"48000"
-#define FM_DEF_AVERAGE_COUNT	"5"
-#define FM_DEF_REPEAT_RATE	"5"
 #define FM_DEF_FILTER_DEPTH	"5"
 #define FM_DEF_THRESHOLD	"20"
 #define FM_DEF_SCAN_INTERVAL	"1000"

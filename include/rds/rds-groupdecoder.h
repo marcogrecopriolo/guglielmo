@@ -58,10 +58,10 @@ static const uint32_t STATION_LABEL_LENGTH =
           NUMBER_OF_NAME_SEGMENTS * STATION_LABEL_SEGMENT_SIZE;
 
 //	Group 2 constants 
-static const uint32_t NUM_CHARS_PER_RTXT_SEGMENT	= 4;
-static const uint32_t NUM_OF_FRAGMENTS			= 16;
-static const uint32_t NUM_OF_CHARS_RADIOTEXT = 
-	        NUM_CHARS_PER_RTXT_SEGMENT * NUM_OF_FRAGMENTS;
+static const uint32_t CHARS_PER_RTXT_SEGMENT		= 4;
+static const uint32_t NUMBER_OF_TEXT_SEGMENTS		= 16;
+static const uint32_t RADIOTEXT_LENGTH = 
+	        CHARS_PER_RTXT_SEGMENT * NUMBER_OF_TEXT_SEGMENTS;
 
 static const char END_OF_RADIO_TEXT		= 0x0D;
 
@@ -74,7 +74,7 @@ private:
 	void		addtoStationLabel	(uint32_t, uint32_t);
 	void		additionalFrequencies	(uint16_t);
 	void		addtoRadioText		(uint16_t, uint16_t, uint16_t);
-	void		prepareText		(char *, int16_t);
+	QString		prepareText		(char *, int16_t);
 	uint32_t	m_piCode;
 	uint8_t		theAlfabet;
 	bool		alfabetSwitcher		(uint8_t, uint8_t);
@@ -82,14 +82,14 @@ private:
 	uint8_t		applyAlfabet 		(uint8_t, uint8_t);
 
 //	Group 1 members
-	char   stationLabel [STATION_LABEL_LENGTH + 1];
+	char   stationLabel [STATION_LABEL_LENGTH];
 	int8_t   m_grp1_diCode;
 	uint32_t stationNameSegmentRegister;
 
 //	Group 2 members 
 	uint32_t textSegmentRegister;
 	int32_t  textABflag;
-	char   textBuffer [NUM_OF_CHARS_RADIOTEXT];
+	char   textBuffer [RADIOTEXT_LENGTH];
 signals:
 	void	setGroup		(int);
 	void	setPTYCode		(int);

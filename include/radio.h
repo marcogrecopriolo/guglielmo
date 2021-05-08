@@ -91,13 +91,9 @@ private:
 
 // FM
     double FMfreq;
-    int32_t inputRate;
     int32_t fmRate;
     int32_t workingRate;
     int32_t audioRate;
-    int32_t buffersSize;
-    int32_t averageCount;
-    int16_t repeatRate;
     int16_t filterDepth;
     int16_t FMthreshold;
     int scanInterval;

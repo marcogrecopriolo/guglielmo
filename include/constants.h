@@ -226,8 +226,6 @@ using namespace std;
 #define	HILBERT_SIZE		13
 #define	RDSBANDFILTER_SIZE	49
 #define	FFT_SIZE		256
-#define	PILOT_WIDTH		1000
-#define	RDS_WIDTH		1500
 #define	LEVEL_SIZE		512
 #define	LEVEL_FREQ		3
 

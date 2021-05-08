@@ -38,26 +38,27 @@
 #include	"pllC.h"
 #include	"ringbuffer.h"
 #include	"oscillator.h"
+#include	"rds-decoder.h"
 
 class		deviceHandler;
 class		RadioInterface;
 class		fm_Demodulator;
-class		rdsDecoder;
 class		audioBase;
 class		newConverter;
 
 class	fmProcessor:public QThread {
 Q_OBJECT
 public:
+	enum RdsDemod {
+	   FM_RDS_PILOT		= 0,
+	   FM_RDS_NOPILOT	= 1
+	};
 			fmProcessor (deviceHandler *,
 	                             RadioInterface *,
 	                             int32_t,	// inputRate
 	                             int32_t,	// decimation
 	                             int32_t,	// workingRate
 	                             int32_t,	// audioRate,
-	                             int32_t,	// displaySize
-	                             int32_t,	// averageCount
-	                             int32_t,	// repeatRate
 	                             int16_t,	// filterDepth
 	                             int16_t);	// threshold scanning
 	        	~fmProcessor (void);
@@ -74,20 +75,16 @@ public:
 	void		setBandwidth	(int32_t);
 	void		setBandfilterDegree	(int32_t);
 	void		setAttenuation	(int16_t, int16_t);
-	void		setfmRdsSelector (int8_t);
+	void		setfmRdsSelector (rdsDecoder::RdsMode);
+	void		setfmRdsDemod	(RdsDemod);
 	void		resetRds	(void);
 	void		set_localOscillator	(int32_t);
-	void		setFreezer	(bool);
 	void		set_squelchMode	(bool);
 	void		setInputMode	(uint8_t);
 	void		setSink		(audioBase *);
 
 	int32_t		totalAmount;
 	bool		ok			(void);
-	DSPFLOAT	get_pilotStrength	(void);
-	DSPFLOAT	get_rdsStrength		(void);
-	DSPFLOAT	get_noiseStrength	(void);
-	DSPFLOAT	get_dcComponent		(void);
 	void		startScanning		(void);
 	void		stopScanning		(void);
 	const char *	nameofDecoder	(void);
@@ -107,9 +104,6 @@ public:
 	void		set_squelchValue	(int16_t);
 private:
 virtual	void		run		(void);
-	void		mapSpectrum	(DSPCOMPLEX *, double *);
-	void		add_to_average	(double *, double *);
-	void		extractLevels	(double *, int32_t);
 	deviceHandler	*myRig;
 	RadioInterface	*myRadioInterface;
 	audioBase	*theSink;
@@ -117,25 +111,13 @@ virtual	void		run		(void);
 	int32_t		fmRate;
 	int32_t		workingRate;
 	int32_t		audioRate;
-	int32_t		displaySize;
-	int32_t		averageCount;
-	int32_t		repeatRate;
-	RingBuffer<double> *hfBuffer;
-	RingBuffer<double> *lfBuffer;
 	int16_t		filterDepth;
 	uint8_t		inputMode;
-	int32_t		freezer;
 	bool		scanning;
 	int16_t		thresHold;
 	DSPFLOAT	getSignal	(DSPCOMPLEX *, int32_t);
 	DSPFLOAT	getNoise	(DSPCOMPLEX *, int32_t);
 	bool		squelchOn;
-	int32_t		spectrumSize;
-	common_fft	*spectrum_fft_hf;
-	common_fft	*spectrum_fft_lf;
-	DSPCOMPLEX	*spectrumBuffer_hf;
-	DSPCOMPLEX	*spectrumBuffer_lf;
-	double		*displayBuffer;
 	void		sendSampletoOutput	(DSPCOMPLEX);
 	DecimatingFIR	*fmBandfilter;
 	Oscillator	*localOscillator;
@@ -165,7 +147,7 @@ virtual	void		run		(void);
 	rdsDecoder	*myRdsDecoder;
 
 	void		stereo	(float, DSPCOMPLEX *, DSPFLOAT *);
-	void		mono	(float, DSPCOMPLEX *, DSPFLOAT *);
+	void		mono	(float, DSPCOMPLEX *);
 	fftFilter	*pilotBandFilter;
 	fftFilter	*rdsBandFilter;
 	fftFilter	*rdsLowPassFilter;
@@ -191,11 +173,9 @@ virtual	void		run		(void);
 	int32_t		peakLevelcnt;
 	fm_Demodulator	*TheDemodulator;
 
-	int8_t		rdsModus;
+	rdsDecoder::RdsMode rdsModus;
+	RdsDemod	rdsDemod;
 
-	float		noiseLevel;
-	float		pilotLevel;
-	float		rdsLevel;
 	int8_t		viewSelector;
 	pllC		*rds_plldecoder;
 	DSPFLOAT	K_FM;
@@ -261,12 +241,7 @@ virtual	void		run		(void);
 	      
 	pilotRecovery	*pilotRecover;
 
-private slots:
-	void		handleConfigurationChange	(void);
 signals:
-	void		setPLLisLocked		(bool);
-	void		hfBufferLoaded		(void);
-	void		lfBufferLoaded		(void);
 	void		showStrength		(float);
 	void		showSoundMode		(bool);
 	void		scanresult		(void);
