@@ -147,6 +147,7 @@ Currently supported devices are
 - LIMESDR
 
 The binary supplied with each version supports all available devices.
+
 At this moment in time, the only device tested is the SDR RTL stick, and the only build linux.
 
 ## TODO
