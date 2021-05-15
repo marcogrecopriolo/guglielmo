@@ -30,7 +30,7 @@
 
 #include	"constants.h"
 #include	"sincos.h"
-#include	"pllC.h"
+#include	"pll.h"
 #include	"Xtan2.h"
 
 #define	PLL_PILOT_GAIN	3000
@@ -52,7 +52,7 @@ private:
 	DSPFLOAT	fm_afc;
 	DSPFLOAT	fm_cvt;
 	DSPFLOAT	K_FM;
-	pllC		*myfm_pll;
+	pll		*myfm_pll;
 	SinCos		*mySinCos;
 	int32_t		ArcsineSize;
 	DSPFLOAT	*Arcsine;

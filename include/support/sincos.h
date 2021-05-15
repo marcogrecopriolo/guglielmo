@@ -30,6 +30,8 @@
 
 #include	"constants.h"
 
+DSPFLOAT toBaseRadians(DSPFLOAT phase);
+
 class	SinCos {
 public:
 	        	SinCos		(DSPCOMPLEX *, int32_t);

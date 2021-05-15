@@ -140,7 +140,7 @@ HEADERS += ./include/radio.h \
 	   ./include/support/fft-filters.h \
 	   ./include/support/iir-filters.h \
 	   ./include/support/oscillator.h \
-	   ./include/support/pllC.h \
+	   ./include/support/pll.h \
 	   ./include/support/sincos.h \
            ./include/support/fft-handler.h \
 	   ./include/support/ringbuffer.h \
@@ -216,7 +216,7 @@ SOURCES += ./src/main.cpp \
 	   ./src/support/fft-filters.cpp \
 	   ./src/support/iir-filters.cpp \
 	   ./src/support/oscillator.cpp \
-	   ./src/support/pllC.cpp \
+	   ./src/support/pll.cpp \
 	   ./src/support/sincos.cpp \
 	   ./src/support/viterbi-jan/viterbi-handler.cpp \
 	   ./src/support/viterbi-spiral/viterbi-spiral.cpp \
@@ -256,10 +256,9 @@ CONFIG		+= lime
 CONFIG		+= faad
 #CONFIG		+= fdk-aac
 
-#if you want to use the default qt way of sound out
 CONFIG          += qt-audio
 
-#CONFIG		+= try-epg		# do not use
+# CONFIG	+= try-epg		# do not use
 CONFIG		+= PC
 #CONFIG		+= RPI
 }

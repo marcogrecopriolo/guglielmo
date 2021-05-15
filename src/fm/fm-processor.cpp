@@ -37,12 +37,24 @@
 #define	AUDIO_FREQ_DEV_PROPORTION 0.85f
 #define	PILOT_FREQUENCY		19000
 #define PILOT_WIDTH             500
-#define	OMEGA_DEMOD		2 * M_PI / fmRate
+#define PILOT_MIN_THRESHOLD	6.0
+#define PILOT_THRESHOLD		12.0
+#define PILOT_SAMPLES		(fmRate * 4)
+#define	OMEGA_DEMOD		(2 * M_PI / fmRate)
 #define	OMEGA_PILOT		((DSPFLOAT (PILOT_FREQUENCY)) / fmRate) * (2 * M_PI)
+#define	SIGNAL_FREQUENCY	3000
+#define SIGNAL_WIDTH		2000
 #define	RDS_FREQUENCY		(3 * PILOT_FREQUENCY)
-#define RDS_WIDTH               2400
-#define RDS_LP_WIDTH            1500
+#define RDS_WIDTH		2400
+#define RDS_LP_WIDTH		1200		// as close to 1187.5 as we can get
+#define RDS_SAMPLES		(fmRate * 4)
+#define RDS_SKIP		fmRate
+#define RDS_MEAN_DRIFT_LIMIT	(2 * M_PI / 100.0)
+#define RDS_AVG_DRIFT_LIMIT	(2 * M_PI / 300.0)
+#define NOISE_FREQUENCY		70000
+#define NOISE_WIDTH		500
 #define	RDS_DECIMATOR		4
+#define SIGNAL_SIZE		1024
 
 //
 //	Note that no decimation done as yet: the samplestream is still
@@ -66,8 +78,9 @@
 	this	-> filterDepth		= filterDepth;
 	this	-> thresHold		= thresHold;
 	this	-> rdsModus		= rdsDecoder::NO_RDS;
-	this	-> rdsDemod		= FM_RDS_NOPILOT;
+	this	-> rdsDemod		= FM_RDS_AUTO;
 	this	-> squelchOn		= false;
+	this	-> initScan		= false;
 	this	-> scanning		= false;
 	Lgain				= 20;
 	Rgain				= 20;
@@ -132,6 +145,7 @@
 	                                             25 * OMEGA_DEMOD,
 	                                             mySinCos);
 	pilotDelay		= (FFT_SIZE - PILOTFILTER_SIZE) * OMEGA_PILOT;
+
 	rdsLowPassFilter	= new fftFilter (FFT_SIZE, RDSLOWPASS_SIZE);
 	rdsLowPassFilter	-> setLowPass (RDS_LP_WIDTH, fmRate);
 //
@@ -154,7 +168,7 @@
 	rdsHilbertFilter	= new HilbertFilter (HILBERT_SIZE,
 						     (DSPFLOAT)RDS_FREQUENCY / fmRate,
 	                                             fmRate);
-	rds_plldecoder		= new pllC (fmRate,
+	rds_plldecoder		= new pll (fmRate,
 	                                    RDS_FREQUENCY,
 	                                    RDS_FREQUENCY - 50,
 	                                    RDS_FREQUENCY + 50,
@@ -165,8 +179,6 @@
 	xkm1			= 0;
 	ykm1			= 0;
 	alpha			= 1.0 / (fmRate / (1000000.0 / 50.0 + 1));
-	dumping			= false;
-	dumpFile		= NULL;
 
 	connect (this, SIGNAL (showStrength (float)),
 	         myRadioInterface, SLOT (showStrength (float)));
@@ -280,29 +292,26 @@ DSPCOMPLEX	fmProcessor::audioGainCorrection (DSPCOMPLEX z) {
 	return z;
 }
 
-void	fmProcessor::startDumping	(SNDFILE *f) {
-	if (dumping)
-	   return;
-//	do not change the order here, another thread might get confused
-	dumpFile 	= f;
-	dumping		= true;
-}
-
-void	fmProcessor::stopDumping	(void) {
-	dumping = false;
-}
-
 void	fmProcessor::setAttenuation (int16_t l, int16_t r) {
 	Lgain	= l;
 	Rgain	= r;
 }
 
 void	fmProcessor::startScanning	(void) {
-	scanning	= true;
+	initScan	= true;
 }
 
 void	fmProcessor::stopScanning	(void) {
 	scanning	= false;
+}
+
+DSPFLOAT	getLevel(DSPCOMPLEX *v, int min, int max) {
+DSPFLOAT sum = 0;
+int32_t	i;
+
+	for (i = min; i < max; i ++)
+	   sum += abs (v [i]);
+	return sum / (max-min);
 }
 
 //
@@ -311,7 +320,6 @@ void	fmProcessor::stopScanning	(void) {
 
 void	fmProcessor::run (void) {
 DSPCOMPLEX	result;
-DSPFLOAT 	rdsData;
 DSPFLOAT	PhaseforRds;
 int		rdsCnt = 0;
 int32_t		bufferSize	= 2 * 8192;
@@ -323,13 +331,30 @@ int32_t		amount;
 squelch		mySquelch (1, workingRate / 10, workingRate / 20, workingRate); 
 int32_t		audioAmount;
 int32_t		signalPointer	= 0;
-common_fft	*signal_fft  	= new common_fft (1024);
+bool		scanning	= false;
+common_fft	*signal_fft  	= new common_fft (SIGNAL_SIZE);
 DSPCOMPLEX	*signalBuffer	= signal_fft -> getVector ();
+DSPFLOAT	binWidth	= fmRate / SIGNAL_SIZE;
+int		signalMinBin	= int((SIGNAL_FREQUENCY - SIGNAL_WIDTH) / binWidth);
+int		signalMaxBin	= int((SIGNAL_FREQUENCY + SIGNAL_WIDTH) / binWidth);
+int		pilotMinBin	= int((PILOT_FREQUENCY - PILOT_WIDTH) / binWidth);
+int		pilotMaxBin	= int((PILOT_FREQUENCY + PILOT_WIDTH) / binWidth);
+int		noiseMinBin	= int((NOISE_FREQUENCY - NOISE_WIDTH) / binWidth);
+int		noiseMaxBin	= int((NOISE_FREQUENCY + NOISE_WIDTH) / binWidth);
+DSPFLOAT	totPilotSnr	= 0.0;
+int		snrCnt		= 0;
+DSPFLOAT	totDrift	= 0.0;
+DSPFLOAT	minDrift	= 2 *M_PI;
+DSPFLOAT	maxDrift	= 0.0;
+int		driftCnt	= 0;
+bool		noPilot		= true;
+bool		pilot		= false;
+
 	myRdsDecoder		= new rdsDecoder (myRadioInterface,
 	                                                  fmRate / RDS_DECIMATOR,
 	                                                  mySinCos);
-
-	running	= true;		// will be set from the outside
+	initRds = true;
+	running	= true;
 	while (running) {
 	   while (running && (myRig -> Samples () < bufferSize)) {
 	      msleep (1);	// should be enough
@@ -352,16 +377,28 @@ DSPCOMPLEX	*signalBuffer	= signal_fft -> getVector ();
 	      old_squelchValue = squelchValue;
 	   }
 
-	   amount = myRig -> getSamples (dataBuffer, bufferSize);
-//
-	   if (dumping) {
-	      float dumpBuffer [2 * amount];
-	      for (i = 0; i < amount; i ++) {
-	         dumpBuffer [2 * i] = real (dataBuffer [i]);
-	         dumpBuffer [2 * i + 1] = imag (dataBuffer [i]);
-	      }
-	      sf_writef_float (dumpFile, dumpBuffer, amount);
+	   if (initRds) {
+		if (rdsDemod == FM_RDS_AUTO) {
+		   snrCnt = PILOT_SAMPLES;
+		   totPilotSnr = 0.0;
+		   signalPointer = 0;
+		   driftCnt = RDS_SAMPLES;
+		   totDrift = 0.0;
+		   maxDrift = 0.0;
+		   minDrift = 2 * M_PI;
+		   noPilot = true;
+		   pilot = false;
+		} else {
+		    noPilot = (rdsDemod == FM_RDS_PLL);
+		    pilot = (rdsDemod == FM_RDS_PILOT);
+		    driftCnt = 0;
+		    snrCnt = 0;
+		}
+		initRds = false;
 	   }
+
+	   amount = myRig -> getSamples (dataBuffer, bufferSize);
+
 //	Here we really start
 
 //	We assume that if/when the pilot is no more than 3 db's above
@@ -377,17 +414,24 @@ DSPCOMPLEX	*signalBuffer	= signal_fft -> getVector ();
 	         continue;
 	        
 //	second step: if we are scanning, do the scan
+	      if (initScan) {
+		 signalPointer = 0;
+		 scanning = true;
+		 initScan = false;
+	      }
+
 	      if (scanning) {
 	         signalBuffer [signalPointer ++] = v;
-	         if (signalPointer >= 1024) {
+	         if (signalPointer >= SIGNAL_SIZE) {
 	            signalPointer	= 0;
 	            signal_fft -> do_FFT ();
-	            float signal	= getSignal	(signalBuffer, 1024);
-	            float Noise		= getNoise	(signalBuffer, 1024);
+	            DSPFLOAT signal	= getLevel (signalBuffer, signalMinBin, signalMaxBin);
+	            DSPFLOAT Noise	= getLevel (signalBuffer, noiseMinBin, noiseMaxBin);
 	            if (get_db (signal, 256) - get_db (Noise, 256) > 
 	                               this -> thresHold) {
 	               fprintf (stderr, "signal found %f %f\n",
 	                        get_db (signal, 256), get_db (Noise, 256));
+		       scanning = false;
 	               scanresult ();
 	            }
 	         }
@@ -397,6 +441,7 @@ DSPCOMPLEX	*signalBuffer	= signal_fft -> getVector ();
 //	third step: if requested, apply filtering
 	      if (fmBandwidth < 0.95 * fmRate)
 	         v	= fmFilter	-> Pass (v);
+
 //	Now we have the signal ready for decoding
 //	keep track of the peaklevel, we take segments
 	      if (abs (v) > peakLevel)
@@ -418,6 +463,29 @@ DSPCOMPLEX	*signalBuffer	= signal_fft -> getVector ();
 	         audioGainAverage = audioGain;
 	         peakLevelcnt	= 0;
 	         peakLevel	= -100;
+	      }
+
+
+	      if (snrCnt > 0) {
+		 snrCnt--;
+		 signalBuffer [signalPointer ++] = v;
+		 if (signalPointer >= SIGNAL_SIZE) {
+		    signalPointer	= 0;
+		    signal_fft -> do_FFT ();
+	            DSPFLOAT noise	= getLevel (signalBuffer, noiseMinBin, noiseMaxBin);
+	            DSPFLOAT pilot	= getLevel (signalBuffer, pilotMinBin, pilotMaxBin);
+		    DSPFLOAT pilotDb = get_db(pilot, 256) - get_db(noise, 256);
+		    totPilotSnr += pilotDb;
+		    if (pilotDb >= PILOT_THRESHOLD) {
+			noPilot = false;
+			fprintf(stderr, "pilot %f usePilot %i\n", pilotDb, !noPilot);
+			snrCnt = 0;
+		    } else if (snrCnt == 0) {
+			DSPFLOAT avgPilotSnr = totPilotSnr / PILOT_SAMPLES;
+			noPilot = (avgPilotSnr < PILOT_MIN_THRESHOLD);
+			fprintf(stderr, "pilot %f usePilot %i\n", avgPilotSnr, !noPilot);
+		    }
+		 }
 	      }
 
 	      DSPFLOAT demod	= TheDemodulator  -> demodulate (v);
@@ -472,19 +540,45 @@ DSPCOMPLEX	*signalBuffer	= signal_fft -> getVector ();
 	      }
 
 	      if ((rdsModus != rdsDecoder::NO_RDS)) {
-		 if (fmModus != FM_STEREO || rdsDemod == FM_RDS_NOPILOT ) {
+		 DSPFLOAT 	rdsData;
 
-		    // fully inspired by cuteSDR, we try to decode the rds stream
-		    // by simply am decoding it
-		    DSPCOMPLEX rdsBase	= DSPCOMPLEX (5 * demod, 5 * demod);
+		 if (noPilot) {
+		    DSPCOMPLEX rdsBase	= DSPCOMPLEX (demod, demod);
 		    rdsBase		= rdsBandFilter -> Pass (rdsBase);
 		    rdsBase		= rdsHilbertFilter -> Pass (rdsBase);
-		    rds_plldecoder	-> do_pll (rdsBase);
-		    DSPFLOAT rdsDelay	= real (rds_plldecoder -> getDelay ());
-		    rdsData		= rdsLowPassFilter -> Pass (5 * rdsDelay);
+		    DSPFLOAT rdsDelay   = rds_plldecoder	-> doPll (rdsBase);
+		    rdsData		= rdsLowPassFilter -> Pass (rdsDelay * demod);
+		 } else if (pilot) {
+		    DSPFLOAT mixerValue	= mySinCos -> getSin (PhaseforRds);
+		    rdsData		= rdsLowPassFilter -> Pass (mixerValue * demod);
 		 } else {
-		    DSPFLOAT MixerValue	= mySinCos -> getCos (PhaseforRds);
-		    rdsData		= 5 * rdsLowPassFilter -> Pass (MixerValue * demod);
+		    DSPCOMPLEX rdsBase	= DSPCOMPLEX (demod, demod);
+		    rdsBase		= rdsBandFilter -> Pass (rdsBase);
+		    rdsBase		= rdsHilbertFilter -> Pass (rdsBase);
+		    DSPFLOAT PhaseforRds1	= toBaseRadians(PhaseforRds);
+		    DSPFLOAT rdsDelay	= rds_plldecoder	-> doPll (rdsBase, PhaseforRds1);
+		    rdsData		= rdsLowPassFilter -> Pass (rdsDelay * demod);
+
+		    // if in auto mode, let the PLL phase settle, and check that it converges after a while
+		    // if it does, we can just move to the pilot phase, and skip the extra load
+		    if (driftCnt-- > 0 && driftCnt <= (RDS_SAMPLES - RDS_SKIP)) {
+			DSPFLOAT drift	= toBaseRadians(PhaseforRds1 - rds_plldecoder -> getNcoPhase());
+			totDrift += drift;
+			if (drift < minDrift)
+			    minDrift = drift;
+			else if (drift > maxDrift)
+			    maxDrift = drift;
+			if (driftCnt == 0) {
+			   DSPFLOAT avgDrift = totDrift/(RDS_SAMPLES-RDS_SKIP);
+			   DSPFLOAT meanDrift = (maxDrift+minDrift)/2;
+			   DSPFLOAT meanDriftDiff = (maxDrift-minDrift)/2;
+			   DSPFLOAT avgDriftDiff = abs(avgDrift-meanDrift);
+
+			   // we check the max width and the distribution of drifts
+			   pilot = (meanDriftDiff < RDS_MEAN_DRIFT_LIMIT && avgDriftDiff < RDS_AVG_DRIFT_LIMIT); 
+			   fprintf(stderr, "pll drift avg %f%% mean %f%% pilot %i\n", 100*avgDriftDiff/2/M_PI, 100*meanDriftDiff/2/M_PI, pilot);
+			}
+		    }
 		 }
 
 	         if (++rdsCnt >= RDS_DECIMATOR) {
@@ -495,20 +589,11 @@ DSPCOMPLEX	*signalBuffer	= signal_fft -> getVector ();
 	         }
 	      }
 
-/*	      // accumulate data for signal measurement
-	      signalBuffer [signalPointer ++] = v;
-	      if (signalPointer >= 1024)
-	         signalPointer	= 0;
-*/
 	      if (++myCount > fmRate) {
 	         myCount = 0;
 
 		 // in reality the peak level is as good a signal measurement as getting the signal 
-		 // after a FFT on the samples buffer
-/*	         signal_fft -> do_FFT ();
-	         float signal	= getSignal (signalBuffer, 1024);
-	         showStrength (2 * (get_db(signal, 128) - get_db (0, 128)));
-*/
+		 // after a FFT on the samples buffer, much like we did for rds and noise
 	         showStrength (2 * (get_db(peakLevel, 128) - get_db (0, 128)));
 		 showSoundMode (stereoCount > 0);
 	         stereoCount = 0;
@@ -537,17 +622,14 @@ DSPFLOAT	LRDiff	= 0;
 DSPFLOAT	pilot	= 0;
 DSPFLOAT	currentPilotPhase;
 DSPFLOAT	PhaseforLRDiff	= 0;
-/*
- */
+
 	LRPlus = LRDiff = pilot	= demod;
-/*
- *	get the phase for the "carrier to be inserted" right
- */
+
+	// get the phase for the "carrier to be inserted" right
 	pilot		= pilotBandFilter -> Pass (5 * pilot);
 	currentPilotPhase = pilotRecover -> getPilotPhase (5 * pilot);
-/*
- *	Now we have the right - i.e. synchronized - signal to work with
- */
+
+	// Now we have the right - i.e. synchronized - signal to work with
 	PhaseforLRDiff	= 2 * (currentPilotPhase + pilotDelay);
 //
 //	Due to filtering the real amplitude of the LRDiff might have
@@ -592,11 +674,14 @@ void	fmProcessor::setfmRdsSelector (rdsDecoder::RdsMode m) {
 
 void	fmProcessor::setfmRdsDemod (RdsDemod m) {
 	rdsDemod	= m;
+	initRds		= true;
 }
 
 void	fmProcessor::resetRds	(void) {
+	initRds		= true;
 	if (myRdsDecoder == NULL)
 	   return;
+	rds_plldecoder	-> reset();
 	myRdsDecoder	-> reset ();
 }
 
@@ -614,26 +699,4 @@ void	fmProcessor::set_squelchMode (bool b) {
 
 void	fmProcessor::setInputMode	(uint8_t m) {
 	inputMode	= m;
-}
-
-DSPFLOAT	fmProcessor::getSignal	(DSPCOMPLEX *v, int32_t size) {
-DSPFLOAT sum = 0;
-int16_t	i;
-
-	for (i = 5; i < 25; i ++)
-	   sum += abs (v [i]);
-	for (i = 5; i < 25; i ++)
-	   sum += abs (v [size - 1 - i]);
-	return sum / 40;
-}
-
-DSPFLOAT	fmProcessor::getNoise	(DSPCOMPLEX *v, int32_t size) {
-DSPFLOAT sum	= 0;
-int16_t	i;
-
-	for (i = 5; i < 25; i ++)
-	   sum += abs (v [size / 2 - 1 - i]);
-	for (i = 5; i < 25; i ++)
-	   sum += abs (v [size / 2 + 1 + i]);
-	return sum / 40;
 }

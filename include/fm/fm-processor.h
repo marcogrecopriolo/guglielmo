@@ -35,7 +35,7 @@
 #include	"fir-filters.h"
 #include	"fft-filters.h"
 #include	"sincos.h"
-#include	"pllC.h"
+#include	"pll.h"
 #include	"ringbuffer.h"
 #include	"oscillator.h"
 #include	"rds-decoder.h"
@@ -50,8 +50,10 @@ class	fmProcessor:public QThread {
 Q_OBJECT
 public:
 	enum RdsDemod {
-	   FM_RDS_PILOT		= 0,
-	   FM_RDS_NOPILOT	= 1
+	   FM_RDS_AUTO		= 0,
+	   FM_RDS_PILOT		= 1,
+	   FM_RDS_PILOTPLL	= 2,
+	   FM_RDS_PLL		= 3
 	};
 			fmProcessor (deviceHandler *,
 	                             RadioInterface *,
@@ -62,7 +64,7 @@ public:
 	                             int16_t,	// filterDepth
 	                             int16_t);	// threshold scanning
 	        	~fmProcessor (void);
-	void		stop		(void);		// stop the processor
+	void		stop		(void);
 	void		setfmMode	(uint8_t);
 	void		setFMdecoder	(int8_t);
 	void		setSoundMode	(uint8_t);
@@ -70,8 +72,6 @@ public:
 	void		setDeemphasis	(int16_t);
 	void		setVolume	(int16_t);
 	void		setLFcutoff	(int32_t);
-	void		startDumping	(SNDFILE *);
-	void		stopDumping	(void);
 	void		setBandwidth	(int32_t);
 	void		setBandfilterDegree	(int32_t);
 	void		setAttenuation	(int16_t, int16_t);
@@ -113,10 +113,9 @@ virtual	void		run		(void);
 	int32_t		audioRate;
 	int16_t		filterDepth;
 	uint8_t		inputMode;
+	bool		initScan;
 	bool		scanning;
 	int16_t		thresHold;
-	DSPFLOAT	getSignal	(DSPCOMPLEX *, int32_t);
-	DSPFLOAT	getNoise	(DSPCOMPLEX *, int32_t);
 	bool		squelchOn;
 	void		sendSampletoOutput	(DSPCOMPLEX);
 	DecimatingFIR	*fmBandfilter;
@@ -124,6 +123,7 @@ virtual	void		run		(void);
 	newConverter	*theConverter;
 	int32_t		lo_frequency;
 	bool		running;
+	bool		initRds;
 	SinCos		*mySinCos;
 	LowPassFIR	*fmFilter;
 	int32_t		fmBandwidth;
@@ -133,8 +133,6 @@ virtual	void		run		(void);
 	int16_t		old_squelchValue;
 	int16_t		squelchValue;
 
-	bool		dumping;
-	SNDFILE		*dumpFile;
 	int32_t		decimatingScale;
 
 	int32_t		myCount;
@@ -146,23 +144,25 @@ virtual	void		run		(void);
 	DSPCOMPLEX	*audioOut;
 	rdsDecoder	*myRdsDecoder;
 
-	void		stereo	(float, DSPCOMPLEX *, DSPFLOAT *);
-	void		mono	(float, DSPCOMPLEX *);
-	fftFilter	*pilotBandFilter;
-	fftFilter	*rdsBandFilter;
-	fftFilter	*rdsLowPassFilter;
-	HilbertFilter	*rdsHilbertFilter;
-
-	DSPFLOAT	pilotDelay;
+	int		audioGainCnt;
 	DSPCOMPLEX	audioGainCorrection	(DSPCOMPLEX);
 	DSPFLOAT	Volume;
 	DSPFLOAT	audioGain;
 	DSPFLOAT	audioGainAverage;
-	int		audioGainCnt;
+
 	int32_t		max_freq_deviation;
 	int32_t		norm_freq_deviation;
 	DSPFLOAT	omega_demod;
+	DSPFLOAT	pilotDelay;
+	void		stereo	(float, DSPCOMPLEX *, DSPFLOAT *);
+	void		mono	(float, DSPCOMPLEX *);
 	LowPassFIR	*fmAudioFilter;
+
+	fftFilter	*pilotBandFilter;
+	fftFilter	*rdsBandFilter;
+	HilbertFilter	*rdsHilbertFilter;
+	pll		*rds_plldecoder;
+	fftFilter	*rdsLowPassFilter;
 
 	int16_t		balance;
 	DSPFLOAT	leftChannel;
@@ -177,7 +177,6 @@ virtual	void		run		(void);
 	RdsDemod	rdsDemod;
 
 	int8_t		viewSelector;
-	pllC		*rds_plldecoder;
 	DSPFLOAT	K_FM;
 
 	DSPFLOAT	xkm1;

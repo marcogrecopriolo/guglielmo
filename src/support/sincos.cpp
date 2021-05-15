@@ -22,6 +22,19 @@
  */
 
 #include	"sincos.h"
+
+float toBaseRadians(DSPFLOAT phase) {
+    DSPFLOAT cycles;
+
+    if (phase>=0 && phase<2*M_PI)
+	return phase;
+    cycles = phase/(2*M_PI);
+    if (phase<0)
+	return 2*M_PI+(cycles-int(cycles))*2*M_PI;
+    else 
+        return (cycles-int(cycles))*2*M_PI;
+}
+
 //
 //	As it turns out, when using DAB sticks, this simple function is the
 //	real CPU burner, with a usage of up to 22 %

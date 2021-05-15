@@ -312,7 +312,7 @@ void RadioInterface::makeFMprocessor() {
 				  workingRate, audioRate, filterDepth, FMthreshold);
     FMprocessor->setSink(soundOut);
     FMprocessor->setfmRdsSelector(rdsDecoder::RDS1);
-    FMprocessor->setfmRdsDemod(fmProcessor::FM_RDS_NOPILOT);
+    FMprocessor->setfmRdsDemod(fmProcessor::FM_RDS_AUTO);
     FMprocessor->setfmMode(true);
     FMprocessor->setSoundBalance(0);
     FMprocessor->setSoundMode(fmProcessor::S_STEREO);

@@ -45,7 +45,7 @@ int32_t	i;
 	         this	-> selectedDecoder	= FM4DECODER;
 	         this	-> max_freq_deviation =
 	                                        0.95 * (0.5 * rateIn);
-	         myfm_pll	= new pllC (rateIn,
+	         myfm_pll	= new pll (rateIn,
 	                                    0,
 	                                    - max_freq_deviation,
 	                                    + max_freq_deviation,
@@ -131,7 +131,7 @@ DSPFLOAT	I, Q;
 	      break;
 //
 	   case FM4DECODER:
-	      myfm_pll	-> do_pll (z);
+	      myfm_pll	-> doPll (z);
 //	lowpass the NCO frequency term to get a DC offset
 	      fm_afc	= (1 - DCAlpha) * fm_afc +
 	                   DCAlpha * myfm_pll -> getPhaseIncr ();

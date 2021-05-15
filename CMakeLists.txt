@@ -175,7 +175,7 @@ add_definitions (-D__MSC_THREAD__)
              ./include/support/fft-filters.h
              ./include/support/iir-filters.h
              ./include/support/oscillator.h
-             ./include/support/pllC.h
+             ./include/support/pll.h
              ./include/support/sincos.h
              ./include/support/squelchClass.h
              ./include/rds/rds-blocksynchronizer.h
@@ -253,7 +253,7 @@ add_definitions (-D__MSC_THREAD__)
              ./src/support/fft-filters.cpp
              ./src/support/iir-filters.cpp
              ./src/support/oscillator.cpp
-             ./src/support/pllC.cpp
+             ./src/support/pll.cpp
              ./src/support/sincos.cpp
              ./src/rds/rds-blocksynchronizer.cpp
              ./src/rds/rds-decoder.cpp
@@ -320,7 +320,7 @@ add_definitions (-D__MSC_THREAD__)
              ./include/support/fft-filters.h
              ./include/support/iir-filters.h
              ./include/support/oscillator.h
-             ./include/support/pllC.h
+             ./include/support/pll.h
              ./include/support/sincos.h
              ./include/support/squelchClass.h
              ./include/rds/rds-blocksynchronizer.h
