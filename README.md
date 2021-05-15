@@ -129,17 +129,29 @@ For cmake:
 
 	mkdir build
 	cd build
-	cmake .. -DXXX=ON -DYYY=ON ... -DZZZ=ON
+	cmake ..
 	make
 
-where XXX, YYY and ZZZ are the mnemonics for the devices to include.
+If you want to build supporting only specific devices, use
 
+	cmake .. -DXXX=ON [-DYYY=ON ...]
+	
+where XXX, YYY, etc are the mnemonics for the devices to include.
+
+Currently supported devices are
+
+- AIRSPY
+- SDRPLAY
+- RTLSDR
+- HACKRF
+- LIMESDR
+
+The binary supplied with each version supports all available devices.
 At this moment in time, the only device tested is the SDR RTL stick, and the only build linux.
 
 ## TODO
 
 - integrate Qt audio with pulseaudio
-- RDS is very signal sensitive at moment
 - debug support
 - MPRIS support
 - cleanup the source, remove objects that are not needed, consolidate buffer usage
@@ -151,7 +163,7 @@ The backends have wholesale lifted from Qt-dab and Sdr-j-fm by Jan van Katwijk a
 various other contributors.
 
 I have merely integrated the two processors, adapted the devices to work against the
-guglielmo interface, fixed a few bugs and improved a few things.
+guglielmo interface, fixed several bugs and improved several things.
 
 The few icons not included in the Qt default style have been taken from freesvg.org.
 
