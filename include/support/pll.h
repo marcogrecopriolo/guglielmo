@@ -26,33 +26,30 @@
 #ifndef	__PLL_H
 #define	__PLL_H
 
-#include	"constants.h"
-#include	"sincos.h"
-#include	"Xtan2.h"
+#include "constants.h"
+#include "trigtabs.h"
 
-class	pll {
-private:
-	int32_t		rate;
-	int32_t		cf;		// center frequency
-	DSPFLOAT	NcoPhase;
-	DSPFLOAT	phaseIncr;
-	DSPFLOAT	NcoHLimit;
-	DSPFLOAT	NcoLLimit;
-	DSPFLOAT	Beta;
-	SinCos		*mySinCos;
-	compAtan	myAtan;
+class pll {
 public:
-			pll (int32_t	rate,
-	                DSPFLOAT freq, DSPFLOAT lofreq, DSPFLOAT hifreq,
-	                DSPFLOAT bandwidth,
-	                SinCos *Table	= NULL);
+    pll(int32_t rate, DSPFLOAT freq, DSPFLOAT lofreq, DSPFLOAT hifreq,
+        DSPFLOAT bandwidth, trigTabs *table);
 
-		        ~pll (void);
+    ~pll(void);
 
-	DSPFLOAT	doPll 		(DSPCOMPLEX signal);
-	DSPFLOAT	doPll 		(DSPCOMPLEX signal, DSPFLOAT phase);
-	DSPFLOAT	getPhaseIncr	(void);
-	DSPFLOAT	getNcoPhase	(void);
-	void		reset		(void);
+    DSPFLOAT doPll(DSPCOMPLEX signal);
+    DSPFLOAT doPll(DSPCOMPLEX signal, DSPFLOAT phase);
+    DSPFLOAT getPhaseIncr(void);
+    DSPFLOAT getNcoPhase(void);
+    void reset(void);
+
+private:
+    int32_t rate;
+    int32_t cf;
+    DSPFLOAT ncoPhase;
+    DSPFLOAT phaseIncr;
+    DSPFLOAT ncoHLimit;
+    DSPFLOAT ncoLLimit;
+    DSPFLOAT beta;
+    trigTabs *fastTrigTabs;
 };
 #endif	/* __PLL_H */

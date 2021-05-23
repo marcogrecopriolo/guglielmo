@@ -1,4 +1,3 @@
-#
 /*
  *    Copyright (C) 2008, 2009, 2010
  *    Jan van Katwijk (J.vanKatwijk@gmail.com)
@@ -23,31 +22,48 @@
  *    along with SDR-J; if not, write to the Free Software
  *    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
+ *	This LUT implementation of atan2 is a C++ translation of
+ *	a Java discussion on the net
+ *	http://www.java-gaming.org/index.php?topic=14647.0
  */
 
 #ifndef _SINCOS_H
 #define _SINCOS_H
 
 #include	"constants.h"
+#include	<math.h>
+#include	<stdio.h>
+#include	<stdint.h>
+#include	<cstdlib>
+#include	<limits>
 
 DSPFLOAT toBaseRadians(DSPFLOAT phase);
 
-class	SinCos {
+class	trigTabs {
 public:
-	        	SinCos		(DSPCOMPLEX *, int32_t);
-			SinCos		(int32_t);
-			~SinCos		(void);
+			trigTabs	(int32_t);
+			~trigTabs	(void);
 	DSPFLOAT	getSin		(DSPFLOAT);
 	DSPFLOAT	getCos		(DSPFLOAT);
 	DSPCOMPLEX	getComplex	(DSPFLOAT);
+	float	atan2		(float, float);
+	float	argX		(DSPCOMPLEX);
 	
 private:
 	DSPCOMPLEX	*Table;
 	int32_t		Rate;
 	bool		localTable;
 	double		C;
+	float	*ATAN2_TABLE_PPY;
+	float	*ATAN2_TABLE_PPX;
+	float	*ATAN2_TABLE_PNY;
+	float	*ATAN2_TABLE_PNX;
+	float	*ATAN2_TABLE_NPY;
+	float	*ATAN2_TABLE_NPX;
+	float	*ATAN2_TABLE_NNY;
+	float	*ATAN2_TABLE_NNX;
+	float	Stretch;
 	int32_t		fromPhasetoIndex	(DSPFLOAT);
 };
 
 #endif
-

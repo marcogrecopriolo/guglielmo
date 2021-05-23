@@ -141,13 +141,12 @@ HEADERS += ./include/radio.h \
 	   ./include/support/iir-filters.h \
 	   ./include/support/oscillator.h \
 	   ./include/support/pll.h \
-	   ./include/support/sincos.h \
+	   ./include/support/trigtabs.h \
            ./include/support/fft-handler.h \
 	   ./include/support/ringbuffer.h \
 	   ./include/support/dab-params.h \
 	   ./include/support/band-handler.h \
 	   ./include/support/text-mapper.h \
-	   ./include/support/Xtan2.h \
 	   ./include/support/dab-tables.h \
 	   ./include/support/ensemble-printer.h \
 	   ./devices/device-handler.h
@@ -217,14 +216,13 @@ SOURCES += ./src/main.cpp \
 	   ./src/support/iir-filters.cpp \
 	   ./src/support/oscillator.cpp \
 	   ./src/support/pll.cpp \
-	   ./src/support/sincos.cpp \
+	   ./src/support/trigtabs.cpp \
 	   ./src/support/viterbi-jan/viterbi-handler.cpp \
 	   ./src/support/viterbi-spiral/viterbi-spiral.cpp \
            ./src/support/fft-handler.cpp \
 	   ./src/support/dab-params.cpp \
 	   ./src/support/band-handler.cpp \
 	   ./src/support/text-mapper.cpp \
-	   ./src/support/Xtan2.cpp \
 	   ./src/support/dab-tables.cpp \
 	   ./src/support/ensemble-printer.cpp \
 	   ./devices/device-handler.cpp

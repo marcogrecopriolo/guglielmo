@@ -29,9 +29,8 @@
 #define	__FM_DEMODULATOR
 
 #include	"constants.h"
-#include	"sincos.h"
+#include	"trigtabs.h"
 #include	"pll.h"
-#include	"Xtan2.h"
 
 #define	PLL_PILOT_GAIN	3000
 
@@ -53,17 +52,16 @@ private:
 	DSPFLOAT	fm_cvt;
 	DSPFLOAT	K_FM;
 	pll		*myfm_pll;
-	SinCos		*mySinCos;
+	trigTabs	*fastTrigTabs;
 	int32_t		ArcsineSize;
 	DSPFLOAT	*Arcsine;
-	compAtan	myAtan;
 	DSPFLOAT	Imin1;
 	DSPFLOAT	Qmin1;
 	DSPFLOAT	Imin2;
 	DSPFLOAT	Qmin2;
 public:
 		fm_Demodulator	(int32_t	Rate_in,
-	                         SinCos		*mySinCos,
+	                         trigTabs	*fastTrigTabs,
 	                         DSPFLOAT	K_FM);
 		~fm_Demodulator	(void);
 	void	setDecoder	(int8_t);

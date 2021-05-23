@@ -46,14 +46,14 @@
 #include	"rds-groupdecoder.h"
 #include	"fft.h"
 #include	"iir-filters.h"
-#include	"sincos.h"
+#include	"trigtabs.h"
 
 class	RadioInterface;
 
 class	rdsDecoder : public QObject {
 Q_OBJECT
 public:
-		rdsDecoder (RadioInterface *, int32_t, SinCos *);
+		rdsDecoder (RadioInterface *, int32_t, trigTabs *);
 		~rdsDecoder (void);
 	enum RdsMode {
 	   NO_RDS	= 0,
@@ -68,7 +68,7 @@ private:
 	void			doDecode2 (DSPFLOAT, DSPFLOAT *);
 	int32_t			sampleRate;
 	int32_t			numofFrames;
-	SinCos			*mySinCos;
+	trigTabs		*fastTrigTabs;
 	RadioInterface		*MyRadioInterface;
 	RDSGroup		*my_rdsGroup;
 	rdsBlockSynchronizer	*my_rdsBlockSync;

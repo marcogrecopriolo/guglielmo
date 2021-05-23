@@ -176,7 +176,7 @@ add_definitions (-D__MSC_THREAD__)
              ./include/support/iir-filters.h
              ./include/support/oscillator.h
              ./include/support/pll.h
-             ./include/support/sincos.h
+             ./include/support/trigtabs.h
              ./include/support/squelchClass.h
              ./include/rds/rds-blocksynchronizer.h
              ./include/rds/rds-decoder.h
@@ -232,7 +232,6 @@ add_definitions (-D__MSC_THREAD__)
 	     ./include/support/process-params.h
 	     ./include/support/fft-handler.h
 	     ./include/support/ringbuffer.h
-	     ./include/support/Xtan2.h
 	     ./include/support/dab-params.h
 	     ./include/support/band-handler.h
 	     ./include/support/text-mapper.h
@@ -254,7 +253,7 @@ add_definitions (-D__MSC_THREAD__)
              ./src/support/iir-filters.cpp
              ./src/support/oscillator.cpp
              ./src/support/pll.cpp
-             ./src/support/sincos.cpp
+             ./src/support/trigtabs.cpp
              ./src/rds/rds-blocksynchronizer.cpp
              ./src/rds/rds-decoder.cpp
              ./src/rds/rds-group.cpp
@@ -301,7 +300,6 @@ add_definitions (-D__MSC_THREAD__)
 	     ./src/output/audio-base.cpp
 	     ./src/output/newconverter.cpp
 	     ./src/support/fft-handler.cpp
-	     ./src/support/Xtan2.cpp
 	     ./src/support/dab-params.cpp
 	     ./src/support/band-handler.cpp
 	     ./src/support/text-mapper.cpp
@@ -321,7 +319,7 @@ add_definitions (-D__MSC_THREAD__)
              ./include/support/iir-filters.h
              ./include/support/oscillator.h
              ./include/support/pll.h
-             ./include/support/sincos.h
+             ./include/support/trigtabs.h
              ./include/support/squelchClass.h
              ./include/rds/rds-blocksynchronizer.h
              ./include/rds/rds-decoder.h

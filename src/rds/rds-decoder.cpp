@@ -26,7 +26,7 @@
 #include	"rds-decoder.h"
 #include	"radio.h"
 #include	"iir-filters.h"
-#include	"sincos.h"
+#include	"trigtabs.h"
 
 const DSPFLOAT	RDS_BITCLK_HZ =	1187.5;
 /*
@@ -40,15 +40,14 @@ const DSPFLOAT	RDS_BITCLK_HZ =	1187.5;
  */
 	rdsDecoder::rdsDecoder (RadioInterface *myRadio,
 				int32_t		rate,
-				SinCos		*mySinCos) {
+				trigTabs	*fastTrigTabs) {
 DSPFLOAT	synchronizerSamples;
 int16_t	i;
 int16_t	length;
 
 	this	-> MyRadioInterface	= myRadio;
 	this	-> sampleRate	= rate;
-	(void)mySinCos;
-	this	-> mySinCos	= new SinCos (rate);
+	this	-> fastTrigTabs	= fastTrigTabs;
 	omegaRDS		= (2 * M_PI * RDS_BITCLK_HZ) / (DSPFLOAT)rate;
 //
 //	for the decoder a la FMStack we need:
@@ -197,7 +196,7 @@ DSPFLOAT clkState;
 	   Resync = false;
 	}
 
-	clkState	= mySinCos -> getSin (bitClkPhase);
+	clkState	= fastTrigTabs -> getSin (bitClkPhase);
 	bitIntegrator	+= v * clkState;
 //
 //	rising edge -> look at integrator
@@ -255,12 +254,12 @@ DSPFLOAT *correlationVector =
 	for (i = 0; i < symbolCeiling; i ++) {
 	   phase = fmod (i * (omegaRDS / 2), 2 * M_PI);
 //	reset index on phase change
-	   if (mySinCos -> getSin (phase) > 0 && !isHigh) {
+	   if (fastTrigTabs -> getSin (phase) > 0 && !isHigh) {
 	      isHigh = true;
 	      k = 0;
 	   }
 	   else
-	   if (mySinCos -> getSin (phase) < 0 && isHigh) {
+	   if (fastTrigTabs -> getSin (phase) < 0 && isHigh) {
 	      isHigh = false;
 	      k = 0;
 	   }

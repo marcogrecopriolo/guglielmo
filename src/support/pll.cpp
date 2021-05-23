@@ -26,87 +26,62 @@
  *   	This pll was found to give reasonable results.
  *	source DTTSP, all rights acknowledged
  */
-#include	"pll.h"
-//
-//	rate	is the samplerate
-//	lofreq and hifreq the frequencies (in Hz) where the lock is 
-//	kept in between,
-//	bandwidth the bandwidth of the signal to be received
+#include "pll.h"
 
-		pll::pll (int32_t	rate,
-	                    DSPFLOAT	freq,
-	                    DSPFLOAT	lofreq, DSPFLOAT hifreq,
-	                    DSPFLOAT	bandwidth,
-	                    SinCos	*Table) {
-DSPFLOAT	fac	= 2.0 * M_PI / rate;
+pll::pll(int32_t rate, DSPFLOAT freq,
+	DSPFLOAT lofreq, DSPFLOAT hifreq,
+	DSPFLOAT bandwidth, trigTabs *table) {
+    DSPFLOAT fac = 2.0*M_PI/rate;
 
-	this	-> rate	= rate;
-	this	-> cf	= freq;
-//	for the control lowpass filter
-	Beta		= exp (- 2.0 * M_PI * bandwidth / 2 / rate);
-	NcoPhase	= 0;
-	phaseIncr	= freq * fac ;		// this will change during runs
-	NcoLLimit	= lofreq * fac;		// boundary for changes
-	NcoHLimit	= hifreq * fac;
-	this	-> mySinCos	= Table;
+    this->rate = rate;
+    cf = freq;
+    beta = exp(-2.0*M_PI*bandwidth/2/rate);
+    ncoPhase = 0;
+    phaseIncr = freq*fac;
+    ncoLLimit = lofreq*fac;
+    ncoHLimit = hifreq*fac;
+    fastTrigTabs = table;
 }
 
-		pll::~pll (void) {
+pll::~pll(void) {
 }
 
-void	pll::reset (void) {
-	NcoPhase        = 0;
-        phaseIncr       = cf * 2.0 * M_PI / rate ;
-}
-//
-//	It turned out that under Fedora we had from time
-//	to time an infinite value for signal. Still have
-//	to constrain this value
-DSPFLOAT	pll::doPll (DSPCOMPLEX signal) {
-DSPCOMPLEX	NcoSignal = DSPCOMPLEX(mySinCos -> getCos(NcoPhase), mySinCos -> getSin(NcoPhase)); 
-DSPCOMPLEX	pll_Delay	= NcoSignal * signal;
-//
-//	we use a pretty fast atan here
-	DSPFLOAT phaseError	= - myAtan. atan2 (imag (pll_Delay), real (pll_Delay));
-//	... and a pretty simple filter
-	phaseIncr	= (1 - Beta) * phaseError + Beta * phaseIncr;
-	if (phaseIncr < NcoLLimit || phaseIncr > NcoHLimit)
-	   phaseIncr	= cf * 2 * M_PI / rate;
-
-	NcoPhase	+= phaseIncr;
-	if (NcoPhase >= 2 * M_PI)
-	   NcoPhase = fmod (NcoPhase, 2 * M_PI);
-	else
-	while (NcoPhase < 0)
-	   NcoPhase += 2 * M_PI;
-	return imag(NcoSignal);
+void pll::reset (void) {
+    ncoPhase = 0;
+    phaseIncr = cf*2.0*M_PI/rate ;
 }
 
-DSPFLOAT	pll::doPll (DSPCOMPLEX signal, DSPFLOAT phase) {
-DSPCOMPLEX	NcoSignal	= DSPCOMPLEX(mySinCos -> getCos(NcoPhase), mySinCos -> getSin(phase)); 
-DSPCOMPLEX	pll_Delay	= NcoSignal * signal;
-DSPFLOAT	ret		= mySinCos -> getSin(NcoPhase);
+DSPFLOAT pll::doPll(DSPCOMPLEX signal) {
+    DSPCOMPLEX	ncoSignal = DSPCOMPLEX(fastTrigTabs->getCos(ncoPhase), fastTrigTabs->getSin(ncoPhase)); 
+    DSPCOMPLEX	pllDelay = ncoSignal*signal;
 
-//	we use a pretty fast atan here
-	DSPFLOAT phaseError	= - myAtan. atan2 (imag(pll_Delay), real(pll_Delay));
-//	... and a pretty simple filter
-	phaseIncr	= (1 - Beta) * phaseError + Beta * phaseIncr;
-	if (phaseIncr < NcoLLimit || phaseIncr > NcoHLimit)
-	   phaseIncr	= cf * 2 * M_PI / rate;
+    DSPFLOAT phaseError	= -fastTrigTabs->atan2(imag(pllDelay), real(pllDelay));
+    phaseIncr	= (1-beta)*phaseError+beta*phaseIncr;
+    if (phaseIncr<ncoLLimit || phaseIncr>ncoHLimit)
+	phaseIncr = cf*2*M_PI/rate;
 
-	NcoPhase	+= phaseIncr;
-	if (NcoPhase >= 2 * M_PI)
-	   NcoPhase = fmod (NcoPhase, 2 * M_PI);
-	else
-	while (NcoPhase < 0)
-	   NcoPhase += 2 * M_PI;
-	return ret;
+    ncoPhase = toBaseRadians(ncoPhase+phaseIncr);
+    return imag(ncoSignal);
 }
 
-DSPFLOAT	pll::getPhaseIncr(void) {
-	return phaseIncr;
+DSPFLOAT pll::doPll(DSPCOMPLEX signal, DSPFLOAT phase) {
+    DSPCOMPLEX ncoSignal = DSPCOMPLEX(fastTrigTabs->getCos(ncoPhase), fastTrigTabs->getSin(phase)); 
+    DSPCOMPLEX pllDelay = ncoSignal*signal;
+    DSPFLOAT ret = fastTrigTabs->getSin(ncoPhase);
+
+    DSPFLOAT phaseError	= -fastTrigTabs->atan2(imag(pllDelay), real(pllDelay));
+    phaseIncr = (1-beta) * phaseError+beta*phaseIncr;
+    if (phaseIncr<ncoLLimit || phaseIncr>ncoHLimit)
+	   phaseIncr = cf*2*M_PI/rate;
+
+    ncoPhase = toBaseRadians(ncoPhase+phaseIncr);
+    return ret;
 }
 
-DSPFLOAT	pll::getNcoPhase (void) {
-	return NcoPhase;
+DSPFLOAT pll::getPhaseIncr(void) {
+    return phaseIncr;
+}
+
+DSPFLOAT pll::getNcoPhase(void) {
+    return ncoPhase;
 }

@@ -34,7 +34,7 @@
 #include	"constants.h"
 #include	"fir-filters.h"
 #include	"fft-filters.h"
-#include	"sincos.h"
+#include	"trigtabs.h"
 #include	"pll.h"
 #include	"ringbuffer.h"
 #include	"oscillator.h"
@@ -124,7 +124,7 @@ virtual	void		run		(void);
 	int32_t		lo_frequency;
 	bool		running;
 	bool		initRds;
-	SinCos		*mySinCos;
+	trigTabs	*fastTrigTabs;
 	LowPassFIR	*fmFilter;
 	int32_t		fmBandwidth;
 	int32_t		fmFilterDegree;
@@ -189,7 +189,7 @@ virtual	void		run		(void);
 	      DSPFLOAT	pilot_oldValue;
 	      DSPFLOAT	omega;
 	      DSPFLOAT	gain;
-	      SinCos	*mySinCos;
+	      trigTabs	*fastTrigTabs;
 	      DSPFLOAT	pilot_Lock;
 	      bool	pll_isLocked;
 	      DSPFLOAT	quadRef;
@@ -199,11 +199,11 @@ virtual	void		run		(void);
 	      pilotRecovery (int32_t	Rate_in,
 	                     DSPFLOAT	omega,
 	                     DSPFLOAT	gain,
-	                     SinCos	*mySinCos) {
+	                     trigTabs	*fastTrigTabs) {
 	         this	-> Rate_in	= Rate_in;
 	         this	-> omega	= omega;
 	         this	-> gain		= gain;
-	         this	-> mySinCos	= mySinCos;
+	         this	-> fastTrigTabs	= fastTrigTabs;
 	         pll_isLocked		= false;
 	         pilot_Lock		= 0;
 	         pilot_oldValue		= 0;
@@ -219,7 +219,7 @@ virtual	void		run		(void);
 
 	      DSPFLOAT	getPilotPhase	(DSPFLOAT pilot) {
 	      DSPFLOAT	OscillatorValue =
-	                  mySinCos -> getCos (pilot_OscillatorPhase);
+	                  fastTrigTabs -> getCos (pilot_OscillatorPhase);
 	      DSPFLOAT	PhaseError	= pilot * OscillatorValue;
 	      DSPFLOAT	currentPhase;
 	         pilot_OscillatorPhase += PhaseError * gain;

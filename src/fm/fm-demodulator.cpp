@@ -34,12 +34,12 @@
 //	on a High Performance Digital Signal Processor", especially
 //	chapter 3.
 	fm_Demodulator::fm_Demodulator (int32_t	rateIn,
-	                                SinCos	*mySinCos,
+	                                trigTabs *fastTrigTabs,
 	                                DSPFLOAT K_FM) {
 int32_t	i;
 
 	         this	-> rateIn	= rateIn;
-	         this	-> mySinCos	= mySinCos;
+	         this	-> fastTrigTabs	= fastTrigTabs;
 	         this	-> K_FM		= 2 * K_FM;
 
 	         this	-> selectedDecoder	= FM4DECODER;
@@ -50,7 +50,7 @@ int32_t	i;
 	                                    - max_freq_deviation,
 	                                    + max_freq_deviation,
 	                                    0.85 * rateIn,
-	                                    mySinCos);
+	                                    fastTrigTabs);
 	         ArcsineSize		= 4 * 8192;
 	         Arcsine		= new DSPFLOAT [ArcsineSize];
 	         for (i = 0; i < ArcsineSize; i ++)
@@ -116,14 +116,14 @@ DSPFLOAT	I, Q;
 	      break;
 
 	   case FM2DECODER:
-	      res	= myAtan. argX (z * DSPCOMPLEX (Imin1, - Qmin1));
+	      res	= fastTrigTabs -> argX (z * DSPCOMPLEX (Imin1, - Qmin1));
 	      fm_afc	= (1 - DCAlpha) * fm_afc + DCAlpha * res;
 	      res	= (res - fm_afc) * fm_cvt;
 	      res	/= K_FM;
 	      break;
 
 	   case FM3DECODER:
-	      res	= myAtan. atan2 (Q * Imin1 - I * Qmin1,
+	      res	= fastTrigTabs -> atan2 (Q * Imin1 - I * Qmin1,
 	                                 I * Imin1 + Q * Qmin1);
 	      fm_afc	= (1 - DCAlpha) * fm_afc + DCAlpha * res;
 	      res	= (res - fm_afc) * fm_cvt;

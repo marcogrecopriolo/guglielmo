@@ -30,7 +30,7 @@
 #include	"rds-decoder.h"
 #include	"audio-base.h"
 #include	"squelchClass.h"
-#include	"sincos.h"
+#include	"trigtabs.h"
 #include	"device-handler.h"
 #include	"newconverter.h"
 
@@ -88,7 +88,7 @@
 	myRdsDecoder			= NULL;
 
 	this	-> localOscillator	= new Oscillator (inputRate);
-	this	-> mySinCos		= new SinCos (fmRate);
+	this	-> fastTrigTabs		= new trigTabs (fmRate);
 	this	-> lo_frequency		= 0;
 	this	-> fmBandwidth		= 0.95 * fmRate;
 	this	-> fmFilterDegree	= 21;
@@ -143,7 +143,7 @@
 	pilotRecover		= new pilotRecovery (fmRate,
 	                                             OMEGA_PILOT,
 	                                             25 * OMEGA_DEMOD,
-	                                             mySinCos);
+	                                             fastTrigTabs);
 	pilotDelay		= (FFT_SIZE - PILOTFILTER_SIZE) * OMEGA_PILOT;
 
 	rdsLowPassFilter	= new fftFilter (FFT_SIZE, RDSLOWPASS_SIZE);
@@ -155,7 +155,7 @@
 	DSPFLOAT	B_FM	= 2 * (Delta_F + F_G);
 	K_FM			= B_FM * M_PI / F_G;
 	TheDemodulator		= new fm_Demodulator (fmRate,
-	                                              mySinCos, K_FM);
+	                                              fastTrigTabs, K_FM);
 	fmAudioFilter		= NULL;
 //
 //	In the case of mono we do not assume a pilot
@@ -173,7 +173,7 @@
 	                                    RDS_FREQUENCY - 50,
 	                                    RDS_FREQUENCY + 50,
 	                                    200,
-	                                    mySinCos);
+	                                    fastTrigTabs);
 
 //	for the deemphasis we use an in-line filter with
 	xkm1			= 0;
@@ -207,7 +207,7 @@
 //	delete	rdsBandFilter;
 //	delete	pilotBandFilter;
 //	delete	audioDecimator;
-//	delete	mySinCos;
+//	delete	fastTrigTabs;
 	if (fmAudioFilter != NULL)
 	   delete fmAudioFilter;
 }
@@ -352,7 +352,7 @@ bool		pilot		= false;
 
 	myRdsDecoder		= new rdsDecoder (myRadioInterface,
 	                                                  fmRate / RDS_DECIMATOR,
-	                                                  mySinCos);
+	                                                  fastTrigTabs);
 	initRds = true;
 	running	= true;
 	while (running) {
@@ -549,7 +549,7 @@ bool		pilot		= false;
 		    DSPFLOAT rdsDelay   = rds_plldecoder	-> doPll (rdsBase);
 		    rdsData		= rdsLowPassFilter -> Pass (rdsDelay * demod);
 		 } else if (pilot) {
-		    DSPFLOAT mixerValue	= mySinCos -> getSin (PhaseforRds);
+		    DSPFLOAT mixerValue	= fastTrigTabs -> getSin (PhaseforRds);
 		    rdsData		= rdsLowPassFilter -> Pass (mixerValue * demod);
 		 } else {
 		    DSPCOMPLEX rdsBase	= DSPCOMPLEX (demod, demod);
@@ -634,7 +634,7 @@ DSPFLOAT	PhaseforLRDiff	= 0;
 //
 //	Due to filtering the real amplitude of the LRDiff might have
 //	to be adjusted, we guess
-	LRDiff	= 2.0 * mySinCos	-> getCos (PhaseforLRDiff) * LRDiff;
+	LRDiff	= 2.0 * fastTrigTabs	-> getCos (PhaseforLRDiff) * LRDiff;
 
 	*PhaseforRds	= 3 * (currentPilotPhase + pilotDelay);
 
