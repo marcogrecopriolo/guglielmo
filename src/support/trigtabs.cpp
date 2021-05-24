@@ -1,23 +1,27 @@
 /*
- *    Copyright (C) 2008, 2009, 2010
- *    Jan van Katwijk (J.vanKatwijk@gmail.com)
- *    Lazy Chair Computing
+ *    Copyright (C) 2021
+ *    Marco Greco <marcogrecopriolo@gmail.com>
  *
- *    This file is part of sdr-j-fm
+ *    This file is part of the guglielmo FM DAB tuner software package.
  *
- *    sdr-j-fm is free software; you can redistribute it and/or modify
+ *    guglielmo is free software; you can redistribute it and/or modify
  *    it under the terms of the GNU General Public License as published by
- *    the Free Software Foundation; either version 2 of the License, or
- *    (at your option) any later version.
+ *    the Free Software Foundation, version 2 of the License.
  *
- *    sdr-j-fm is distributed in the hope that it will be useful,
+ *    guglielmo is distributed in the hope that it will be useful,
  *    but WITHOUT ANY WARRANTY; without even the implied warranty of
  *    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *    GNU General Public License for more details.
  *
  *    You should have received a copy of the GNU General Public License
- *    along with sdr-j-fm; if not, write to the Free Software
+ *    along with guglielmo; if not, write to the Free Software
  *    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ *
+ *    Taken from sdr-j-fm, with bug fixes and enhancements.
+ *
+ *    Copyright (C) 2008, 2009, 2010
+ *    Jan van Katwijk (J.vanKatwijk@gmail.com)
+ *    Lazy Chair Computing
  *
  *	This LUT implementation of atan2 is a C++ translation of
  *	a Java discussion on the net
@@ -41,151 +45,113 @@ float toBaseRadians(DSPFLOAT phase) {
         return (cycles-int(cycles))*2*M_PI;
 }
 
-	trigTabs::trigTabs (int32_t Rate) {
-int32_t	i;
-	   this	-> Rate		= Rate;
-	   this	-> Table	= new DSPCOMPLEX [Rate];
-	   for (i = 0; i < Rate; i ++) 
-	      Table [i] = DSPCOMPLEX (cos (2 * M_PI * i / Rate),
-	                              sin (2 * M_PI * i / Rate));
-	   this	->	C	= Rate / (2 * M_PI);
-	Stretch		= M_PI;
-// Output will swing from -Stretch to Stretch (default: Math.PI)
-// Useful to change to 1 if you would normally do "atan2(y, x) / Math.PI"
+trigTabs::trigTabs (int32_t rate) {
+    int32_t i;
 
-	ATAN2_TABLE_PPY    = new float [SIZE + 1];
-	ATAN2_TABLE_PPX    = new float [SIZE + 1];
-	ATAN2_TABLE_PNY    = new float [SIZE + 1];
-	ATAN2_TABLE_PNX    = new float [SIZE + 1];
-	ATAN2_TABLE_NPY    = new float [SIZE + 1];
-	ATAN2_TABLE_NPX    = new float [SIZE + 1];
-	ATAN2_TABLE_NNY    = new float [SIZE + 1];
-	ATAN2_TABLE_NNX    = new float [SIZE + 1];
-        for (int i = 0; i <= SIZE; i++) {
-            float f = (float)i / SIZE;
-            ATAN2_TABLE_PPY [i] = atan(f) * Stretch / M_PI;
-            ATAN2_TABLE_PPX [i] = Stretch * 0.5f - ATAN2_TABLE_PPY[i];
-            ATAN2_TABLE_PNY [i] = -ATAN2_TABLE_PPY [i];
-            ATAN2_TABLE_PNX [i] = ATAN2_TABLE_PPY [i] - Stretch * 0.5f;
-            ATAN2_TABLE_NPY [i] = Stretch - ATAN2_TABLE_PPY [i];
-            ATAN2_TABLE_NPX [i] = ATAN2_TABLE_PPY [i] + Stretch * 0.5f;
-            ATAN2_TABLE_NNY [i] = ATAN2_TABLE_PPY [i] - Stretch;
-            ATAN2_TABLE_NNX [i] = -Stretch * 0.5f - ATAN2_TABLE_PPY [i];
-        }
+   this->rate = rate;
+   this->table = new DSPCOMPLEX[rate];
+   for (i=0; i<rate; i++) 
+	table [i] = DSPCOMPLEX(cos(2*M_PI*i/rate), sin(2*M_PI*i/rate));
+   this->C = rate/(2*M_PI);
+   stretch = M_PI;
+
+    ATAN2_TABLE_PPY = new float[SIZE+1];
+    ATAN2_TABLE_PPX = new float[SIZE+1];
+    ATAN2_TABLE_PNY = new float[SIZE+1];
+    ATAN2_TABLE_PNX = new float[SIZE+1];
+    ATAN2_TABLE_NPY = new float[SIZE+1];
+    ATAN2_TABLE_NPX = new float[SIZE+1];
+    ATAN2_TABLE_NNY = new float[SIZE+1];
+    ATAN2_TABLE_NNX = new float[SIZE+1];
+    for (int i=0; i<=SIZE; i++) {
+	float f = (float) i/SIZE;
+
+	ATAN2_TABLE_PPY[i] = atan(f)*stretch/M_PI;
+	ATAN2_TABLE_PPX[i] = stretch*0.5f-ATAN2_TABLE_PPY[i];
+	ATAN2_TABLE_PNY[i] = -ATAN2_TABLE_PPY[i];
+	ATAN2_TABLE_PNX[i] = ATAN2_TABLE_PPY[i]-stretch*0.5f;
+	ATAN2_TABLE_NPY[i] = stretch-ATAN2_TABLE_PPY[i];
+	ATAN2_TABLE_NPX[i] = ATAN2_TABLE_PPY[i]+stretch*0.5f;
+	ATAN2_TABLE_NNY[i] = ATAN2_TABLE_PPY[i]-stretch;
+	ATAN2_TABLE_NNX[i] = -stretch*0.5f-ATAN2_TABLE_PPY[i];
+    }
 }
 
-	trigTabs::~trigTabs (void) {
-	delete [] Table;
-	delete	ATAN2_TABLE_PPY;
-	delete	ATAN2_TABLE_PPX;
-	delete	ATAN2_TABLE_PNX;
-	delete	ATAN2_TABLE_PNY;
-	delete	ATAN2_TABLE_NPY;
-	delete	ATAN2_TABLE_NPX;
-	delete	ATAN2_TABLE_NNY;
-	delete	ATAN2_TABLE_NNX;
+trigTabs::~trigTabs (void) {
+    delete []table;
+    delete ATAN2_TABLE_PPY;
+    delete ATAN2_TABLE_PPX;
+    delete ATAN2_TABLE_PNX;
+    delete ATAN2_TABLE_PNY;
+    delete ATAN2_TABLE_NPY;
+    delete ATAN2_TABLE_NPX;
+    delete ATAN2_TABLE_NNY;
+    delete ATAN2_TABLE_NNX;
 }
-//	Heavy code: executed millions of times
-//	we get all kinds of very strange values here, so
-//	testing over the whole domain is needed
-int32_t	trigTabs::fromPhasetoIndex (DSPFLOAT Phase) {	
-	if (Phase >= 0)
-	   return (int32_t (Phase * C)) % Rate;
+
+int32_t	trigTabs::fromPhasetoIndex (DSPFLOAT phase) {	
+    if (phase >= 0)
+	return (int32_t(phase*C))%rate;
+    else
+	return rate-(int32_t(phase*C))%rate;
+}
+
+DSPFLOAT trigTabs::getSin(DSPFLOAT phase) {
+    if (phase<0)
+	return -getSin(-phase);
+    return imag(table[fromPhasetoIndex(phase)]);
+}
+
+DSPFLOAT trigTabs::getCos(DSPFLOAT phase) {
+    if (phase>=0)
+	return real(table[(int32_t(phase*C))%rate]);
+    else
+	return real(table[rate-(int32_t(-phase*C))% rate]);
+}
+
+DSPFLOAT trigTabs::atan2(float y, float x) {
+
+    if (isinf (x) || isinf (y))
+	return 0;
+    if (isnan (x) || isnan (y))
+	return 0;
+    if (isnan (-x) || isnan (-y))
+	return 0;
+    if (x==0) {
+	if (y==0) 
+	    return 0;
+	else if (y>0)
+	    return M_PI/2;
 	else
-	   return Rate - (int32_t (Phase * C)) % Rate;
-/*
-	if (0 <= Phase && Phase < 2 * M_PI)
-	   return Phase / (2 * M_PI) * Rate;
+	    return -M_PI/2;
+    }
 
-	if (Phase >= 2 * M_PI)
-//	   return fmod (Phase, 2 * M_PI) / (2 * M_PI) * Rate;
-	   return (int32_t (Phase / (2 * M_PI) * Rate)) % Rate;
-
-	if (Phase >= -2 * M_PI) {
-	   Phase = -Phase;
-	   return Rate - Phase / (2 * M_PI) * Rate;
-	}
-
-	Phase = -Phase;
-	return Rate - fmod (Phase, 2 * M_PI) / (2 * M_PI) * Rate;
-*/
-}
-
-DSPFLOAT	trigTabs::getSin (DSPFLOAT Phase) {
-	if (Phase < 0)
-	   return -getSin (- Phase);
-	return imag (Table [fromPhasetoIndex (Phase)]);
-}
-
-DSPFLOAT	trigTabs::getCos (DSPFLOAT Phase) {
-	if (Phase >= 0)
-	   return real (Table [(int32_t (Phase * C)) % Rate]);
-	else
-	   return real (Table [Rate - (int32_t ( - Phase * C)) % Rate]);
-/*
-	if (Phase < 0)
-	   Phase = -Phase;
-	return real (Table [fromPhasetoIndex (Phase)]);
-*/
-}
-
-DSPCOMPLEX	trigTabs::getComplex (DSPFLOAT Phase) {
-	if (Phase >= 0)
-	   return Table [(int32_t (Phase * C)) % Rate];
-	else
-	   return Table [Rate - (int32_t ( - Phase * C)) % Rate];
-//	return Table [fromPhasetoIndex (Phase)];
-}
-
-
-/**
-  * ATAN2 : performance degrades due to the many "0" tests
-  */
-
-float	trigTabs::atan2 (float y, float x) {
-
-	if (isinf (x) || isinf (y)) return 0;
-	if (isnan (x) || isnan (y)) return 0;
-	if (isnan (-x) || isnan (-y)) return 0;
-	if (x == 0) {
-	   if (y == 0)  return 0;
-//	      return std::numeric_limits<float>::infinity ();
-	   else
-	   if (y > 0)
-	      return  M_PI / 2;
-	   else		// y < 0
-	      return  - M_PI / 2;
-	}
-
-	if (x > 0) {
-	   if (y >= 0) {
-	      if (x >= y) 
-	         return ATAN2_TABLE_PPY[(int)(SIZE * y / x + 0.5)];
-	      else
-	         return ATAN2_TABLE_PPX[(int)(SIZE * x / y + 0.5)];
+    if (x>0) {
+	if (y>=0) {
+	    if (x>=y) 
+		return ATAN2_TABLE_PPY[(int)(SIZE*y/x+0.5)];
+	    else
+		return ATAN2_TABLE_PPX[(int)(SIZE*x/y+0.5)];
 	      
-	   }
-	   else {
-	      if (x >= -y) 
-	         return ATAN2_TABLE_PNY[(int)(EZIS * y / x + 0.5)];
+	} else {
+	      if (x>=-y) 
+	         return ATAN2_TABLE_PNY[(int)(EZIS*y/x+0.5)];
 	      else
-	         return ATAN2_TABLE_PNX[(int)(EZIS * x / y + 0.5)];
-	   }
-        }
-	else {
-	   if (y >= 0) {
-	      if (-x >= y) 
-	         return ATAN2_TABLE_NPY[(int)(EZIS * y / x + 0.5)];
-	      else
-	         return ATAN2_TABLE_NPX[(int)(EZIS * x / y + 0.5)];
-	   }
-	   else {
-	      if (x <= y) // (-x >= -y)
-	         return ATAN2_TABLE_NNY[(int)(SIZE * y / x + 0.5)];
-	      else
-	         return ATAN2_TABLE_NNX[(int)(SIZE * x / y + 0.5)];
-	   }
+	         return ATAN2_TABLE_PNX[(int)(EZIS*x/y+0.5)];
 	}
+    } else {
+	if (y>=0) {
+	    if (-x>=y) 
+		return ATAN2_TABLE_NPY[(int)(EZIS*y/x+0.5)];
+	    else
+		return ATAN2_TABLE_NPX[(int)(EZIS*x/y+0.5)];
+	} else {
+	    if (x<=y)
+		return ATAN2_TABLE_NNY[(int)(SIZE*y/x+0.5)];
+	    else
+		return ATAN2_TABLE_NNX[(int)(SIZE*x/y+0.5)];
+	}
+    }
 }
 
 float	trigTabs::argX	(DSPCOMPLEX v) {

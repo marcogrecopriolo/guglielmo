@@ -25,7 +25,6 @@
  */
 
 #include	"fm-demodulator.h"
-#include	"Xtan2.h"
 
 //
 //	Just to play around a little, I implemented 5 common 

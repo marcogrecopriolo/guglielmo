@@ -23,8 +23,8 @@
  *    Jan van Katwijk (J.vanKatwijk@gmail.com)
  *    Lazy Chair Computing
  */
-#ifndef	__PLL_H
-#define	__PLL_H
+#ifndef	_PLL_H
+#define	_PLL_H
 
 #include "constants.h"
 #include "trigtabs.h"
