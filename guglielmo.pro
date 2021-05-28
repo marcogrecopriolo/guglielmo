@@ -139,7 +139,6 @@ HEADERS += ./include/radio.h \
 	   ./include/support/fft.h \
 	   ./include/support/fft-filters.h \
 	   ./include/support/iir-filters.h \
-	   ./include/support/oscillator.h \
 	   ./include/support/pll.h \
 	   ./include/support/trigtabs.h \
            ./include/support/fft-handler.h \
@@ -214,7 +213,6 @@ SOURCES += ./src/main.cpp \
 	   ./src/support/fft.cpp \
 	   ./src/support/fft-filters.cpp \
 	   ./src/support/iir-filters.cpp \
-	   ./src/support/oscillator.cpp \
 	   ./src/support/pll.cpp \
 	   ./src/support/trigtabs.cpp \
 	   ./src/support/viterbi-jan/viterbi-handler.cpp \

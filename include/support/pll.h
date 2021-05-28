@@ -52,4 +52,19 @@ private:
     DSPFLOAT beta;
     trigTabs *fastTrigTabs;
 };
-#endif	/* __PLL_H */
+
+class pilotPll {
+public:
+    pilotPll(DSPFLOAT omega, DSPFLOAT gain, trigTabs *table);
+
+    ~pilotPll(void);
+
+    DSPFLOAT doPll(DSPFLOAT pilot);
+
+private:
+    DSPFLOAT pilotOscillatorPhase;
+    DSPFLOAT omega;
+    DSPFLOAT gain;
+    trigTabs *fastTrigTabs;
+};
+#endif	/* _PLL_H */

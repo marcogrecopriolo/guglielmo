@@ -85,3 +85,24 @@ DSPFLOAT pll::getPhaseIncr(void) {
 DSPFLOAT pll::getNcoPhase(void) {
     return ncoPhase;
 }
+
+pilotPll::pilotPll(DSPFLOAT omega, DSPFLOAT gain, trigTabs *table) {
+    this->omega = omega;
+    this->gain = gain;
+    this->fastTrigTabs = table;
+    pilotOscillatorPhase = 0;
+}
+
+pilotPll::~pilotPll(void) {
+}
+
+DSPFLOAT pilotPll::doPll(DSPFLOAT pilot) {
+    DSPFLOAT currentPhase;
+    DSPFLOAT oscillatorValue = fastTrigTabs->getCos(pilotOscillatorPhase);
+    DSPFLOAT PhaseError = pilot*oscillatorValue;
+
+    pilotOscillatorPhase += PhaseError*gain;
+    currentPhase = toBaseRadians(pilotOscillatorPhase);
+    pilotOscillatorPhase = toBaseRadians(pilotOscillatorPhase+omega);
+    return currentPhase;
+}

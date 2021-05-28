@@ -94,7 +94,6 @@ private:
     int32_t fmRate;
     int32_t workingRate;
     int32_t audioRate;
-    int16_t filterDepth;
     int16_t FMthreshold;
     int scanInterval;
 

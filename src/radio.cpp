@@ -138,7 +138,6 @@ RadioInterface::RadioInterface (QSettings *Si, QWidget	 *parent):
     scanTimer = nullptr;
     settings->beginGroup(GROUP_FM);
     workingRate = settings->value(FM_WORKING_RATE, FM_DEF_WORKING_RATE).toInt();
-    filterDepth = settings->value(FM_FILTER_DEPTH, FM_DEF_FILTER_DEPTH).toInt();
     FMthreshold = settings->value(FM_THRESHOLD, FM_DEF_THRESHOLD).toInt();
     scanInterval = settings->value(FM_SCAN_INTERVAL, FM_DEF_SCAN_INTERVAL).toInt();
 
@@ -204,8 +203,8 @@ RadioInterface::RadioInterface (QSettings *Si, QWidget	 *parent):
 	lastSquelch = 100;
     squelchKnob->setValue(double(lastSquelch));
     if (FMprocessor != nullptr) {
-	FMprocessor->set_squelchValue(100-int(lastSquelch));
-	FMprocessor->set_squelchMode((lastSquelch > 0));
+	FMprocessor->setSquelchValue(100-int(lastSquelch));
+	FMprocessor->setSquelchMode((lastSquelch > 0));
     }
 
     playing = false;
@@ -309,7 +308,7 @@ void RadioInterface::makeFMprocessor() {
     if (FMfilter <= 0)
 	FMfilter = 0.95*fmRate;
     FMprocessor = new fmProcessor(inputDevice, this, inputRate, fmRate,
-				  workingRate, audioRate, filterDepth, FMthreshold);
+				  workingRate, audioRate, FMthreshold);
     FMprocessor->setSink(soundOut);
     FMprocessor->setfmRdsSelector(rdsDecoder::RDS1);
     FMprocessor->setfmRdsDemod(fmProcessor::FM_RDS_AUTO);
@@ -531,7 +530,6 @@ void RadioInterface::startFMscan(bool down) {
     FMfreq = (FMfreq*10+scanIncrement)/10;
     frequencyKnob->setValue(double(FMfreq));
     frequencyLCD->display(int(FMfreq*1000));
-    FMprocessor->set_localOscillator(0);
     inputDevice->restartReader(int(FMfreq*1000000));
     FMprocessor->start();
     FMprocessor->startScanning();
@@ -562,7 +560,6 @@ void RadioInterface::nextFrequency(void) {
 	FMfreq = (FMfreq*10+scanIncrement)/10;
 	frequencyKnob->setValue(double(FMfreq));
 	frequencyLCD->display(int(FMfreq*1000));
-	FMprocessor->set_localOscillator(0);
 	inputDevice->restartReader(int(FMfreq*1000000));
 	FMprocessor->start();
 	FMprocessor->startScanning();
@@ -702,8 +699,8 @@ void RadioInterface::handleVolume(double vol) {
 }
 
 void RadioInterface::handleSquelch(double val) {
-    FMprocessor->set_squelchValue(100-int(val));
-    FMprocessor->set_squelchMode((val > 0));
+    FMprocessor->setSquelchValue(100-int(val));
+    FMprocessor->setSquelchMode((val > 0));
 }
 
 //	preset selection
@@ -1041,7 +1038,6 @@ void RadioInterface::startFM(int32_t freq) {
 	return;
     ficBlocks = 0;
     ficSuccess = 0;
-    FMprocessor->set_localOscillator(0);
     FMprocessor->resetRds();
     FMprocessor->start();
     soundOut->restart();

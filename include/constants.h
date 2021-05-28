@@ -214,13 +214,6 @@ using namespace std;
 #define	MINIMUM(x, y)	((x) < (y) ? x : y)
 #define	MAXIMUM(x, y)	((x) > (y) ? x : y)
 
-#define	IandQ		0100
-#define	QandI		0101
-#define I_Only		0102
-#define	Q_Only		0104
-
-#define	MSECFORTIMER	10
-
 #define	PILOTFILTER_SIZE	31
 #define	RDSLOWPASS_SIZE		89
 #define	HILBERT_SIZE		13
@@ -228,19 +221,6 @@ using namespace std;
 #define	FFT_SIZE		256
 #define	LEVEL_SIZE		512
 #define	LEVEL_FREQ		3
-
-static	inline
-DSPFLOAT	PI_Constrain (DSPFLOAT val) {
-	if (0 <= val && val < 2 * M_PI)
-	   return val;
-	if (val >= 2 * M_PI)
-	   return fmod (val, 2 * M_PI);
-//	apparently val < 0
-	if (val > - 2 * M_PI)
-	   return val + 2 * M_PI;
-	return 2 * M_PI - fmod (- val, 2 * M_PI);
-}
-
 
 // Common
 

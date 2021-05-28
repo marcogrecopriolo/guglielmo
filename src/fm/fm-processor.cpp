@@ -34,7 +34,7 @@
 #include	"device-handler.h"
 #include	"newconverter.h"
 
-#define	AUDIO_FREQ_DEV_PROPORTION 0.85f
+#define	AUDIO_MAX_PEAK		2.0
 #define	PILOT_FREQUENCY		19000
 #define PILOT_WIDTH             500
 #define PILOT_MIN_THRESHOLD	6.0
@@ -56,7 +56,6 @@
 #define	RDS_DECIMATOR		4
 #define SIGNAL_SIZE		1024
 
-//
 //	Note that no decimation done as yet: the samplestream is still
 //	full speed
 	fmProcessor::fmProcessor (deviceHandler		*vi,
@@ -65,18 +64,15 @@
 	                          int32_t		fmRate,
 	                          int32_t		workingRate,
 	                          int32_t		audioRate,
-	                          int16_t		filterDepth,
-	                          int16_t		thresHold) {
+	                          int16_t		threshold) {
 	running				= false;
-	this	-> myRig		= vi;
-	this	-> myRadioInterface	= RI;
-	this	-> inputRate		= inputRate;
+	this	-> device		= vi;
+	this	-> radioInterface	= RI;
 	this	-> fmRate		= fmRate;
 	this	-> decimatingScale	= inputRate / fmRate;
 	this	-> workingRate		= workingRate;
 	this	-> audioRate		= audioRate;
-	this	-> filterDepth		= filterDepth;
-	this	-> thresHold		= thresHold;
+	this	-> threshold		= threshold;
 	this	-> rdsModus		= rdsDecoder::NO_RDS;
 	this	-> rdsDemod		= FM_RDS_AUTO;
 	this	-> squelchOn		= false;
@@ -85,46 +81,38 @@
 	Lgain				= 20;
 	Rgain				= 20;
 
-	myRdsDecoder			= NULL;
+	rdsDataDecoder			= NULL;
 
-	this	-> localOscillator	= new Oscillator (inputRate);
 	this	-> fastTrigTabs		= new trigTabs (fmRate);
-	this	-> lo_frequency		= 0;
 	this	-> fmBandwidth		= 0.95 * fmRate;
 	this	-> fmFilterDegree	= 21;
 	this	-> fmFilter		= new LowPassFIR (this -> fmFilterDegree,
 	                                                  0.95 * fmRate / 2,
 	                                                  fmRate);
 	this	-> newFilter		= false;
-/*
- *	default values, will be set through the user interface
- *	to their appropriate values
- */
+
+//	default values, will be set through the user interface
+//	to their appropriate values
 	this	-> fmModus		= FM_STEREO;
 	this	-> selector		= S_STEREO;
-	this	-> balance		= 0;
-	this	-> leftChannel		= - (balance - 50.0) / 100.0;
-	this	-> rightChannel		= (balance + 50.0) / 100.0;
-	this	-> Volume		= 40.0;
-	this	-> inputMode		= IandQ;
+	this	-> leftChannel		= - (- 50.0) / 100.0;
+	this	-> rightChannel		= (+ 50.0) / 100.0;
+	this	-> volume		= 40.0;
 	this	-> audioDecimator	=
 	                         new newConverter (fmRate,
 	                                           workingRate,
 	                                           workingRate / 200);
 	this	-> audioOut		=	
 	                         new DSPCOMPLEX [audioDecimator -> getOutputsize ()];
-/*
- *	averagePeakLevel and audioGain are set
- *	prior to calling the processFM method
- */
+
+//	averagePeakLevel and audioGain are set
+//	prior to calling the processFM method
 	this	-> peakLevel		= -100;
 	this	-> peakLevelcnt		= 0;
-	this	-> max_freq_deviation	= 0.95 * (0.5 * fmRate);
-	this	-> norm_freq_deviation	= 0.6 * max_freq_deviation;
 	this	-> audioGain		= 0;
 	this	-> audioGainAverage	= 0;
 	this	-> audioGainCnt		= 0;
-//
+
 //	Since data is coming with a pretty high rate, we need to filter
 //	and decimate in an efficient way. We have an optimized
 //	decimating filter (optimized or not, it takes quite some
@@ -140,24 +128,23 @@
 	pilotBandFilter		-> setBand (PILOT_FREQUENCY - PILOT_WIDTH,
 		                            PILOT_FREQUENCY + PILOT_WIDTH,
 		                            fmRate);
-	pilotRecover		= new pilotRecovery (fmRate,
-	                                             OMEGA_PILOT,
-	                                             25 * OMEGA_DEMOD,
-	                                             fastTrigTabs);
+	pilotPllFilter		= new pilotPll (OMEGA_PILOT,
+	                                        25 * OMEGA_DEMOD,
+	                                        fastTrigTabs);
 	pilotDelay		= (FFT_SIZE - PILOTFILTER_SIZE) * OMEGA_PILOT;
 
 	rdsLowPassFilter	= new fftFilter (FFT_SIZE, RDSLOWPASS_SIZE);
 	rdsLowPassFilter	-> setLowPass (RDS_LP_WIDTH, fmRate);
-//
+
 //	the constant K_FM is still subject to many questions
 	DSPFLOAT	F_G	= 0.65 * fmRate / 2; // highest freq in message
 	DSPFLOAT	Delta_F	= 0.95 * fmRate / 2;	//
 	DSPFLOAT	B_FM	= 2 * (Delta_F + F_G);
 	K_FM			= B_FM * M_PI / F_G;
-	TheDemodulator		= new fm_Demodulator (fmRate,
+	fmDemodulator		= new fm_Demodulator (fmRate,
 	                                              fastTrigTabs, K_FM);
 	fmAudioFilter		= NULL;
-//
+
 //	In the case of mono we do not assume a pilot
 //	to be available. We borrow the approach from CuteSDR
 	rdsBandFilter		= new fftFilter (FFT_SIZE,
@@ -168,7 +155,7 @@
 	rdsHilbertFilter	= new HilbertFilter (HILBERT_SIZE,
 						     (DSPFLOAT)RDS_FREQUENCY / fmRate,
 	                                             fmRate);
-	rds_plldecoder		= new pll (fmRate,
+	rdsPllDecoder		= new pll (fmRate,
 	                                    RDS_FREQUENCY,
 	                                    RDS_FREQUENCY - 50,
 	                                    RDS_FREQUENCY + 50,
@@ -181,28 +168,28 @@
 	alpha			= 1.0 / (fmRate / (1000000.0 / 50.0 + 1));
 
 	connect (this, SIGNAL (showStrength (float)),
-	         myRadioInterface, SLOT (showStrength (float)));
+	         radioInterface, SLOT (showStrength (float)));
 	connect (this, SIGNAL (showSoundMode (bool)),
-	         myRadioInterface, SLOT (showSoundMode (bool)));
+	         radioInterface, SLOT (showSoundMode (bool)));
 	connect (this, SIGNAL (scanresult (void)),
-	         myRadioInterface, SLOT (scanDone (void)));
+	         radioInterface, SLOT (scanDone (void)));
 	squelchValue		= 0;
-	old_squelchValue	= 0;
+	oldSquelchValue		= 0;
 
-	theConverter		= NULL;
+	audioConverter		= NULL;
 	if (audioRate != workingRate) 
-	   theConverter	= new newConverter (workingRate, audioRate,
+	   audioConverter	= new newConverter (workingRate, audioRate,
 	                                    workingRate / 20);
-	myCount			= 0;
+	signalCount		= 0;
 	stereoCount		= 0;
 }
 
 	fmProcessor::~fmProcessor (void) {
 	stop	();
 
-//	delete	TheDemodulator;
-//	delete	rds_plldecoder;
-//	delete	pilotRecover;
+//	delete	fmDemodulator;
+//	delete	rdsPllDecoder;
+//	delete	pilotPllFilter;
 //	delete	rdsHilbertFilter;
 //	delete	rdsBandFilter;
 //	delete	pilotBandFilter;
@@ -220,20 +207,18 @@ void	fmProcessor::stop	(void) {
 	}
 }
 
-void	fmProcessor::setSink	(audioBase *mySink) {
-	this	-> theSink		= mySink;
+void	fmProcessor::setSink	(audioBase *audioSink) {
+	this	-> audioSink		= audioSink;
 }
 
-void	fmProcessor::set_squelchValue	(int16_t n) {
+void	fmProcessor::setSquelchValue	(int16_t n) {
 	squelchValue	= n;
 }
 
-const char  *fmProcessor::nameofDecoder	(void) {
-//	if (running)
-	   return TheDemodulator -> nameofDecoder ();
-	return " ";
+void	fmProcessor::setSquelchMode (bool b) {
+	squelchOn	= b;
 }
-//
+
 //	changing a filter is in two steps: here we set a marker,
 //	but the actual filter is created in the mainloop of
 //	the processor
@@ -253,7 +238,7 @@ void	fmProcessor::setfmMode (uint8_t m) {
 
 void	fmProcessor::setFMdecoder (int8_t d) {
 	if (running)
-	   TheDemodulator	-> setDecoder (d);
+	   fmDemodulator	-> setDecoder (d);
 }
 
 void	fmProcessor::setSoundMode (uint8_t selector) {
@@ -261,7 +246,6 @@ void	fmProcessor::setSoundMode (uint8_t selector) {
 }
 
 void	fmProcessor::setSoundBalance (int16_t balance) {
-	this	-> balance = balance;
 	leftChannel	= - (balance - 50.0) / 100.0;
 	rightChannel	= (balance + 50.0) / 100.0;
 }
@@ -274,21 +258,21 @@ DSPFLOAT	Tau;
 	switch (v) {
 	   default:
 	      v	= 1;
+	      /* fallthrough */
 	   case	1:
 	   case 50:
 	   case 75:
-//	pass the Tau
 	      Tau	= 1000000.0 / v;
 	      alpha	= 1.0 / (DSPFLOAT (fmRate) / Tau + 1.0);
 	}
 }
 
 void	fmProcessor::setVolume (int16_t Vol) {
-	Volume = Vol;
+	volume = Vol;
 }
 
 DSPCOMPLEX	fmProcessor::audioGainCorrection (DSPCOMPLEX z) {
-	return cmul (z, audioGain * Volume);
+	return cmul (z, audioGain * volume);
 	return z;
 }
 
@@ -305,6 +289,24 @@ void	fmProcessor::stopScanning	(void) {
 	scanning	= false;
 }
 
+void	fmProcessor::setfmRdsSelector (rdsDecoder::RdsMode m) {
+	rdsModus	= m;
+}
+
+void	fmProcessor::setfmRdsDemod (RdsDemod m) {
+	rdsDemod	= m;
+	initRds		= true;
+}
+
+void	fmProcessor::resetRds	(void) {
+	initRds		= true;
+	if (rdsDataDecoder == NULL)
+	   return;
+	rdsPllDecoder	-> reset();
+	rdsDataDecoder	-> reset();
+}
+
+static
 DSPFLOAT	getLevel(DSPCOMPLEX *v, int min, int max) {
 DSPFLOAT sum = 0;
 int32_t	i;
@@ -314,10 +316,8 @@ int32_t	i;
 	return sum / (max-min);
 }
 
-//
 //	In this variant, we have a separate thread for the
 //	fm processing
-
 void	fmProcessor::run (void) {
 DSPCOMPLEX	result;
 DSPFLOAT	PhaseforRds;
@@ -350,13 +350,13 @@ int		driftCnt	= 0;
 bool		noPilot		= true;
 bool		pilot		= false;
 
-	myRdsDecoder		= new rdsDecoder (myRadioInterface,
+	rdsDataDecoder		= new rdsDecoder (radioInterface,
 	                                                  fmRate / RDS_DECIMATOR,
 	                                                  fastTrigTabs);
 	initRds = true;
 	running	= true;
 	while (running) {
-	   while (running && (myRig -> Samples () < bufferSize)) {
+	   while (running && (device -> Samples () < bufferSize)) {
 	      msleep (1);	// should be enough
 	   }
 	   
@@ -372,9 +372,9 @@ bool		pilot		= false;
 	   }
 	   newFilter = false;
 
-	   if (squelchValue != old_squelchValue) {
+	   if (squelchValue != oldSquelchValue) {
 	      mySquelch. setSquelchLevel (squelchValue);
-	      old_squelchValue = squelchValue;
+	      oldSquelchValue = squelchValue;
 	   }
 
 	   if (initRds) {
@@ -397,7 +397,7 @@ bool		pilot		= false;
 		initRds = false;
 	   }
 
-	   amount = myRig -> getSamples (dataBuffer, bufferSize);
+	   amount = device -> getSamples (dataBuffer, bufferSize);
 
 //	Here we really start
 
@@ -407,8 +407,7 @@ bool		pilot		= false;
 	      DSPCOMPLEX v = 
 	          DSPCOMPLEX (real (dataBuffer [i]) * Lgain,
 	                      imag (dataBuffer [i]) * Rgain);
-	      v	= v * localOscillator -> nextValue (lo_frequency);
-//
+
 //	first step: decimating (and filtering)
 	      if ((decimatingScale > 1) && !fmBandfilter -> Pass (v, &v))
 	         continue;
@@ -428,7 +427,7 @@ bool		pilot		= false;
 	            DSPFLOAT signal	= getLevel (signalBuffer, signalMinBin, signalMaxBin);
 	            DSPFLOAT Noise	= getLevel (signalBuffer, noiseMinBin, noiseMaxBin);
 	            if (get_db (signal, 256) - get_db (Noise, 256) > 
-	                               this -> thresHold) {
+	                               this -> threshold) {
 	               fprintf (stderr, "signal found %f %f\n",
 	                        get_db (signal, 256), get_db (Noise, 256));
 		       scanning = false;
@@ -448,11 +447,9 @@ bool		pilot		= false;
 	         peakLevel = abs (v);
 	      if (++peakLevelcnt >= fmRate / 4) {
 		 DSPFLOAT	tmpGain = 0;
-	         DSPFLOAT	ratio	= 
-	                          max_freq_deviation / norm_freq_deviation;
+
 	         if (peakLevel > 0)
-	            tmpGain	=
-	                  (ratio / peakLevel) / AUDIO_FREQ_DEV_PROPORTION;
+	            tmpGain	= AUDIO_MAX_PEAK / peakLevel;
 	         if (tmpGain <= 0.1)
 	            tmpGain = 0.1;
 
@@ -464,7 +461,6 @@ bool		pilot		= false;
 	         peakLevelcnt	= 0;
 	         peakLevel	= -100;
 	      }
-
 
 	      if (snrCnt > 0) {
 		 snrCnt--;
@@ -488,7 +484,7 @@ bool		pilot		= false;
 		 }
 	      }
 
-	      DSPFLOAT demod	= TheDemodulator  -> demodulate (v);
+	      DSPFLOAT demod	= fmDemodulator  -> demodulate (v);
 
 	      if ((fmModus == FM_STEREO)) {
 	         stereo (demod, &result, &PhaseforRds);
@@ -509,18 +505,18 @@ bool		pilot		= false;
 	               result = DSPCOMPLEX (0, - (imag (result) - real (result)));
 	               break;
 
-	            case S_LEFTplusRIGHT:
+	            case S_LEFT_PLUS_RIGHT:
 	               result = DSPCOMPLEX (real (result),  real (result));
 	               break;
 
-	            case S_LEFTminusRIGHT:
+	            case S_LEFT_MINUS_RIGHT:
 	               result = DSPCOMPLEX (imag (result), imag (result));
 	               break;
 	         }
 	      }
 	      else
 	         mono (demod, &result);
-//
+
 //	"result" now contains the audio sample, either stereo
 //	or mono
 	      result = audioGainCorrection (result);
@@ -546,7 +542,7 @@ bool		pilot		= false;
 		    DSPCOMPLEX rdsBase	= DSPCOMPLEX (demod, demod);
 		    rdsBase		= rdsBandFilter -> Pass (rdsBase);
 		    rdsBase		= rdsHilbertFilter -> Pass (rdsBase);
-		    DSPFLOAT rdsDelay   = rds_plldecoder	-> doPll (rdsBase);
+		    DSPFLOAT rdsDelay   = rdsPllDecoder	-> doPll (rdsBase);
 		    rdsData		= rdsLowPassFilter -> Pass (rdsDelay * demod);
 		 } else if (pilot) {
 		    DSPFLOAT mixerValue	= fastTrigTabs -> getSin (PhaseforRds);
@@ -556,13 +552,13 @@ bool		pilot		= false;
 		    rdsBase		= rdsBandFilter -> Pass (rdsBase);
 		    rdsBase		= rdsHilbertFilter -> Pass (rdsBase);
 		    DSPFLOAT PhaseforRds1	= toBaseRadians(PhaseforRds);
-		    DSPFLOAT rdsDelay	= rds_plldecoder	-> doPll (rdsBase, PhaseforRds1);
+		    DSPFLOAT rdsDelay	= rdsPllDecoder	-> doPll (rdsBase, PhaseforRds1);
 		    rdsData		= rdsLowPassFilter -> Pass (rdsDelay * demod);
 
 		    // if in auto mode, let the PLL phase settle, and check that it converges after a while
 		    // if it does, we can just move to the pilot phase, and skip the extra load
 		    if (driftCnt-- > 0 && driftCnt <= (RDS_SAMPLES - RDS_SKIP)) {
-			DSPFLOAT drift	= toBaseRadians(PhaseforRds1 - rds_plldecoder -> getNcoPhase());
+			DSPFLOAT drift	= toBaseRadians(PhaseforRds1 - rdsPllDecoder -> getNcoPhase());
 			totDrift += drift;
 			if (drift < minDrift)
 			    minDrift = drift;
@@ -584,13 +580,13 @@ bool		pilot		= false;
 	         if (++rdsCnt >= RDS_DECIMATOR) {
 		    DSPFLOAT mag;
 
-	            myRdsDecoder -> doDecode (rdsData, &mag, rdsModus);
+	            rdsDataDecoder -> doDecode (rdsData, &mag, rdsModus);
 	            rdsCnt = 0;
 	         }
 	      }
 
-	      if (++myCount > fmRate) {
-	         myCount = 0;
+	      if (++signalCount > fmRate) {
+	         signalCount = 0;
 
 		 // in reality the peak level is as good a signal measurement as getting the signal 
 		 // after a FFT on the samples buffer, much like we did for rds and noise
@@ -601,7 +597,6 @@ bool		pilot		= false;
 	   }
 	}
 }
-
 
 void	fmProcessor::mono (float	demod,
 	                   DSPCOMPLEX	*audioOut) {
@@ -627,11 +622,11 @@ DSPFLOAT	PhaseforLRDiff	= 0;
 
 	// get the phase for the "carrier to be inserted" right
 	pilot		= pilotBandFilter -> Pass (5 * pilot);
-	currentPilotPhase = pilotRecover -> getPilotPhase (5 * pilot);
+	currentPilotPhase = pilotPllFilter -> doPll (5 * pilot);
 
-	// Now we have the right - i.e. synchronized - signal to work with
+// 	Now we have the right - i.e. synchronized - signal to work with
 	PhaseforLRDiff	= 2 * (currentPilotPhase + pilotDelay);
-//
+
 //	Due to filtering the real amplitude of the LRDiff might have
 //	to be adjusted, we guess
 	LRDiff	= 2.0 * fastTrigTabs	-> getCos (PhaseforLRDiff) * LRDiff;
@@ -643,11 +638,10 @@ DSPFLOAT	PhaseforLRDiff	= 0;
 	LRDiff		= ykm1	= (LRDiff - ykm1) * alpha + ykm1;
         *audioOut		= DSPCOMPLEX (LRPlus, LRDiff);
 }
-//
+
 //	Since setLFcutoff is only called from within the "run"  function
 //	from where the filter is also called, it is safe to remove
 //	it here
-//	
 void	fmProcessor::setLFcutoff (int32_t Hz) {
 	if (fmAudioFilter != NULL)
 	   delete	fmAudioFilter;
@@ -659,44 +653,11 @@ void	fmProcessor::setLFcutoff (int32_t Hz) {
 void	fmProcessor::sendSampletoOutput (DSPCOMPLEX s) {
 
 	if (audioRate == workingRate)
-	   theSink	-> putSample (s);
+	   audioSink	-> putSample (s);
 	else {
-	   DSPCOMPLEX out [theConverter -> getOutputsize ()];
+	   DSPCOMPLEX out [audioConverter -> getOutputsize ()];
 	   int32_t amount;
-	   if (theConverter -> convert (s, out, &amount))
-	         theSink -> putSamples (out, amount);
+	   if (audioConverter -> convert (s, out, &amount))
+	         audioSink -> putSamples (out, amount);
 	}
-}
-
-void	fmProcessor::setfmRdsSelector (rdsDecoder::RdsMode m) {
-	rdsModus	= m;
-}
-
-void	fmProcessor::setfmRdsDemod (RdsDemod m) {
-	rdsDemod	= m;
-	initRds		= true;
-}
-
-void	fmProcessor::resetRds	(void) {
-	initRds		= true;
-	if (myRdsDecoder == NULL)
-	   return;
-	rds_plldecoder	-> reset();
-	myRdsDecoder	-> reset ();
-}
-
-void	fmProcessor::set_localOscillator (int32_t lo) {
-	lo_frequency = lo;
-}
-
-bool	fmProcessor::ok		(void) {
-	return running;
-}
-
-void	fmProcessor::set_squelchMode (bool b) {
-	squelchOn	= b;
-}
-
-void	fmProcessor::setInputMode	(uint8_t m) {
-	inputMode	= m;
 }

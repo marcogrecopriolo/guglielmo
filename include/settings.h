@@ -73,7 +73,6 @@
 
 // fm
 #define FM_WORKING_RATE		"workingRate"
-#define FM_FILTER_DEPTH		"filterDepth"
 #define FM_THRESHOLD		"threshold"
 #define FM_SCAN_INTERVAL	"scanInterval"
 
@@ -85,7 +84,6 @@
 #define FM_AUDIO_GAIN		"audioGain"
 
 #define FM_DEF_WORKING_RATE	"48000"
-#define FM_DEF_FILTER_DEPTH	"5"
 #define FM_DEF_THRESHOLD	"20"
 #define FM_DEF_SCAN_INTERVAL	"1000"
 
