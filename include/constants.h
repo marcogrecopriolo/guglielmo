@@ -214,10 +214,11 @@ using namespace std;
 #define	MINIMUM(x, y)	((x) < (y) ? x : y)
 #define	MAXIMUM(x, y)	((x) > (y) ? x : y)
 
-#define	PILOTFILTER_SIZE	31
-#define	RDSLOWPASS_SIZE		89
+#define	PILOT_FILTER_SIZE	31
+#define	RDS_LOWPASS_SIZE	89
 #define	HILBERT_SIZE		13
-#define	RDSBANDFILTER_SIZE	49
+#define AUDIO_FILTER_SIZE	11
+#define	RDS_BAND_FILTER_SIZE	49
 #define	FFT_SIZE		256
 #define	LEVEL_SIZE		512
 #define	LEVEL_FREQ		3

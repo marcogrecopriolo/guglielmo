@@ -204,7 +204,6 @@ RadioInterface::RadioInterface (QSettings *Si, QWidget	 *parent):
     squelchKnob->setValue(double(lastSquelch));
     if (FMprocessor != nullptr) {
 	FMprocessor->setSquelchValue(100-int(lastSquelch));
-	FMprocessor->setSquelchMode((lastSquelch > 0));
     }
 
     playing = false;
@@ -279,23 +278,20 @@ void RadioInterface::makeDABprocessor() {
     DABprocessor = new dabProcessor(this, inputDevice, &DABglobals);
 }
 
-//      For different input rates we select different rates for the
-//      fm decoding (the fmrate). Decimating from inputRate to fmRate
-//      is always integer. Decimating from fmRate to audioRate maybe
-//      fractional which costs a lot of power.
+// input decimating rate gets progressively higher with input rate to contain cost
 static
 int32_t mapRates(int32_t inputRate) {
-	return inputRate % 256000 == 0? 256000:
-	       inputRate % 192000 == 0? 192000:
-	       inputRate < 400000? inputRate:
-	       inputRate < 850000? inputRate/4:
-	       inputRate < 1300000? inputRate/6:
-	       inputRate < 1900000? inputRate/8:
-	       inputRate < 3000000? inputRate/10:
-	       inputRate < 4000000? inputRate/15:
-	       inputRate < 5000000? inputRate/20:
-	       inputRate < 6000000? inputRate/25:
-	       inputRate / 30;
+    return inputRate %256000 == 0? 256000:
+	   inputRate % 192000 == 0? 192000:
+	   inputRate < 400000? inputRate:
+	   inputRate < 850000? inputRate/4:
+	   inputRate < 1300000? inputRate/6:
+	   inputRate < 1900000? inputRate/8:
+	   inputRate < 3000000? inputRate/10:
+	   inputRate < 4000000? inputRate/15:
+	   inputRate < 5000000? inputRate/20:
+	   inputRate < 6000000? inputRate/25:
+	   inputRate/30;
 }
 
 void RadioInterface::makeFMprocessor() {
@@ -310,18 +306,15 @@ void RadioInterface::makeFMprocessor() {
     FMprocessor = new fmProcessor(inputDevice, this, inputRate, fmRate,
 				  workingRate, audioRate, FMthreshold);
     FMprocessor->setSink(soundOut);
-    FMprocessor->setfmRdsSelector(rdsDecoder::RDS1);
-    FMprocessor->setfmRdsDemod(fmProcessor::FM_RDS_AUTO);
-    FMprocessor->setfmMode(true);
-    FMprocessor->setSoundBalance(0);
-    FMprocessor->setSoundMode(fmProcessor::S_STEREO);
-    FMprocessor->setAttenuation(100, 100);
+    FMprocessor->setFMRDSSelector(rdsDecoder::RDS1);
+    FMprocessor->setFMRDSDemod(fmProcessor::FM_RDS_AUTO);
+    FMprocessor->setFMMode(true);
     FMprocessor->setBandwidth(FMfilter);
-    FMprocessor->setBandfilterDegree(FMdegree);
-    FMprocessor->setFMdecoder(fm_Demodulator::fm_demod(FMdecoder));
+    FMprocessor->setBandFilterDegree(FMdegree);
+    FMprocessor->setFMDecoder(fm_Demodulator::fm_demod(FMdecoder));
     FMprocessor->setDeemphasis(deemphasis);
-    FMprocessor->setLFcutoff(lowPassFilter);
-    FMprocessor->setVolume(FMaudioGain);
+    FMprocessor->setAudioBandwidth(lowPassFilter);
+    FMprocessor->setAudioGain(FMaudioGain);
 }
 
 void RadioInterface::terminateProcess() {
@@ -700,7 +693,6 @@ void RadioInterface::handleVolume(double vol) {
 
 void RadioInterface::handleSquelch(double val) {
     FMprocessor->setSquelchValue(100-int(val));
-    FMprocessor->setSquelchMode((val > 0));
 }
 
 //	preset selection
@@ -1038,10 +1030,10 @@ void RadioInterface::startFM(int32_t freq) {
 	return;
     ficBlocks = 0;
     ficSuccess = 0;
-    FMprocessor->resetRds();
-    FMprocessor->start();
-    soundOut->restart();
+    FMprocessor->resetRDS();
     inputDevice->restartReader(freq);
+    soundOut->restart();
+    FMprocessor->start();
     playing = true;
     recording = false;
     setPlaying();
@@ -1055,9 +1047,9 @@ void RadioInterface::stopFM() {
 	stopFMscan();
     ficBlocks = 0;
     ficSuccess = 0;
+    soundOut->stop();
     inputDevice->stopReader();
     FMprocessor->stop();
-    soundOut->stop();
     playing = false;
     scanning = false;
     stopRecording();

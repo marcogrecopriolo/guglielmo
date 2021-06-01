@@ -53,7 +53,8 @@ public:
 	bool	convert (std::complex<float> v,
 	                       std::complex<float> *out, int32_t *amount);
 
-int32_t	getOutputsize();
+	int32_t	getOutputsize();
+	void	reset (void);
 };
 
 #endif

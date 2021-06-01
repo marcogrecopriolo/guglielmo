@@ -80,4 +80,7 @@ int	res;
 int32_t		newConverter::getOutputsize() {
 	return outputLimit;
 }
+void		newConverter::reset() {
+	inp = 0;
+}
 

@@ -91,7 +91,7 @@
 #define FM_DEF_DEGREE		"15"
 #define FM_DEF_DECODER		"3"
 #define FM_DEF_DEEMPHASIS	"50"
-#define FM_DEF_LOW_PASS_FILTER	"-1"
+#define FM_DEF_LOW_PASS_FILTER	"0"
 #define FM_DEF_AUDIO_GAIN	"75"
 
 // sound
