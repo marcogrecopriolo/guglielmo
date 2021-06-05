@@ -81,7 +81,7 @@ HEADERS += ./include/radio.h \
 	   ./include/rds/rds-decoder.h \
 	   ./include/rds/rds-groupdecoder.h \
 	   ./include/rds/rds-group.h \
-	   ./include/rds/ebu-codetables.h \
+	   ./include/rds/codetables.h \
 	   ./include/ofdm/timesyncer.h \
 	   ./include/ofdm/sample-reader.h \
 	   ./include/ofdm/ofdm-decoder.h \

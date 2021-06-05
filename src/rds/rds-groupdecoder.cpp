@@ -34,21 +34,14 @@
  */
 
 #include	"rds-groupdecoder.h"
+#include	"codetables.h"
 #include	<cstring>
 #include	<stdio.h>
 #include	"radio.h"
 
-
-//	The alfabets
-#define	G0	0
-#define	G1	1
-#define	G2	2
-
 //	The bitmaps
 #define	ALL_NAME_SEGMENTS	((uint32_t) (1 << NUMBER_OF_NAME_SEGMENTS) - 1)
 #define	ALL_TEXT_SEGMENTS	((uint32_t) (1 << NUMBER_OF_TEXT_SEGMENTS) - 1)
-
-#include	"ebu-codetables.h"
 
 	rdsGroupDecoder::rdsGroupDecoder (RadioInterface *RI) {
 	MyRadioInterface	= RI;
@@ -64,6 +57,7 @@
 
 void	rdsGroupDecoder::reset (void) {
 	m_piCode = 0;
+	alfabet = tabG0;
 
 // Initialize Group 1 members
 	memset (stationLabel, ' ', STATION_LABEL_LENGTH);
@@ -250,16 +244,16 @@ QString outString	= QString ("");
 	for (i = 1; i < length; i ++) {
 	   uint8_t currentChar = v [i];
 	   if (alfabetSwitcher (previousChar, currentChar)) {
-	      theAlfabet = setAlfabetTo (previousChar, currentChar);
+	      alfabet = setAlfabetTo (previousChar, currentChar);
 	      previousChar = v [i];
 	      i++;
 	   }
 	   else {
-	      outString. append (mapEBUtoUnicode (theAlfabet, previousChar));
+	      outString. append (alfabet [previousChar]);
 	      previousChar = currentChar;
 	   }
 	}
-	outString. append (mapEBUtoUnicode (theAlfabet, previousChar));
+	outString. append (alfabet [previousChar]);
 	return outString;
 }
 
@@ -273,22 +267,15 @@ bool	rdsGroupDecoder::alfabetSwitcher (uint8_t c1, uint8_t c2) {
 //	Note that iff we ensure that the function is only
 //	called with alfabetSwitcher == true, we only have to
 //	look at the first character
-uint8_t	rdsGroupDecoder::setAlfabetTo (uint8_t c1, uint8_t c2) {
+uint16_t *rdsGroupDecoder::setAlfabetTo (uint8_t c1, uint8_t c2) {
 	fprintf (stderr, "setting alfabet to %x %x\n", c1, c2);
 	switch (c1) {
 	   default:		// should not happen
 	   case 0x0F:
-	      return G0;
+	      return tabG0;
 	   case 0x0E:
-	      return G1;
+	      return tabG1;
 	   case 0x1B:
-	      return G2;
+	      return tabG2;
 	}
-}
-
-uint8_t	rdsGroupDecoder::applyAlfabet (uint8_t alfabet, uint8_t c) {
-	if (alfabet == G0)
-	   return c;
-	else
-	   return c;
 }

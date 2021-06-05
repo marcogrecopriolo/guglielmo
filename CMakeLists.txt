@@ -181,7 +181,7 @@ add_definitions (-D__MSC_THREAD__)
              ./include/rds/rds-decoder.h
              ./include/rds/rds-groupdecoder.h
              ./include/rds/rds-group.h
-             ./include/rds/ebu-codetables.h
+             ./include/rds/codetables.h
              ./include/ofdm/sample-reader.h
 	     ./include/ofdm/phasereference.h
 	     ./include/ofdm/ofdm-decoder.h

@@ -1,5 +1,24 @@
-#
 /*
+ *    Copyright (C) 2021
+ *    Marco Greco <marcogrecopriolo@gmail.com>
+ *
+ *    This file is part of the guglielmo FM DAB tuner software package.
+ *
+ *    guglielmo is free software; you can redistribute it and/or modify
+ *    it under the terms of the GNU General Public License as published by
+ *    the Free Software Foundation, version 2 of the License.
+ *
+ *    guglielmo is distributed in the hope that it will be useful,
+ *    but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *    GNU General Public License for more details.
+ *
+ *    You should have received a copy of the GNU General Public License
+ *    along with guglielmo; if not, write to the Free Software
+ *    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ *
+ *    Taken from sdr-j-fm, with bug fixes and enhancements.
+
  *    Copyright (C) 2014
  *    Jan van Katwijk (J.vanKatwijk@gmail.com)
  *    Lazy Chair Programming
@@ -12,25 +31,6 @@
  *    Author(s)       : Michael Feilen (michael.feilen@tum.de)
  *    Initial release : 01.09.2009
  *    Last changed    : 09.03.2010
- * 
- *    This file is part of the SDR-J.
- *    Many of the ideas as implemented in SDR-J are derived from
- *    other work, made available through the GNU general Public License. 
- *    All copyrights of the original authors are recognized.
- *
- *    SDR-J is free software; you can redistribute it and/or modify
- *    it under the terms of the GNU General Public License as published by
- *    the Free Software Foundation; either version 2 of the License, or
- *    (at your option) any later version.
- *
- *    SDR-J is distributed in the hope that it will be useful,
- *    but WITHOUT ANY WARRANTY; without even the implied warranty of
- *    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *    GNU General Public License for more details.
- *
- *    You should have received a copy of the GNU General Public License
- *    along with SDR-J; if not, write to the Free Software
- *    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
 #ifndef	__RDS_GROUP_DECODER
@@ -76,10 +76,9 @@ private:
 	void		addtoRadioText		(uint16_t, uint16_t, uint16_t);
 	QString		prepareText		(char *, int16_t);
 	uint32_t	m_piCode;
-	uint8_t		theAlfabet;
+	uint16_t	*alfabet;
 	bool		alfabetSwitcher		(uint8_t, uint8_t);
-	uint8_t		setAlfabetTo		(uint8_t, uint8_t);
-	uint8_t		applyAlfabet 		(uint8_t, uint8_t);
+	uint16_t	*setAlfabetTo		(uint8_t, uint8_t);
 
 //	Group 1 members
 	char   stationLabel [STATION_LABEL_LENGTH];
