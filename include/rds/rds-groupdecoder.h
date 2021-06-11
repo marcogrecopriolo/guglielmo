@@ -76,9 +76,9 @@ private:
 	void		addtoRadioText		(uint16_t, uint16_t, uint16_t);
 	QString		prepareText		(char *, int16_t);
 	uint32_t	m_piCode;
-	uint16_t	*alfabet;
-	bool		alfabetSwitcher		(uint8_t, uint8_t);
-	uint16_t	*setAlfabetTo		(uint8_t, uint8_t);
+	uint16_t	*alphabet;
+	bool		alphabetSwitcher	(uint8_t, uint8_t);
+	uint16_t	*setAlphabetTo		(uint8_t, uint8_t);
 
 //	Group 1 members
 	char   stationLabel [STATION_LABEL_LENGTH];

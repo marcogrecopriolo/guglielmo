@@ -57,7 +57,7 @@
 
 void	rdsGroupDecoder::reset (void) {
 	m_piCode = 0;
-	alfabet = tabG0;
+	alphabet = tabG0;
 
 // Initialize Group 1 members
 	memset (stationLabel, ' ', STATION_LABEL_LENGTH);
@@ -235,7 +235,7 @@ void	rdsGroupDecoder::Handle_Time_and_Date (RDSGroup *grp) {
 	(void) grp;
 }
 //
-//	handle the text, taking into account different alfabets
+//	handle the text, taking into account different alphabets
 QString	rdsGroupDecoder::prepareText (char *v, int16_t length) {
 int16_t	i;
 uint8_t	previousChar	= v [0];
@@ -243,21 +243,21 @@ QString outString	= QString ("");
 
 	for (i = 1; i < length; i ++) {
 	   uint8_t currentChar = v [i];
-	   if (alfabetSwitcher (previousChar, currentChar)) {
-	      alfabet = setAlfabetTo (previousChar, currentChar);
+	   if (alphabetSwitcher (previousChar, currentChar)) {
+	      alphabet = setAlphabetTo (previousChar, currentChar);
 	      previousChar = v [i];
 	      i++;
 	   }
 	   else {
-	      outString. append (alfabet [previousChar]);
+	      outString. append (alphabet [previousChar]);
 	      previousChar = currentChar;
 	   }
 	}
-	outString. append (alfabet [previousChar]);
+	outString. append (alphabet [previousChar]);
 	return outString;
 }
 
-bool	rdsGroupDecoder::alfabetSwitcher (uint8_t c1, uint8_t c2) {
+bool	rdsGroupDecoder::alphabetSwitcher (uint8_t c1, uint8_t c2) {
 	if ((c1 == 0x0F) && (c2 == 0x0F))	return true;
 	if ((c1 == 0x0E) && (c2 == 0x0E))	return true;
 	if ((c1 == 0x1B) && (c2 == 0x6E))	return true;
@@ -265,10 +265,10 @@ bool	rdsGroupDecoder::alfabetSwitcher (uint8_t c1, uint8_t c2) {
 }
 //
 //	Note that iff we ensure that the function is only
-//	called with alfabetSwitcher == true, we only have to
+//	called with alphabetSwitcher == true, we only have to
 //	look at the first character
-uint16_t *rdsGroupDecoder::setAlfabetTo (uint8_t c1, uint8_t c2) {
-	fprintf (stderr, "setting alfabet to %x %x\n", c1, c2);
+uint16_t *rdsGroupDecoder::setAlphabetTo (uint8_t c1, uint8_t c2) {
+	fprintf (stderr, "setting alphabet to %x %x\n", c1, c2);
 	switch (c1) {
 	   default:		// should not happen
 	   case 0x0F:
