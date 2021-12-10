@@ -163,8 +163,9 @@ At this moment in time, the only device tested is the SDR RTL stick, and the onl
 The backends have wholesale lifted from Qt-dab and Sdr-j-fm by Jan van Katwijk and
 various other contributors.
 
-I have merely integrated the two processors, adapted the devices to work against the
-guglielmo interface, fixed several bugs and improved several things.
+I have written the interface, integrated the two processors, adapted the devices to work
+against the guglielmo interface and fixed several bugs and improved several things, most
+notably the RDS subsystem.
 
 The few icons not included in the Qt default style have been taken from freesvg.org.
 

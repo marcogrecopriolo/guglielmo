@@ -121,6 +121,22 @@
      <string>select the previous service or channel</string>
     </property>
    </widget>
+   <widget class="QLabel" name="slidesLabel">
+    <property name="enabled">
+     <bool>true</bool>
+    </property>
+    <property name="geometry">
+     <rect>
+      <x>30</x>
+      <y>60</y>
+      <width>180</width>
+      <height>180</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string/>
+    </property>
+   </widget>
   </widget>
   <widget class="QWidget" name="fmWidget" native="true">
    <property name="geometry">

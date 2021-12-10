@@ -39,6 +39,7 @@
 #define GEN_VOLUME		"volume"
 #define GEN_SQUELCH		"squelch"
 #define GEN_TUNER_MODE		"tunerMode"
+#define GEN_DAB_MODE		"dabMode"
 #define GEN_CHANNEL		"channel"
 #define GEN_SERVICE_NAME	"serviceName"
 #define GEN_FM_FREQUENCY	"FMfrequency"
@@ -47,9 +48,12 @@
 #define GEN_DEF_SQUELCH		"0"
 #define GEN_DEF_TUNER_MODE	"FM"
 #define GEN_DEF_CHANNEL		"12C"
+#define GEN_DEF_DAB_MODE	"stations"
 
 #define GEN_FM			"FM"
 #define GEN_DAB			"DAB"
+#define GEN_DAB_STATIONS	"stations"
+#define GEN_DAB_SLIDES		"slides"
 
 // ui
 #define UI_THEME		"theme"

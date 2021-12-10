@@ -109,6 +109,8 @@ private:
     Ui::settings settingsUi;
     QAction *aboutAction;
     QAction *settingsAction;
+    QAction *stationsAction;
+    QAction *slidesAction;
     QStandardItemModel ensembleModel;
     QString stereoStyle;
     QSettings *settings;
@@ -126,6 +128,7 @@ private:
     int lnaGain;
     bool agc;
     bool isFM;
+    bool isSlides;
     bool playing;
     bool recording;
     bool scanning;
@@ -148,6 +151,8 @@ private:
     void stopDAB();
     void startDABService(dabService *);
     void stopDABService();
+    void showSlides(QByteArray data, int contentType, QString pictureName, int dirs);
+    void showSlides(QPixmap p);
     void startFM(int32_t);
     void stopFM();
     void startFMscan(bool);
@@ -169,6 +174,7 @@ public slots:
     void showLabel(QString);
     void showText(QString);
     void showSoundMode(bool);
+    void handleMotObject(QByteArray, QString, int, bool);
     void changeInConfiguration();
     void newAudio(int, int);
     void scanDone();
@@ -200,6 +206,8 @@ private slots:
     void handleSquelch(double);
     void handleAboutAction();
     void handleSettingsAction();
+    void handleStationsAction();
+    void handleSlidesAction();
 
 // settings
     void settingsClose(void);

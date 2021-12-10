@@ -67,7 +67,7 @@ private:
 
 signals:
         void	the_picture	(QByteArray, int, QString);
-	void	handle_motObject (QByteArray, QString, int, bool);
+	void	handleMotObject (QByteArray, QString, int, bool);
 };
 
 #endif

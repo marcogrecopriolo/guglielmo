@@ -36,9 +36,9 @@ int32_t pointer = 7;
 uint16_t	rawContentType = 0;
 
 	this	-> dirElement	= dirElement;
-	connect (this, SIGNAL (handle_motObject (QByteArray, QString,
+	connect (this, SIGNAL (handleMotObject (QByteArray, QString,
 	                                         int, bool)),
-	         mr,   SLOT   (handle_motObject (QByteArray, QString,
+	         mr,   SLOT   (handleMotObject (QByteArray, QString,
 	                                         int, bool)));
 	this	-> transportId		= transportId;
 	this	-> numofSegments	= -1;
@@ -150,7 +150,7 @@ QByteArray result;
 	for (const auto &it : motMap)
 	   result. append (it. second);
 
-	handle_motObject (result, name, (int)contentType, dirElement);
+	handleMotObject (result, name, (int)contentType, dirElement);
 }
 
 int	motObject::get_headerSize() {

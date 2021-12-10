@@ -28,6 +28,7 @@
 #include "fm-processor.h"
 #include "fm-demodulator.h"
 #include "rds-decoder.h"
+#include "mot-content-types.h"
 #include <iostream>
 #include <numeric>
 #include <unistd.h>
@@ -92,8 +93,12 @@ RadioInterface::RadioInterface (QSettings *Si, QWidget	 *parent):
     signalStrength->setRangeFlags(QwtInterval::ExcludeMinimum);
     menuButton->setIcon(QIcon(":/menubutton.png"));
     QMenu *menu = new QMenu();
+    stationsAction = new QAction(QIcon(":/stations.png"), "stations");
+    slidesAction = new QAction(QIcon(":/slides.png"), "slides");
     aboutAction = new QAction(QIcon(":/copyright.png"), "about");
     settingsAction = new QAction(QIcon(":/settings.png"), "settings");
+    menu->addAction(stationsAction);
+    menu->addAction(slidesAction);
     menu->addAction(settingsAction);
     menu->addAction(aboutAction);
     menu->setLayoutDirection(Qt::LeftToRight);
@@ -210,6 +215,7 @@ RadioInterface::RadioInterface (QSettings *Si, QWidget	 *parent):
     recording = false;
     scanning = false;
     isFM = (settings->value(GEN_TUNER_MODE, GEN_DEF_TUNER_MODE).toString() == GEN_FM);
+    isSlides = (settings->value(GEN_DAB_MODE, GEN_DEF_DAB_MODE).toString() == GEN_DAB_SLIDES);
     if (isFM)
 	toFM();
     else
@@ -220,6 +226,10 @@ RadioInterface::RadioInterface (QSettings *Si, QWidget	 *parent):
 		this, SLOT(handleAboutAction()));
     connect(settingsAction, SIGNAL(triggered(bool)),
 		this, SLOT(handleSettingsAction()));
+    connect(stationsAction, SIGNAL(triggered(bool)),
+		this, SLOT(handleStationsAction()));
+    connect(slidesAction, SIGNAL(triggered(bool)),
+		this, SLOT(handleSlidesAction()));
     connect(presetSelector, SIGNAL(activated(const QString &)),
 		this, SLOT(handlePresetSelector (const QString &)));
     connect(ensembleDisplay, SIGNAL(clicked(QModelIndex)),
@@ -331,6 +341,7 @@ void RadioInterface::terminateProcess() {
     settings->setValue(GEN_CHANNEL, channelSelector->currentText());
     settings->setValue(GEN_FM_FREQUENCY, FMfreq);
     settings->setValue(GEN_TUNER_MODE, isFM? GEN_FM: GEN_DAB);
+    settings->setValue(GEN_DAB_MODE, isSlides? GEN_DAB_SLIDES: GEN_DAB_STATIONS);
     settings->setValue(GEN_VOLUME, int(volumeKnob->value()));
     settings->setValue(GEN_SQUELCH, int(squelchKnob->value()));
     settings->beginWriteArray(GROUP_PRESETS);
@@ -676,6 +687,59 @@ void RadioInterface::showLabel(const QString s) {
     serviceLabel->setText(s);
 }
 
+void RadioInterface::showSlides(QByteArray data, int contentType, QString pictureName, int dirs) {
+    const char *type;
+    QPixmap p;
+
+    if (pictureName == QString(""))
+	return;
+    switch (static_cast<MOTContentType>(contentType)) {
+    case MOTCTImageGIF:
+	type = "GIF";
+	break;
+    case MOTCTImageJFIF:
+	type = "JPG";
+	break;
+    case MOTCTImageBMP:
+	type = "BMP";
+	break;
+    case MOTCTImagePNG:
+	type = "PNG";
+	break;
+    default:
+	return;
+    }
+    if (dirs != 0)
+	return;
+
+    p.loadFromData(data, type);
+    showSlides(p);
+}
+
+void RadioInterface::showSlides(QPixmap p) {
+    int h = slidesLabel->height();
+    int w = slidesLabel->width();
+
+    slidesLabel->setPixmap(p.scaled(w, h, Qt::KeepAspectRatio));
+    if (isSlides)
+	slidesLabel->show();
+}
+
+void RadioInterface::handleMotObject (QByteArray result,
+                                          QString name,
+                                          int contentType, bool dirElement) {
+
+    // currently we only handle images
+    switch (getContentBaseType ((MOTContentType)contentType)) {
+    case MOTBaseTypeImage:
+	if (dirElement == 0)
+	     showSlides(result, contentType, name, dirElement);
+	break;
+    default:
+	break;
+    }
+}
+
 // 	close button
 void RadioInterface::closeEvent(QCloseEvent *event) {
     if (yesNo(this)) {
@@ -863,16 +927,35 @@ void RadioInterface::handleSelectService(QModelIndex ind) {
     }
 }
 
+void RadioInterface::handleStationsAction() {
+	isSlides = false;
+	slidesAction->setVisible(true);
+	stationsAction->setVisible(false);
+	slidesLabel->setVisible(false);
+	ensembleDisplay->setVisible(true);
+}
+
+void RadioInterface::handleSlidesAction() {
+	isSlides = true;
+	slidesAction->setVisible(false);
+	stationsAction->setVisible(true);
+	slidesLabel->setVisible(true);
+	ensembleDisplay->setVisible(false);
+}
+
 //	DAB OPs
 
 void RadioInterface::startDABService(dabService *s) {
     QString serviceName = s->serviceName;
+    QPixmap p;
 
     if (playing && !isFM && currentService.valid) {
 	fprintf (stderr, "service %s is still valid\n",
 		currentService.serviceName.toLatin1().data());
 	stopDABService();
     }
+    p.load(":/empty.png");
+    showSlides(p);
 
     ficBlocks = 0;
     ficSuccess = 0;
@@ -912,6 +995,7 @@ void RadioInterface::startDAB(const QString &channel) {
 
     if (inputDevice == nullptr || DABprocessor == nullptr)
 	return;
+    slidesLabel->clear();
     inputDevice->restartReader(tunedFrequency);
     DABprocessor->start(tunedFrequency);
 }
@@ -937,6 +1021,7 @@ void RadioInterface::stopDAB() {
     serviceList.clear();
     ensembleModel.clear();
     ensembleDisplay->setModel(&ensembleModel);
+    ensembleId->clear();
     cleanScreen();
 }
 
@@ -1250,6 +1335,10 @@ void RadioInterface::toDAB() {
 		this, SLOT(handleDeleteDABPreset(void)));
     FMButton->setChecked(false);
     DABButton->setChecked(true);
+    if (isSlides) 
+	handleSlidesAction();
+    else
+	handleStationsAction();
 }
 
 void RadioInterface::handleFMButton() {
@@ -1284,8 +1373,10 @@ void RadioInterface::toFM() {
 
 void RadioInterface::cleanScreen() {
     serviceLabel->clear();
-    ensembleId->clear();
+    if (isFM)
+	ensembleId->clear();
     dynamicLabel->clear();
+    slidesLabel->clear();
     presetSelector->setCurrentIndex(0);
     stereoLabel->setStyleSheet(stereoStyle);
     stereoLabel->clear();
