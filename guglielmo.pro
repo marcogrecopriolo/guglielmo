@@ -1,6 +1,6 @@
 TEMPLATE	= app
 objectName      = guglielmo
-objectVersion	= 0.1
+objectVersion	= 0.3
 currDate	= $$system(date "+\"%Y-%m-%d %H:%M:%S %z\"")
 os		= $$system(uname)
 orgName		= SQSL
