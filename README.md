@@ -149,8 +149,9 @@ Currently supported devices are
 - RTLSDR
 - HACKRF
 - LIMESDR
+- PLUTO
 
-The binary supplied with each version supports all available devices.
+The binary supplied with each version supports all available devices except for PLUTO.
 
 At this moment in time, the only device tested is the SDR RTL stick, and the only build linux.
 

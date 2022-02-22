@@ -28,6 +28,8 @@
 #define MAX_GAIN	59
 
 static	bool	debugFlag	= true;
+// #define USE_NETWORK
+#define HOST "127.0.0.1"
 
 /* static scratch mem for strings */
 static char tmpstr[64];
@@ -113,6 +115,7 @@ struct iio_channel *chn		= nullptr;
 	   ctx = iio_create_local_context ();
 	}
 
+#ifdef USE_NETWORK
 	if (ctx == nullptr) {
 	   if (debugFlag)
 	      fprintf (stderr, "creating local context failed\n");
@@ -122,8 +125,9 @@ struct iio_channel *chn		= nullptr;
 	if (ctx == nullptr) {
 	   if (debugFlag)
 	      fprintf (stderr, "creating network context with pluto.local failed\n");
-	   ctx = iio_create_network_context ("192.168.2.1");
+	   ctx = iio_create_network_context (HOST);
 	}
+#endif
 
 	if (ctx == nullptr) {
 	   fprintf (stderr, "No pluto found, fatal\n");
