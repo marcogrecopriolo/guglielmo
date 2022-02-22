@@ -145,6 +145,7 @@ Currently supported devices are
 
 - AIRSPY
 - SDRPLAY
+- SDRPLAY V3
 - RTLSDR
 - HACKRF
 - LIMESDR
@@ -168,7 +169,7 @@ various other contributors.
 
 I have written the interface, integrated the two processors, adapted the devices to work
 against the guglielmo interface and fixed several bugs and improved several things, most
-notably the RDS subsystem.
+notably the FM and RDS subsystem.
 
 The few icons not included in the Qt default style have been taken from freesvg.org.
 

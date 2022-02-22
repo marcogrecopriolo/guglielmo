@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.12)
 cmake_policy(SET CMP0048 NEW)
-project(guglielmo VERSION 0.3)
+project(guglielmo VERSION 0.4)
 set (BINARY_TARGET ${PROJECT_NAME})
 set (orgName SQSL)
 set (orgDomain sqsl.org)
@@ -56,6 +56,11 @@ if(DEFINED SDRPLAY)
 	set(deviceChosen true)
 endif ()
 
+if(DEFINED SDRPLAY_V3)
+	set(SDRPLAY_V3 true)
+	set(deviceChosen true)
+endif ()
+
 if(DEFINED RTLSDR)
 	set(RTLSDR true)
 	set(deviceChosen true)
@@ -75,6 +80,7 @@ endif ()
 if (NOT deviceChosen)
 	set(AIRSPY true)
 	set(SDRPLAY true)
+	set(SDRPLAY_V3 true)
 	set(RTLSDR true)
 	set(HACKRF true)
 	set(LIMESDR true)
@@ -473,6 +479,32 @@ add_definitions (-D__MSC_THREAD__)
 
 	 add_definitions (-DHAVE_SDRPLAY)
 	endif (SDRPLAY)
+
+	if (SDRPLAY_V3)
+	   set (${PROJECT_NAME}_MOCS
+	        ${${PROJECT_NAME}_MOCS}
+	        ./devices/sdrplay-handler-v3/sdrplay-handler-v3.h
+	        ./devices/sdrplay-handler-v3/sdrplay-commands.h
+	        ./devices/sdrplay-handler-v3/include/sdrplay_api.h
+	   )
+
+	   include_directories (
+	     ./devices/sdrplay-handler-v3
+	     ./devices/sdrplay-handler-v3/include
+	   )
+
+	   set ($(PROJECT_NAME)_HDRS
+	        ${${PROJECT_NAME}_HDRS}
+	        ./devices/sdrplay-handler-v3/sdrplay-handler-v3.h
+           )
+
+	   set (${PROJECT_NAME}_SRCS
+	        ${${PROJECT_NAME}_SRCS}
+	        ./devices/sdrplay-handler-v3/sdrplay-handler-v3.cpp
+	   )
+
+	 add_definitions (-DHAVE_SDRPLAY_V3)
+	endif (SDRPLAY_V3)
 
 	if (AIRSPY)
 #           find_package(LibAIRSPY)

@@ -43,6 +43,9 @@
 #ifdef	HAVE_SDRPLAY
 #include "sdrplay-handler.h"
 #endif
+#ifdef	HAVE_SDRPLAY_V3
+#include "sdrplay-handler-v3.h"
+#endif
 #ifdef	HAVE_AIRSPY
 #include "airspy-handler.h"
 #endif
@@ -374,6 +377,14 @@ void RadioInterface::findDevices() {
     try {
 	    discoveredDevice.device = new sdrplayHandler();
 	    discoveredDevice.deviceName = "Sdrplay";
+	    discoveredDevice.controls = AGC|IF_GAIN|LNA_GAIN;
+	    deviceList.push_back(discoveredDevice);
+    } catch (int e) {}
+#endif
+#ifdef	HAVE_SDRPLAY_V3
+    try {
+	    discoveredDevice.device = new sdrplayHandler_v3();
+	    discoveredDevice.deviceName = "Sdrplay V3";
 	    discoveredDevice.controls = AGC|IF_GAIN|LNA_GAIN;
 	    deviceList.push_back(discoveredDevice);
     } catch (int e) {}

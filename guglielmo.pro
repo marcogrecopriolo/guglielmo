@@ -1,6 +1,6 @@
 TEMPLATE	= app
 objectName      = guglielmo
-objectVersion	= 0.3
+objectVersion	= 0.4
 currDate	= $$system(date "+\"%Y-%m-%d %H:%M:%S %z\"")
 os		= $$system(uname)
 orgName		= SQSL
@@ -244,6 +244,7 @@ LIBS		+= -lqwt-qt5
 # (you obviously have libraries installed for the selected ones)
 CONFIG		+= rtlsdr
 CONFIG		+= sdrplay
+CONFIG		+= sdrplay-v3
 CONFIG		+= airspy
 CONFIG		+= hackrf
 CONFIG		+= lime
@@ -361,6 +362,15 @@ sdrplay {
         INCLUDEPATH     += ./devices/sdrplay-handler
         HEADERS         += ./devices/sdrplay-handler/sdrplay-handler.h
         SOURCES         += ./devices/sdrplay-handler/sdrplay-handler.cpp
+}
+sdrplay-v3 {
+        DEFINES         += HAVE_SDRPLAY_V3
+        DEPENDPATH      += ./devices/sdrplay-handler-v3
+        INCLUDEPATH     += ./devices/sdrplay-handler-v3 \
+			   ./devices/sdrplay-handler-v3/include
+        HEADERS         += ./devices/sdrplay-handler-v3/sdrplay-handler-v3.h \
+			   ./devices/sdrplay-handler-v3/sdrplay-commands.h
+        SOURCES         += ./devices/sdrplay-handler-v3/sdrplay-handler-v3.cpp
 }
 #
 # airspy support

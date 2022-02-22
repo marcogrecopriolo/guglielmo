@@ -23,19 +23,6 @@
 #include	"sdrplay-handler.h"
 #include	"sdrplayselect.h"
 
-//static
-//int     RSP1_Table [] = {0, 24, 19, 43};
-////
-//static
-//int     RSP1A_Table [] = {0, 6, 12, 18, 20, 26, 32, 38, 57, 62};
-////
-//static
-//int     RSP2_Table [] = {0, 10, 15, 21, 24, 34, 39, 45, 64};
-////
-//static
-//int     RSPduo_Table [] = {0, 6, 12, 18, 20, 26, 32, 38, 57, 62};
-
-
 #define MIN_GAIN	20
 #define MAX_GAIN	59
 
