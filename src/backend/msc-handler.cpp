@@ -103,6 +103,10 @@ void	mscHandler::processBlock_0 (std::complex<float> *b) {
 
 #ifdef	__MSC_THREAD__
 void	mscHandler::process_Msc	(std::complex<float> *b, int blkno) {
+
+	// guard against bad blocks
+	if (blkno < 0 || blkno >= nrBlock)
+		return;
 	bufferSpace. acquire (1);
         memcpy (command [blkno]. data(), b,
 	            params. get_T_u() * sizeof (std::complex<float>));
