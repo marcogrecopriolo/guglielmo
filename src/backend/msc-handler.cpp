@@ -105,7 +105,7 @@ void	mscHandler::processBlock_0 (std::complex<float> *b) {
 void	mscHandler::process_Msc	(std::complex<float> *b, int blkno) {
 
 	// guard against bad blocks
-	if (blkno < 0 || blkno >= nrBlock)
+	if (blkno < 0 || blkno >= nrBlocks)
 		return;
 	bufferSpace. acquire (1);
         memcpy (command [blkno]. data(), b,
