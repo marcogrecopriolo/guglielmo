@@ -457,7 +457,6 @@ add_definitions (-D__MSC_THREAD__)
 	   set (${PROJECT_NAME}_MOCS
 	        ${${PROJECT_NAME}_MOCS}
 	        ./devices/sdrplay-handler/sdrplay-handler.h
-	        ./devices/sdrplay-handler/sdrplayselect.h
 	   )
 
 	   include_directories (
@@ -467,14 +466,12 @@ add_definitions (-D__MSC_THREAD__)
 	   set ($(PROJECT_NAME)_HDRS
 	        ${${PROJECT_NAME}_HDRS}
 	        ./devices/sdrplay-handler/sdrplay-handler.h
-	        ./devices/sdrplay-handler/sdrplayselect.h
 	        ./devices/sdrplay-handler/mirsdrapi-rsp.h
            )
 
 	   set (${PROJECT_NAME}_SRCS
 	        ${${PROJECT_NAME}_SRCS}
 	        ./devices/sdrplay-handler/sdrplay-handler.cpp
-	        ./devices/sdrplay-handler/sdrplayselect.cpp
 	   )
 
 	 add_definitions (-DHAVE_SDRPLAY)

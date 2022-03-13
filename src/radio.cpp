@@ -372,22 +372,26 @@ void RadioInterface::terminateProcess() {
 
 void RadioInterface::findDevices() {
     device discoveredDevice;
+    bool foundV3 = false;
 
-#ifdef	HAVE_SDRPLAY
-    try {
-	    discoveredDevice.device = new sdrplayHandler();
-	    discoveredDevice.deviceName = "Sdrplay";
-	    discoveredDevice.controls = AGC|IF_GAIN|LNA_GAIN;
-	    deviceList.push_back(discoveredDevice);
-    } catch (int e) {}
-#endif
 #ifdef	HAVE_SDRPLAY_V3
     try {
 	    discoveredDevice.device = new sdrplayHandler_v3();
 	    discoveredDevice.deviceName = "Sdrplay V3";
 	    discoveredDevice.controls = AGC|IF_GAIN|LNA_GAIN;
 	    deviceList.push_back(discoveredDevice);
+	    foundV3 = true;
     } catch (int e) {}
+#endif
+#ifdef	HAVE_SDRPLAY
+    // rdsplay v2 is a fallback
+    if (!foundV3)
+	try {
+	        discoveredDevice.device = new sdrplayHandler();
+	        discoveredDevice.deviceName = "Sdrplay";
+	        discoveredDevice.controls = AGC|IF_GAIN|LNA_GAIN;
+	        deviceList.push_back(discoveredDevice);
+	} catch (int e) {}
 #endif
 #ifdef	HAVE_RTLSDR
 // no LNA
@@ -1378,6 +1382,8 @@ void RadioInterface::toFM() {
 		this, SLOT(handleDeleteFMPreset(void)));
     DABButton->setChecked(false);
     FMButton->setChecked(true);
+    slidesAction->setVisible(false);
+    stationsAction->setVisible(false);
 }
 
 // utility

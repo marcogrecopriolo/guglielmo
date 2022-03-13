@@ -54,6 +54,7 @@ public:
 	int32_t		Samples			(void);
 	void		resetBuffer		(void);
 	int16_t		bitDepth		(void);
+	int32_t         getRate                 (void);
 
         void            update_PowerOverload (
                                          sdrplay_api_EventParamsT *params);
@@ -103,6 +104,7 @@ private:
 	int			GRdB;
 	int16_t			nrBits;
 	int			lna_upperBound;
+	int32_t			inputRate;
 	float			apiVersion;
 	QString			serial;
 	bool			has_antennaSelect;

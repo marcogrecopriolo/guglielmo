@@ -20,11 +20,11 @@
  *    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#include	<QThread>
-#include	<QTime>
-#include	<QDate>
 #include	"sdrplay-handler-v3.h"
 #include	"sdrplay-commands.h"
+
+#define MIN_GAIN        20
+#define MAX_GAIN        39
 
 	sdrplayHandler_v3::sdrplayHandler_v3  ():
 	                                          _I_Buffer (4 * 1024 * 1024) {
@@ -35,6 +35,10 @@
 	vfoFrequency	= MHz (220);
 	failFlag	= false;
 	successFlag	= false;
+	GRdB		= 30;
+	lnaState	= 5;
+	agcMode		= true;
+	inputRate	= 2048000;
 	start ();
 	while (!failFlag && !successFlag)
 	   usleep (1000);
@@ -96,11 +100,16 @@ int16_t	sdrplayHandler_v3::bitDepth	() {
 	return nrBits;
 }
 
+int32_t sdrplayHandler_v3::getRate (void) {
+        return inputRate;
+}
+
 ///////////////////////////////////////////////////////////////////////////
 //	Handling the GUI
 //////////////////////////////////////////////////////////////////////
 
 void	sdrplayHandler_v3::setIfGain (int newGRdB) {
+	newGRdB = newGRdB * MAX_GAIN / 100 + MIN_GAIN;
 	GRdBRequest r (newGRdB);
 	if (!receiverRuns. load ())
            return;
@@ -109,11 +118,13 @@ void	sdrplayHandler_v3::setIfGain (int newGRdB) {
 	emit configurationChanged();
 }
 
-void	sdrplayHandler_v3::setLnaGain (int lnaState) {
-	lnaRequest r (lnaState);
+void	sdrplayHandler_v3::setLnaGain (int newLnaState) {
+	newLnaState = newLnaState * lna_upperBound / 100;
+	lnaRequest r (newLnaState);
 	if (!receiverRuns. load ())
            return;
         messageHandler (&r);
+	lnaState = newLnaState;
 	emit configurationChanged();
 }
 
@@ -310,13 +321,13 @@ uint32_t                ndev;
 	vfoFrequency	= Khz (220000);		// default
 //	set the parameter values
 	chParams	= deviceParams -> rxChannelA;
-	deviceParams	-> devParams -> fsFreq. fsHz	= 2048000.0;
+	deviceParams	-> devParams -> fsFreq. fsHz	= inputRate;
 	chParams	-> tunerParams. bwType = sdrplay_api_BW_1_536;
 	chParams	-> tunerParams. ifType = sdrplay_api_IF_Zero;
 //
 //	these will change:
 	chParams	-> tunerParams. rfFreq. rfHz    = 220000000.0;
-	chParams	-> tunerParams. gain.gRdB	= 30;
+	chParams	-> tunerParams. gain.gRdB	= GRdB;
 	chParams	-> tunerParams. gain.LNAstate	= lnaState;
 	chParams	-> ctrlParams.agc.enable = sdrplay_api_AGC_DISABLE;
 	if (agcMode) {
@@ -429,7 +440,6 @@ uint32_t                ndev;
 	         else
 	            chParams    -> ctrlParams. agc. enable =
                                              sdrplay_api_AGC_DISABLE;
-
 	         p -> result = true;
 	         err = sdrplay_api_Update (chosenDevice -> dev,
                                            chosenDevice -> tuner,

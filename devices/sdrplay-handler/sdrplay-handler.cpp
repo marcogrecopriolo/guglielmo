@@ -21,7 +21,6 @@
  */
 
 #include	"sdrplay-handler.h"
-#include	"sdrplayselect.h"
 
 #define MIN_GAIN	20
 #define MAX_GAIN	59

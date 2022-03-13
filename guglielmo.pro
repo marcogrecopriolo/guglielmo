@@ -248,7 +248,7 @@ CONFIG		+= sdrplay-v3
 CONFIG		+= airspy
 CONFIG		+= hackrf
 CONFIG		+= lime
-#CONFIG		+= pluto
+CONFIG		+= pluto
 
 CONFIG		+= faad
 #CONFIG		+= fdk-aac
