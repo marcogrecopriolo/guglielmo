@@ -38,7 +38,7 @@ mir_sdr_DeviceT devDesc [4];
 	this	-> inputRate		= Khz (2048);
 	libraryLoaded			= false;
 
-#ifdef	__MINGW32__
+#if IS_WINDOWS
 HKEY APIkey;
 wchar_t APIkeyValue [256];
 ULONG APIkeyValue_length = 255;
@@ -89,7 +89,7 @@ ULONG APIkeyValue_length = 255;
 
 	bool success = loadFunctions ();
 	if (!success) {
-#ifdef __MINGW32__
+#if IS_WINDOWS
 	   FreeLibrary (Handle);
 #else
 	   dlclose (Handle);
@@ -100,7 +100,7 @@ ULONG APIkeyValue_length = 255;
 	err		= my_mir_sdr_ApiVersion (&ver);
 	if (ver < 2.13) {
 	   fprintf (stderr, "please install mir_sdr library >= 2.13\n");
-#ifdef __MINGW32__
+#if IS_WINDOWS
 	   FreeLibrary (Handle);
 #else
 	   dlclose (Handle);
@@ -112,7 +112,7 @@ ULONG APIkeyValue_length = 255;
 	my_mir_sdr_GetDevices (devDesc, &numofDevs, uint32_t (4));
 	if (numofDevs == 0) {
 	   fprintf (stderr, "Sorry, no device found\n");
-#ifdef __MINGW32__
+#if IS_WINDOWS
 	   FreeLibrary (Handle);
 #else
 	   dlclose (Handle);
@@ -175,7 +175,7 @@ ULONG APIkeyValue_length = 255;
 	   return;
 	stopReader ();
 	
-#ifdef __MINGW32__
+#if IS_WINDOWS
 	FreeLibrary (Handle);
 #else
 	dlclose (Handle);

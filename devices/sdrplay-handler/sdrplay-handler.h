@@ -44,7 +44,7 @@ typedef	void	(*mir_sdr_GainChangeCallback_t)(uint32_t	gRdB,
 	                                        uint32_t	lnaGRdB,
 	                                        void		*cbContext);
 
-#ifdef __MINGW32__
+#if IS_WINDOWS
 #define	GETPROCADDRESS	GetProcAddress
 #else
 #define	GETPROCADDRESS	dlsym

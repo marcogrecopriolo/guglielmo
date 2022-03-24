@@ -153,15 +153,19 @@ Currently supported devices are
 
 The binary supplied with each version supports all available devices except for PLUTO.
 
-At this moment in time, the only device tested is the SDR RTL stick, and the only build linux.
+At this moment in time, the only devices tested are the SDR RTL stick and the SDRplay RSP1a,
+and the only build linux.
 
 ## TODO
 
 - integrate Qt audio with pulseaudio
-- debug support
+- debug verbosity (and logging in general)
 - MPRIS support
 - cleanup the source, remove objects that are not needed, consolidate buffer usage
 - make loading settings more resilient to duff values
+- selecting devices when multiple devices of the same type are available
+- improve on IF and LNA gain settings
+- Windows and Mac builds
 
 ## Acknowledgements, copyright, etc...
 

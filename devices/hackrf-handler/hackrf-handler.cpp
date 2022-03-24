@@ -35,7 +35,7 @@ int	res;
 	lnaGain			= 50;
 	this	-> inputRate		= Khz (2048);
 
-#ifdef  __MINGW32__
+#if IS_WINDOWS
         const char *libraryString = "libhackrf.dll";
         Handle          = LoadLibrary ((wchar_t *)L"libhackrf.dll");
 #else
@@ -50,7 +50,7 @@ int	res;
 
         libraryLoaded   = true;
         if (!load_hackrfFunctions ()) {
-#ifdef __MINGW32__
+#if IS_WINDOWS
            FreeLibrary (Handle);
 #else
            dlclose (Handle);

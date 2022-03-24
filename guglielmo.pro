@@ -265,13 +265,13 @@ CONFIG		+= PC
 win32 {
 
 #for 64 bit
-#	TARGET		= guglielmo-64-1.0
+#	TARGET		= guglielmo-64-$$objectVersion
 #	DEFINES		+= __BITS64__
 #	DESTDIR		= /usr/shared/sdr-j-development/w64-programs/windows-guglielmo64
 #	INCLUDEPATH	+= /usr/x64-w64-mingw32/sys-root/mingw/include
 #	LIBS		+= -L/usr/x64-w64-mingw32/sys-root/mingw/lib
 #for 32 bit
-	TARGET		= guglielmo-32-1.0
+	TARGET		= guglielmo-32-$$objectVersion
 	DESTDIR		= /usr/shared/w32-programs/windows-guglielmo32
 	INCLUDEPATH	+= /usr/i686-w64-mingw32/sys-root/mingw/include
 	LIBS		+= -L/usr/i686-w64-mingw32/sys-root/mingw/lib

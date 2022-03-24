@@ -30,7 +30,7 @@
 #include	"rtlsdr-handler.h"
 #include	"rtl-sdr.h"
 
-#ifdef	__MINGW32__
+#if IS_WINDOWS
 #define	GETPROCADDRESS	GetProcAddress
 #else
 #define	GETPROCADDRESS	dlsym
@@ -95,7 +95,7 @@ int	i, k;
 	vfoFrequency		= KHz (22000);	// just a dummy
 	gains			= NULL;
 
-#ifdef	__MINGW32__
+#if IS_WINDOWS
 	const char *libraryString = "rtlsdr.dll";
 	Handle		= LoadLibrary ((wchar_t *)L"rtlsdr.dll");
 #else
@@ -109,7 +109,7 @@ int	i, k;
 
 	libraryLoaded	= true;
 	if (!load_rtlFunctions ()) {
-#ifdef __MINGW32__
+#if IS_WINDOWS
 	   FreeLibrary (Handle);
 #else
 	   dlclose (Handle);
@@ -120,7 +120,7 @@ int	i, k;
 //	Ok, from here we have the library functions accessible
 	deviceCount 		= this -> rtlsdr_get_device_count ();
 	if (deviceCount == 0) {
-#ifdef __MINGW32__
+#if IS_WINDOWS
 	   FreeLibrary (Handle);
 #else
 	   dlclose (Handle);
@@ -132,7 +132,7 @@ int	i, k;
 	r			= this -> rtlsdr_open (&device, 0);
 	if (r < 0) {
 	   fprintf (stderr, "Opening rtlsdr device failed\n");
-#ifdef __MINGW32__
+#if IS_WINDOWS
 	   FreeLibrary (Handle);
 #else
 	   dlclose (Handle);
@@ -146,7 +146,7 @@ int	i, k;
 	if (r < 0) {
 	   fprintf (stderr, "Setting samplerate failed\n");
 	   rtlsdr_close (device);
-#ifdef __MINGW32__
+#if IS_WINDOWS
 	   FreeLibrary (Handle);
 #else
 	   dlclose (Handle);
@@ -179,7 +179,7 @@ int	i, k;
 	}
 	
 	if (!open) {	
-#ifdef __MINGW32__
+#if IS_WINDOWS
 	   FreeLibrary (Handle);
 #else
 	   dlclose (Handle);
@@ -191,7 +191,7 @@ int	i, k;
 	stopReader ();
 	
 	this -> rtlsdr_close (device);
-#ifdef __MINGW32__
+#if IS_WINDOWS
 	FreeLibrary (Handle);
 #else
 	dlclose (Handle);

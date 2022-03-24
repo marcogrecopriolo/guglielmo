@@ -15,7 +15,9 @@
  *	Lazy Chair Computing
  */
 
-#ifdef	__MINGW32__
+#include "constants.h"
+
+#if IS_WINDOWS
 #define	GETPROCADDRESS	GetProcAddress
 #else
 #define	GETPROCADDRESS	dlsym
@@ -43,7 +45,7 @@ uint32_t samplerateCount;
 	device			= 0;
 	serialNumber		= 0;
 	theBuffer		= NULL;
-#ifdef	__MINGW32__
+#if IS_WINDOWS
 	const char *libraryString = "airspy.dll";
 	Handle		= LoadLibrary ((wchar_t *)L"airspy.dll");
 #else
@@ -53,7 +55,7 @@ uint32_t samplerateCount;
 
 	if (Handle == NULL) {
 	   fprintf (stderr, "failed to open %s\n", libraryString);
-#ifndef	__MINGW32__
+#if !IS_WINDOWS
 	   fprintf (stderr, "Error = %s\n", dlerror ());
 #endif
 	   throw (20);
@@ -63,7 +65,7 @@ uint32_t samplerateCount;
 
 	if (!load_airspyFunctions ()) {
 	   fprintf (stderr, "problem in loading functions\n");
-#ifdef __MINGW32__
+#if IS_WINDOWS
 	   FreeLibrary (Handle);
 #else
 	   dlclose (Handle);
@@ -76,7 +78,7 @@ uint32_t samplerateCount;
 	if (result != AIRSPY_SUCCESS) {
 	   printf ("my_airspy_init () failed: %s (%d)\n",
 	             my_airspy_error_name((airspy_error)result), result);
-#ifdef __MINGW32__
+#if IS_WINDOWS
 	   FreeLibrary (Handle);
 #else
 	   dlclose (Handle);
@@ -88,7 +90,7 @@ uint32_t samplerateCount;
 	if (result != AIRSPY_SUCCESS) {
 	   printf ("my_airpsy_open () failed: %s (%d)\n",
 	             my_airspy_error_name ((airspy_error)result), result);
-#ifdef __MINGW32__
+#if IS_WINDOWS
 	   FreeLibrary (Handle);
 #else
 	   dlclose (Handle);
@@ -114,7 +116,7 @@ uint32_t samplerateCount;
 
 	if (selectedRate == 0) {
 	   fprintf (stderr, "Sorry. cannot help you\n");
-#ifdef __MINGW32__
+#if IS_WINDOWS
 	   FreeLibrary (Handle);
 #else
 	   dlclose (Handle);
@@ -128,7 +130,7 @@ uint32_t samplerateCount;
 	if (result != AIRSPY_SUCCESS) {
            printf("airspy_set_samplerate() failed: %s (%d)\n",
 	             my_airspy_error_name ((enum airspy_error)result), result);
-#ifdef __MINGW32__
+#if IS_WINDOWS
 	   FreeLibrary (Handle);
 #else
 	   dlclose (Handle);
@@ -185,7 +187,7 @@ uint32_t samplerateCount;
 	   return;	// nothing achieved earlier
 	}
 	my_airspy_exit ();
-#ifdef __MINGW32__
+#if IS_WINDOWS
 	FreeLibrary (Handle);
 #else
 	dlclose (Handle);

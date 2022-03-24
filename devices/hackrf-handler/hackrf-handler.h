@@ -33,7 +33,7 @@
 
 typedef int (*hackrf_samble_block_bc_fn)(hackrf_transfer *transfer);
 
-#ifdef __MINGW32__
+#if IS_WINDOWS
 #define GETPROCADDRESS  GetProcAddress
 #else
 #define GETPROCADDRESS  dlsym

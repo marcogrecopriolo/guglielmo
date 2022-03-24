@@ -33,7 +33,7 @@
 #include	<LimeSuite.h>
 #include	"device-handler.h"
 
-#ifdef __MINGW32__
+#if IS_WINDOWS
 #define GETPROCADDRESS  GetProcAddress
 #else
 #define GETPROCADDRESS  dlsym

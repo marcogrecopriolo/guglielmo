@@ -557,7 +557,7 @@ closeAPI:
 
 HINSTANCE	sdrplayHandler_v3::fetchLibrary () {
 HINSTANCE	Handle	= nullptr;
-#ifdef	__MINGW32__
+#if IS_WINDOWS
 HKEY APIkey;
 wchar_t APIkeyValue [256];
 ULONG APIkeyValue_length = 255;
@@ -604,7 +604,7 @@ ULONG APIkeyValue_length = 255;
 }
 
 void	sdrplayHandler_v3::releaseLibrary () {
-#ifdef __MINGW32__
+#if IS_WINDOWS
         FreeLibrary (Handle);
 #else
 	dlclose (Handle);

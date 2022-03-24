@@ -94,7 +94,11 @@ int main(int argc, char **argv) {
 	   exit(1);
 	}
 
+#if IS_WINDOWS
+    settings = new QSettings(configFile, QSettings::IniFormat);
+#else
     settings = new QSettings(configFile, QSettings::NativeFormat);
+#endif
 
 #if QT_VERSION >= 0x050600
     QGuiApplication::setAttribute(Qt::AA_EnableHighDpiScaling);

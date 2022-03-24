@@ -32,7 +32,7 @@ lms_info_str_t limedevices [10];
 	limeHandler::limeHandler ():
 	                             _I_Buffer (4 * 1024 * 1024) {
 
-#ifdef  __MINGW32__
+#if IS_WINDOWS
         const char *libraryString = "LimeSuite.dll";
         Handle          = LoadLibrary ((wchar_t *)L"LimeSuite.dll");
 #elif  __clang__
@@ -50,7 +50,7 @@ lms_info_str_t limedevices [10];
 
         libraryLoaded   = true;
 	if (!load_limeFunctions()) {
-#ifdef __MINGW32__
+#if IS_WINDOWS
            FreeLibrary (Handle);
 #else
            dlclose (Handle);

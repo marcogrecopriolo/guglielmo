@@ -22,11 +22,7 @@
 #include	"constants.h"
 #include	"ringbuffer.h"
 #include	"device-handler.h"
-#ifndef	__MINGW32__
 #include	"libairspy/airspy.h"
-#else
-#include	"libairspy/airspy.h"
-#endif
 
 class	airspyFilter;
 

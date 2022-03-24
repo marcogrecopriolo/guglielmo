@@ -91,9 +91,11 @@ if (DEFINED FDK_AAC)
 endif ()
 
 add_definitions (-DPRESET_NAME)
-add_definitions (-D__THREADED_BACKEND)	# uncomment for use for an RPI
-add_definitions (-D__MSC_THREAD__)
-#
+if(DEFINED RPI)
+	add_definitions (-D__THREADED_BACKEND)
+	add_definitions (-D__MSC_THREAD__)
+endif()
+
 ########################################################################
 
 	find_package (PkgConfig)

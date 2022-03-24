@@ -37,11 +37,13 @@
 #include	<complex>
 #include	<cstring>
 
+#define IS_WINDOWS (defined(__MINGW32__)||defined(__MSC_VER))
+
 #ifndef	__FREEBSD__
 //#include	<malloc.h>
 #endif
 
-#ifdef	__MINGW32__
+#if IS_WINDOWS
 //#include	"iostream.h"
 #include	"windows.h"
 #else
