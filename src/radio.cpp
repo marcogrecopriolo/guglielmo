@@ -372,9 +372,9 @@ void RadioInterface::terminateProcess() {
 
 void RadioInterface::findDevices() {
     device discoveredDevice;
-    bool foundV3 = false;
 
 #ifdef	HAVE_SDRPLAY_V3
+    bool foundV3 = false;
     try {
 	    discoveredDevice.device = new sdrplayHandler_v3();
 	    discoveredDevice.deviceName = "Sdrplay V3";
@@ -384,8 +384,11 @@ void RadioInterface::findDevices() {
     } catch (int e) {}
 #endif
 #ifdef	HAVE_SDRPLAY
+#ifdef HAVE_SDRPLAY_V3
+
     // rdsplay v2 is a fallback
     if (!foundV3)
+#endif
 	try {
 	        discoveredDevice.device = new sdrplayHandler();
 	        discoveredDevice.deviceName = "Sdrplay";

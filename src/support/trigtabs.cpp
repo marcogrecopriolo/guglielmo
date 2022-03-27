@@ -28,8 +28,9 @@
  *	http://www.java-gaming.org/index.php?topic=14647.0
  */
 
-#define	SIZE		8192
-#define	EZIS		(-SIZE)
+// SIZE conflicts with a mingw32 header file
+#define	TABSIZE		8192
+#define	NEGSIZE		(-TABSIZE)
 
 #include	"trigtabs.h"
 
@@ -55,16 +56,16 @@ trigTabs::trigTabs (int32_t rate) {
    this->C = rate/(2*M_PI);
    stretch = M_PI;
 
-    ATAN2_TABLE_PPY = new float[SIZE+1];
-    ATAN2_TABLE_PPX = new float[SIZE+1];
-    ATAN2_TABLE_PNY = new float[SIZE+1];
-    ATAN2_TABLE_PNX = new float[SIZE+1];
-    ATAN2_TABLE_NPY = new float[SIZE+1];
-    ATAN2_TABLE_NPX = new float[SIZE+1];
-    ATAN2_TABLE_NNY = new float[SIZE+1];
-    ATAN2_TABLE_NNX = new float[SIZE+1];
-    for (int i=0; i<=SIZE; i++) {
-	float f = (float) i/SIZE;
+    ATAN2_TABLE_PPY = new float[TABSIZE+1];
+    ATAN2_TABLE_PPX = new float[TABSIZE+1];
+    ATAN2_TABLE_PNY = new float[TABSIZE+1];
+    ATAN2_TABLE_PNX = new float[TABSIZE+1];
+    ATAN2_TABLE_NPY = new float[TABSIZE+1];
+    ATAN2_TABLE_NPX = new float[TABSIZE+1];
+    ATAN2_TABLE_NNY = new float[TABSIZE+1];
+    ATAN2_TABLE_NNX = new float[TABSIZE+1];
+    for (int i=0; i<=TABSIZE; i++) {
+	float f = (float) i/TABSIZE;
 
 	ATAN2_TABLE_PPY[i] = atan(f)*stretch/M_PI;
 	ATAN2_TABLE_PPX[i] = stretch*0.5f-ATAN2_TABLE_PPY[i];
@@ -129,27 +130,27 @@ DSPFLOAT trigTabs::atan2(float y, float x) {
     if (x>0) {
 	if (y>=0) {
 	    if (x>=y) 
-		return ATAN2_TABLE_PPY[(int)(SIZE*y/x+0.5)];
+		return ATAN2_TABLE_PPY[(int)(TABSIZE*y/x+0.5)];
 	    else
-		return ATAN2_TABLE_PPX[(int)(SIZE*x/y+0.5)];
+		return ATAN2_TABLE_PPX[(int)(TABSIZE*x/y+0.5)];
 	      
 	} else {
 	      if (x>=-y) 
-	         return ATAN2_TABLE_PNY[(int)(EZIS*y/x+0.5)];
+	         return ATAN2_TABLE_PNY[(int)(NEGSIZE*y/x+0.5)];
 	      else
-	         return ATAN2_TABLE_PNX[(int)(EZIS*x/y+0.5)];
+	         return ATAN2_TABLE_PNX[(int)(NEGSIZE*x/y+0.5)];
 	}
     } else {
 	if (y>=0) {
 	    if (-x>=y) 
-		return ATAN2_TABLE_NPY[(int)(EZIS*y/x+0.5)];
+		return ATAN2_TABLE_NPY[(int)(NEGSIZE*y/x+0.5)];
 	    else
-		return ATAN2_TABLE_NPX[(int)(EZIS*x/y+0.5)];
+		return ATAN2_TABLE_NPX[(int)(NEGSIZE*x/y+0.5)];
 	} else {
 	    if (x<=y)
-		return ATAN2_TABLE_NNY[(int)(SIZE*y/x+0.5)];
+		return ATAN2_TABLE_NNY[(int)(TABSIZE*y/x+0.5)];
 	    else
-		return ATAN2_TABLE_NNX[(int)(SIZE*x/y+0.5)];
+		return ATAN2_TABLE_NNX[(int)(TABSIZE*x/y+0.5)];
 	}
     }
 }

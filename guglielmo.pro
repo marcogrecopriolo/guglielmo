@@ -1,8 +1,7 @@
 TEMPLATE	= app
 objectName      = guglielmo
-objectVersion	= 0.4
-currDate	= $$system(date "+\"%Y-%m-%d %H:%M:%S %z\"")
 os		= $$system(uname)
+objectVersion	= 0.4
 orgName		= SQSL
 orgDomain	= sqsl.org
 TARGET		= $$objectName
@@ -14,10 +13,92 @@ QMAKE_CXXFLAGS	+= -std=c++11
 QMAKE_CFLAGS	+= -flto -ffast-math
 MAKE_CXXFLAGS	+= -flto -ffast-math
 QMAKE_CXXFLAGS  += -isystem $$[QT_INSTALL_HEADERS]
-RC_ICONS	= guglielmo.ico
+RC_ICONS	= icons/guglielmo.ico
 RESOURCES	+= guglielmo.qrc
+
 contains(os, Linux) {
 	DEFINES	+= CHOOSE_CONFIG=Linux
+}
+contains(os, MINGW32.*) {
+	CONFIG 		+= mingw32
+}
+
+win32 {
+	# powershell hangs on date, so make sure we use a proper shell
+	currDate	= $$system(sh -c date "+\"%Y-%m-%d %H:%M:%S %z\"")
+} else {
+	currDate	= $$system(date "+\"%Y-%m-%d %H:%M:%S %z\"")
+}
+
+#CONFIG	+= try-epg		# do not use
+
+unix {
+	DESTDIR		= ./linux-bin
+
+	INCLUDEPATH	+= /usr/local/include
+	INCLUDEPATH	+= /usr/include/qt5/qwt
+	LIBS		+= -lfftw3f  -lfftw3 -lusb-1.0 -ldl
+	LIBS		+= -lportaudio
+	LIBS		+= -lz
+	LIBS		+= -lsndfile
+	LIBS		+= -lsamplerate
+
+	# FIXME currently needs to be set by hand
+	LIBS		+= -lqwt-qt5
+
+	# comment or uncomment for the devices you want to have support for
+	# (you obviously have libraries installed for the selected ones)
+	CONFIG		+= rtlsdr
+	CONFIG		+= sdrplay
+	CONFIG		+= sdrplay-v3
+	CONFIG		+= airspy
+	CONFIG		+= hackrf
+	CONFIG		+= lime
+#	CONFIG		+= pluto
+
+	CONFIG		+= faad
+#	CONFIG		+= fdk-aac
+
+	CONFIG          += qt-audio
+
+	CONFIG		+= PC
+#	CONFIG		+= RPI
+}
+
+mingw32 {
+	DESTDIR		= ./windows-bin
+
+	INCLUDEPATH	+= /usr/local/include
+	LIBS		+= -L/usr/local/lib
+	LIBS		+= -lfftw3f -lfftw3
+	LIBS		+= -lportaudio
+	LIBS		+= -lsndfile
+	LIBS		+= -lsamplerate
+	LIBS		+= -lole32
+	LIBS		+= -lwinpthread
+	LIBS		+= -lwinmm
+	LIBS 		+= -lstdc++
+	LIBS		+= -lws2_32
+	LIBS		+= -lusb-1.0
+	LIBS		+= -lz
+	LIBS		+= -lqwt
+
+	# comment or uncomment for the devices you want to have support for
+	# (you obviously have libraries installed for the selected ones)
+	CONFIG		+= rtlsdr
+	CONFIG		+= sdrplay
+	CONFIG		+= sdrplay-v3
+#	CONFIG		+= airspy
+#	CONFIG		+= hackrf
+#	CONFIG		+= lime
+#	CONFIG		+= pluto
+
+	CONFIG		+= faad
+
+	CONFIG          += qt-audio
+
+#	CONFIG		+= PC
+	CONFIG		+= NO_SSE
 }
 
 DEPENDPATH += . \
@@ -224,77 +305,22 @@ SOURCES += ./src/main.cpp \
 	   ./src/support/dab-tables.cpp \
 	   ./src/support/ensemble-printer.cpp \
 	   ./devices/device-handler.cpp
-#
-#
-unix {
-DESTDIR		= ./linux-bin
 
-INCLUDEPATH	+= /usr/local/include
-INCLUDEPATH	+= /usr/include/qt5/qwt
-LIBS		+= -lfftw3f  -lfftw3 -lusb-1.0 -ldl
-LIBS		+= -lportaudio
-LIBS		+= -lz
-LIBS		+= -lsndfile
-LIBS		+= -lsamplerate
-
-# FIXME currently needs to be set by hand
-LIBS		+= -lqwt-qt5
-#
-# comment or uncomment for the devices you want to have support for
-# (you obviously have libraries installed for the selected ones)
-CONFIG		+= rtlsdr
-CONFIG		+= sdrplay
-CONFIG		+= sdrplay-v3
-CONFIG		+= airspy
-CONFIG		+= hackrf
-CONFIG		+= lime
-CONFIG		+= pluto
-
-CONFIG		+= faad
-#CONFIG		+= fdk-aac
-
-CONFIG          += qt-audio
-
-# CONFIG	+= try-epg		# do not use
-CONFIG		+= PC
-#CONFIG		+= RPI
+faad	{
+	DEFINES		+= __WITH_FAAD__
+	HEADERS		+= ./include/backend/audio/faad-decoder.h
+	SOURCES		+= ./src/backend/audio/faad-decoder.cpp
+	LIBS		+= -lfaad
 }
 
-#
-# an attempt to have it run under W32 through cross compilation
-win32 {
-
-#for 64 bit
-#	TARGET		= guglielmo-64-$$objectVersion
-#	DEFINES		+= __BITS64__
-#	DESTDIR		= /usr/shared/sdr-j-development/w64-programs/windows-guglielmo64
-#	INCLUDEPATH	+= /usr/x64-w64-mingw32/sys-root/mingw/include
-#	LIBS		+= -L/usr/x64-w64-mingw32/sys-root/mingw/lib
-#for 32 bit
-	TARGET		= guglielmo-32-$$objectVersion
-	DESTDIR		= /usr/shared/w32-programs/windows-guglielmo32
-	INCLUDEPATH	+= /usr/i686-w64-mingw32/sys-root/mingw/include
-	LIBS		+= -L/usr/i686-w64-mingw32/sys-root/mingw/lib
-
-#	common:
-INCLUDEPATH	+= /usr/local/include
-LIBS		+= -lfftw3f -lfftw3
-LIBS		+= -lportaudio
-LIBS		+= -lsndfile
-LIBS		+= -lsamplerate
-LIBS		+= -lole32
-LIBS		+= -lwinpthread
-LIBS		+= -lwinmm
-LIBS 		+= -lstdc++
-LIBS		+= -lws2_32
-LIBS		+= -lusb-1.0
-LIBS		+= -lz
-CONFIG		+= faad
-
-#CONFIG		+= PC
-CONFIG		+= NO_SSE
+fdk-aac	{
+	DEFINES		+= __WITH_FDK_AAC__
+	INCLUDEPATH	+= ./specials/fdk-aac
+	HEADERS		+= ./include/backend/audio/fdk-aac.h
+	SOURCES		+= ./src/backend/audio/fdk-aac.cpp
+	LIBS		+= -lfdk-aac
 }
-#
+
 try-epg	{
 	DEFINES		+= TRY_EPG
 	QT		+= xml
@@ -329,23 +355,8 @@ NO_SSE	{
 	SOURCES		+= ./src/support/viterbi-spiral/spiral-no-sse.c
 }
 
-faad	{
-	DEFINES		+= __WITH_FAAD__
-	HEADERS		+= ./include/backend/audio/faad-decoder.h 
-	SOURCES		+= ./src/backend/audio/faad-decoder.cpp 
-	LIBS		+= -lfaad
-}
-
-fdk-aac	{
-	DEFINES		+= __WITH_FDK_AAC__
-	INCLUDEPATH	+= ./specials/fdk-aac
-	HEADERS		+= ./include/backend/audio/fdk-aac.h 
-	SOURCES		+= ./src/backend/audio/fdk-aac.cpp 
-	LIBS		+= -lfdk-aac
-}
-
 #	devices
-#       rtlsdr
+
 rtlsdr {
         DEFINES         += HAVE_RTLSDR
         DEPENDPATH      += ./devices/rtlsdr-handler
@@ -353,9 +364,7 @@ rtlsdr {
         HEADERS         += ./devices/rtlsdr-handler/rtlsdr-handler.h
         SOURCES         += ./devices/rtlsdr-handler/rtlsdr-handler.cpp
 }
-#
-#       the SDRplay
-#
+
 sdrplay {
         DEFINES         += HAVE_SDRPLAY
         DEPENDPATH      += ./devices/sdrplay-handler
@@ -363,6 +372,7 @@ sdrplay {
         HEADERS         += ./devices/sdrplay-handler/sdrplay-handler.h
         SOURCES         += ./devices/sdrplay-handler/sdrplay-handler.cpp
 }
+
 sdrplay-v3 {
         DEFINES         += HAVE_SDRPLAY_V3
         DEPENDPATH      += ./devices/sdrplay-handler-v3
@@ -372,9 +382,7 @@ sdrplay-v3 {
 			   ./devices/sdrplay-handler-v3/sdrplay-commands.h
         SOURCES         += ./devices/sdrplay-handler-v3/sdrplay-handler-v3.cpp
 }
-#
-# airspy support
-#
+
 airspy {
 	DEFINES		+= HAVE_AIRSPY
 	DEPENDPATH	+= ./devices/airspy 
@@ -386,9 +394,7 @@ airspy {
 	SOURCES		+= ./devices/airspy-handler/airspy-handler.cpp \
 	                   ./devices/airspy-handler/airspyfilter.cpp
 }
-#
-#       the HACKRF One
-#
+
 hackrf {
         DEFINES         += HAVE_HACKRF
         DEPENDPATH      += ./devices/hackrf-handler
@@ -396,9 +402,7 @@ hackrf {
         HEADERS         += ./devices/hackrf-handler/hackrf-handler.h
         SOURCES         += ./devices/hackrf-handler/hackrf-handler.cpp
 }
-#
-#       the Lime SDR
-#
+
 lime {
         DEFINES         += HAVE_LIME
         DEPENDPATH      += ./devices/lime-handler
@@ -408,7 +412,7 @@ lime {
 	                   ./devices/lime-handler/LMS7002M_parameters.h
         SOURCES         += ./devices/lime-handler/lime-handler.cpp
 }
-#
+
 pluto   {
         DEFINES         += HAVE_PLUTO
         QT              += network

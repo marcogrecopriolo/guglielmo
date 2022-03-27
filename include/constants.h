@@ -37,7 +37,12 @@
 #include	<complex>
 #include	<cstring>
 
-#define IS_WINDOWS (defined(__MINGW32__)||defined(__MSC_VER))
+// the mingw compiler complains that nested use of the defined() macro might not be portable
+// hence we define IS_WINDOWS explicitly
+// currently we only cover mingw32
+#if (defined(__MINGW32__))
+#define IS_WINDOWS 1
+#endif
 
 #ifndef	__FREEBSD__
 //#include	<malloc.h>

@@ -125,4 +125,5 @@ int main(int argc, char **argv) {
     fflush(stderr);
     delete radioInterface;
     delete settings;
+    return 0;
 }
