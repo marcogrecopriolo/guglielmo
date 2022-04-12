@@ -23,7 +23,6 @@
 #include <QTranslator>
 #include <QString>
 #include <QDir>
-#include <unistd.h>
 #include <iostream>
 #include "constants.h"
 #include "radio.h"

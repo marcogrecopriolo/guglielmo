@@ -26,7 +26,6 @@
 #include	<cmath>
 #include	<complex>
 #include	<cstdint>
-#include	<unistd.h>
 #include	<vector>
 #include	<limits>
 #include	<samplerate.h>

@@ -79,7 +79,6 @@ void	Qt_Audio::setParams (int outputRate) {
 	connect (theAudioOutput, SIGNAL (stateChanged (QAudio::State)),
 	         this, SLOT (handleStateChanged (QAudio::State)));
 
-	restart();
 	currentState = theAudioOutput -> state();
 }
 

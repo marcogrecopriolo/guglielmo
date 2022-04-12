@@ -29,7 +29,6 @@
 #include	<stdint.h>
 #include	<limits>
 #include	<stdlib.h>
-#include	<unistd.h>
 #include	<cmath>
 #include	<cstdint>
 #include	<cstdlib>
@@ -39,9 +38,17 @@
 
 // the mingw compiler complains that nested use of the defined() macro might not be portable
 // hence we define IS_WINDOWS explicitly
-// currently we only cover mingw32
-#if (defined(__MINGW32__))
+#if (defined(__MINGW32__) || defined(_MSC_VER))
 #define IS_WINDOWS 1
+#endif
+
+#ifndef _MSC_VER
+#include <unistd.h>
+#define _ALWAYS_INLINE __attribute__ ((always_inline))
+#define _ALIGN(S) __attribute__ ((aligned (S)))
+#else
+#define _ALWAYS_INLINE __attribute__ inline __forceinline
+#define _ALIGN(S) __declspec(align(S))
 #endif
 
 #ifndef	__FREEBSD__

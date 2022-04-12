@@ -31,7 +31,6 @@
 #include "mot-content-types.h"
 #include <iostream>
 #include <numeric>
-#include <unistd.h>
 #include <vector>
 #include "radio.h"
 #include "band-handler.h"
