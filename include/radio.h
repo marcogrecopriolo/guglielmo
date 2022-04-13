@@ -37,6 +37,7 @@
 #include "fm-processor.h"
 #include "ringbuffer.h"
 #include "band-handler.h"
+#include "device-handler.h"
 #include "process-params.h"
 
 // dialogs
@@ -61,7 +62,7 @@ enum deviceControls {
     LNA_GAIN =	0x04
 };
 
-class device {
+class deviceDescriptor {
 public:
     QString deviceName;
     deviceHandler *device;
@@ -115,7 +116,7 @@ private:
     QString stereoStyle;
     QSettings *settings;
     std::vector<serviceId> serviceList;
-    std::vector<device> deviceList;
+    std::vector<deviceDescriptor> deviceList;
 
 // devices, processors
     dabProcessor *DABprocessor;

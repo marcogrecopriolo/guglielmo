@@ -6,7 +6,6 @@ orgName		= SQSL
 orgDomain	= sqsl.org
 TARGET		= $$objectName
 DEFINES		+= TARGET=\\\"$$objectName\\\" CURRENT_VERSION=\\\"$$objectVersion\\\" ORGNAME=\\\"$$orgName\\\" ORGDOMAIN=\\\"$$orgDomain\\\"
-DEFINES		+= CURRENT_DATE=\'\"$$currDate\"\'
 QT		+= widgets multimedia
 CONFIG		-= console
 QMAKE_CXXFLAGS	+= -std=c++11
@@ -19,16 +18,26 @@ RESOURCES	+= guglielmo.qrc
 contains(os, Linux) {
 	DEFINES	+= CHOOSE_CONFIG=Linux
 }
-contains(os, MINGW32.*) {
+contains(os, MINGW32.*)  || contains(os, MSYS.*) {
 	CONFIG 		+= mingw32
+}
+contains(os, MINGW64.*) {
+	error("Git bash is unsupported, please use MSYS or MSYS2 instead")
 }
 
 win32 {
+    mingw32 {
 	# powershell hangs on date, so make sure we use a proper shell
 	currDate	= $$system(sh -c date "+\"%Y-%m-%d %H:%M:%S %z\"")
+    } else {
+	# powershell specific date
+	currdate	= $$system(powershell Get-Date -Uformat \'%Y-%m-%d %H:%M:%S %Z\')
+	CONFIG += visualStudio
+    }
 } else {
 	currDate	= $$system(date "+\"%Y-%m-%d %H:%M:%S %z\"")
 }
+DEFINES		+= CURRENT_DATE=\'\"$$currDate\"\'
 
 #CONFIG	+= try-epg		# do not use
 
@@ -70,6 +79,45 @@ mingw32 {
 
 	INCLUDEPATH	+= /usr/local/include
 	LIBS		+= -L/usr/local/lib
+	LIBS		+= -lfftw3f -lfftw3
+	LIBS		+= -lportaudio
+	LIBS		+= -lsndfile
+	LIBS		+= -lsamplerate
+	LIBS		+= -lole32
+	LIBS		+= -lwinpthread
+	LIBS		+= -lwinmm
+	LIBS 		+= -lstdc++
+	LIBS		+= -lws2_32
+	LIBS		+= -lusb-1.0
+	LIBS		+= -lz
+	LIBS		+= -lqwt
+
+	# comment or uncomment for the devices you want to have support for
+	# (you obviously have libraries installed for the selected ones)
+	CONFIG		+= rtlsdr
+	CONFIG		+= sdrplay
+	CONFIG		+= sdrplay-v3
+#	CONFIG		+= airspy
+#	CONFIG		+= hackrf
+#	CONFIG		+= lime
+#	CONFIG		+= pluto
+
+	CONFIG		+= faad
+
+	CONFIG          += qt-audio
+
+#	CONFIG		+= PC
+	CONFIG		+= NO_SSE
+}
+
+visualStudio {
+	error("Visual studio is not currently supported, use mingw32 or mingw64 instead")
+	DESTDIR		= ./windows-bin
+
+	basePath	= "c:\Program Files\Microsoft Visual Studio\2022\Community\SDK\ScopeCppSDK\vc15"
+	INCLUDEPATH	+= "$$basePath\VC\include" "$$basePath\SDK\include" "$$basePath\SDK\include\shared" "$$basePath\SDK\include\um"
+	INCLUDEPATH	+= c:\msys\localinclude
+	LIBS		+= -Lc:\msys\local\lib
 	LIBS		+= -lfftw3f -lfftw3
 	LIBS		+= -lportaudio
 	LIBS		+= -lsndfile

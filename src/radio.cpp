@@ -370,7 +370,7 @@ void RadioInterface::terminateProcess() {
 }
 
 void RadioInterface::findDevices() {
-    device discoveredDevice;
+    deviceDescriptor discoveredDevice;
 
 #ifdef	HAVE_SDRPLAY_V3
     bool foundV3 = false;
