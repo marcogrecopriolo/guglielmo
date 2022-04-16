@@ -21,14 +21,8 @@
  *    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
+#include	"constants.h"
 #include	"iir-filters.h"
-#ifndef	__MINGW32__
-#ifdef	__FREEBSD__
-#include	<stdlib.h>
-#else
-#include	"alloca.h"
-#endif
-#endif
 
 #define	MAXORDER	0176
 

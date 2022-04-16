@@ -29,15 +29,17 @@ win32 {
     mingw32 {
 	# powershell hangs on date, so make sure we use a proper shell
 	currDate	= $$system(sh -c date "+\"%Y-%m-%d %H:%M:%S %z\"")
+	DEFINES		+= "CURRENT_DATE='\"$$currDate\"'"
     } else {
 	# powershell specific date
-	currdate	= $$system(powershell Get-Date -Uformat \'%Y-%m-%d %H:%M:%S %Z\')
+	currdate	= $$system("powershell Get-Date -Uformat '%Y-%m-%d %H:%M:%S %Z'")
+	DEFINES		+= "\"CURRENT_DATE=\\\"$$currDate\\\"\""
 	CONFIG += visualStudio
     }
 } else {
 	currDate	= $$system(date "+\"%Y-%m-%d %H:%M:%S %z\"")
+	DEFINES		+= "CURRENT_DATE='\"$$currDate\"'"
 }
-DEFINES		+= CURRENT_DATE=\'\"$$currDate\"\'
 
 #CONFIG	+= try-epg		# do not use
 
@@ -111,13 +113,16 @@ mingw32 {
 }
 
 visualStudio {
-	error("Visual studio is not currently supported, use mingw32 or mingw64 instead")
 	DESTDIR		= ./windows-bin
 
+	SOURCES		+= src/share
+	HEADERS		+= include/share
 	basePath	= "c:\Program Files\Microsoft Visual Studio\2022\Community\SDK\ScopeCppSDK\vc15"
-	INCLUDEPATH	+= "$$basePath\VC\include" "$$basePath\SDK\include" "$$basePath\SDK\include\shared" "$$basePath\SDK\include\um"
-	INCLUDEPATH	+= c:\msys\localinclude
-	LIBS		+= -Lc:\msys\local\lib
+	INCLUDEPATH	+= "$$basePath\VC\include" "$$basePath\SDK\include" "$$basePath\SDK\include\shared" "$$basePath\SDK\include\ucrt" "$$basePath\SDK\include\um"
+	INCLUDEPATH	+= c:\msys64\usr\local\include
+	INCLUDEPATH	+= include/share
+	INCLUDEPATH	+= $$[QT_INSTALL_HEADERS]/QtZlib
+	LIBS		+= -Lc:\msys64\usr\local\lib
 	LIBS		+= -lfftw3f -lfftw3
 	LIBS		+= -lportaudio
 	LIBS		+= -lsndfile

@@ -98,7 +98,7 @@ dabFrequencies alternatives [100];
 FILE	*f;
 	selectedBand		= nullptr;
 
-#ifndef	__MINGW32__
+#ifndef	IS_WINDOWS
 	if (a_band == QString (""))
 	   return;
 	if (a_band != QString ("")) {

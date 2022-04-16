@@ -21,6 +21,7 @@
  *    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
+#include 	"constants.h"
 #include	"audio-base.h"
 #include	<cstdio>
 
@@ -97,8 +98,8 @@ void	audioBase::audioOut	(int16_t *V, int32_t amount, int32_t rate) {
 //	scale up from 16 -> 48
 //	amount gives number of pairs
 void	audioBase::audioOut_16000	(int16_t *V, int32_t amount) {
-std::complex<float> outputBuffer [converter_16. getOutputsize()];
-float      buffer       [2 * converter_16. getOutputsize()];
+_VLA(std::complex<float>, outputBuffer, converter_16. getOutputsize());
+_VLA(float, buffer, 2 * converter_16. getOutputsize());
 int16_t	i, j;
 int32_t	result;
 
@@ -124,8 +125,8 @@ int32_t	result;
 //	scale up from 24000 -> 48000
 //	amount gives number of pairs
 void	audioBase::audioOut_24000	(int16_t *V, int32_t amount) {
-std::complex<float> outputBuffer [converter_24. getOutputsize()];
-float      buffer       [2 * converter_24. getOutputsize()];
+_VLA(std::complex<float>, outputBuffer, converter_24. getOutputsize());
+_VLA(float, buffer, 2 * converter_24. getOutputsize());
 int16_t	i, j;
 int32_t	result;
 
@@ -151,8 +152,8 @@ int32_t	result;
 //	scale up from 32000 -> 48000
 //	amount is number of pairs
 void	audioBase::audioOut_32000	(int16_t *V, int32_t amount) {
-std::complex<float> outputBuffer [converter_32. getOutputsize()];
-float      buffer       [2 * converter_32. getOutputsize()];
+_VLA(std::complex<float>, outputBuffer, converter_32. getOutputsize());
+_VLA(float, buffer, 2 * converter_32. getOutputsize());
 int32_t	i, j;
 int32_t	result;
 

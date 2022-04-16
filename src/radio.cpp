@@ -513,7 +513,7 @@ void RadioInterface::changeInConfiguration() {
 //	In order to not overload with an enormous amount of
 //	signals, we trigger this function at most 10 times a second
 void RadioInterface::newAudio(int amount, int rate) {
-    int16_t vec[amount];
+    _VLA(int16_t, vec, amount);
 
     while (audioBuffer.GetRingBufferReadAvailable() > amount) {
 	audioBuffer.getDataFromBuffer(vec, amount);

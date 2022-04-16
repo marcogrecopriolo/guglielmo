@@ -97,7 +97,7 @@ float	ofdmDecoder::computeQuality (std::complex<float> *v) {
 int16_t i;
 std::complex<float>	avgPoint	= std::complex<float> (0, 0);
 float		absVal			= 0;
-std::complex<float>	x [T_u];
+_VLA(std::complex<float>, x, T_u);
 float	nominator	= 0;
 float	denominator	= 0;
 //
@@ -132,7 +132,7 @@ static	int	cnt	= 0;
 void	ofdmDecoder::decode (std::vector <std::complex<float>> buffer,
 	                     int32_t blkno, int16_t *ibits) {
 int16_t	i;
-std::complex<float> conjVector [T_u];
+_VLA(std::complex<float>, conjVector, T_u);
 
 	memcpy (fft_buffer, &((buffer. data()) [T_g]),
 	                               T_u * sizeof (std::complex<float>));

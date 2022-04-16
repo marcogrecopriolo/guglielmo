@@ -20,6 +20,7 @@
  *    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  */
+#include	"constants.h"
 #include	"journaline-datahandler.h"
 #include	"dabdatagroupdecoder.h"
 
@@ -44,7 +45,7 @@ void my_callBack (
 void	journaline_dataHandler::add_mscDatagroup (std::vector<uint8_t> msc) {
 int16_t	len	= msc. size ();
 uint8_t	*data	= (uint8_t *)(msc. data());
-uint8_t buffer [len / 8];
+_VLA(uint8_t, buffer, len / 8);
 int16_t	i;
 int32_t	res;
 	for (i = 0; i < len / 8; i ++)

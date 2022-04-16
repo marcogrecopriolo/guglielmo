@@ -45,11 +45,21 @@
 #ifndef _MSC_VER
 #include <unistd.h>
 #define _ALWAYS_INLINE __attribute__ ((always_inline))
-#define _ALIGN(S) __attribute__ ((aligned (S)))
+#define _ALIGN(S, F) F __attribute__ ((aligned (S)))
+#define _VLA(T, N, S) T N[(S)]
 #else
 #define _ALWAYS_INLINE __attribute__ inline __forceinline
-#define _ALIGN(S) __declspec(align(S))
+#define _ALIGN(S, F) __declspec(align(S)) F
+
+// MSVC does not support VLAs
+#define _VLA(T, N, S) T *N = (T *) alloca((S)*sizeof(T))
+
+// MSVC has conflicting definitions for std::min and std::max
+#define NOMINMAX
 #endif
+
+#include <QThread>
+#define usleep(NS) QThread::usleep(NS)
 
 #ifndef	__FREEBSD__
 //#include	<malloc.h>
@@ -59,9 +69,6 @@
 //#include	"iostream.h"
 #include	"windows.h"
 #else
-#ifndef	__FREEBSD__
-//#include	"alloca.h"
-#endif
 #include	"dlfcn.h"
 typedef	void	*HINSTANCE;
 #endif

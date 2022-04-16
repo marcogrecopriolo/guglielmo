@@ -292,7 +292,7 @@ int16_t	currentblk;
 	   int16_t startAddr	= b -> startAddr;
 	   int16_t Length	= b -> Length; 
 	   if (Length > 0) {		// Length = 0? should not happen
-	      int16_t temp [Length * CUSize];
+	      _VLA(int16_t, temp, Length * CUSize);
 	      memcpy (temp, &cifVector [startAddr * CUSize],
 	                           Length * CUSize * sizeof (int16_t));
 	      (void) b -> process (temp, Length * CUSize);

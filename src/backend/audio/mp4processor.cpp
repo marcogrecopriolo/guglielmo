@@ -30,6 +30,7 @@
  ************************************************************************
  */
 #include	"mp4processor.h"
+#include	"constants.h"
 #include	"radio.h"
 //
 #include	<cstring>
@@ -291,7 +292,7 @@ stream_parms    streamParameters;
 //	first handle the pad data if any
 	         if (((outVector [au_start [i + 0]] >> 5) & 07) == 4) {
 	            int16_t count = outVector [au_start [i] + 1];
-	            uint8_t buffer [count];
+	            _VLA(uint8_t, buffer, count);
 	            memcpy (buffer, &outVector [au_start [i] + 2], count);
 	            uint8_t L0	= buffer [count - 1];
 	            uint8_t L1	= buffer [count - 2];

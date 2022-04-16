@@ -27,6 +27,7 @@
 //	of the sdr-j DAB/DAB+ software
 //
 #include	"mp2processor.h"
+#include	"constants.h"
 #include	"radio.h"
 #include	"pad-handler.h"
 
@@ -582,7 +583,7 @@ void	mp2Processor::addtoFrame (std::vector<uint8_t> v) {
 int16_t	i, j;
 int16_t	lf	= baudRate == 48000 ? MP2framesize : 2 * MP2framesize;
 int16_t	amount	= MP2framesize;
-uint8_t	help [24 * bitRate / 8];
+_VLA(uint8_t, help, 24 * bitRate / 8);
 int16_t	vLength	= 24 * bitRate / 8;
 
 //fprintf (stderr, "baudrate = %d, inputsize = %d\n",

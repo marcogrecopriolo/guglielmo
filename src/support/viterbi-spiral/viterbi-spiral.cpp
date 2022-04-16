@@ -19,15 +19,15 @@
  *    along with Qt-DAB; if not, write to the Free Software
  *    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
+#include	"constants.h"
 #include	<stdio.h>
 #include	<stdlib.h>
 #include	"mm_malloc.h"
 #include	"viterbi-spiral.h"
 #include	<cstring>
-#ifdef  __MINGW32__
+#ifdef  IS_WINDOWS
 #include	<intrin.h>
 #include	<malloc.h>
-#include	<windows.h>
 #endif
 
 //
@@ -125,7 +125,7 @@ int32_t	i;
 	viterbiSpiral::viterbiSpiral (int16_t wordlength, bool spiral) {
 int polys [RATE] = POLYS;
 int16_t	i, state;
-#ifdef	__MINGW32__
+#ifdef	IS_WINDOWS
 uint32_t	size;
 #endif
 
@@ -137,7 +137,7 @@ uint32_t	size;
 // However, the application then crashes, so something is not OK
 // By doubling the size, the problem disappears. It is not solved though
 // and not further investigation.
-#ifdef __MINGW32__
+#ifdef IS_WINDOWS
 	size = 2 * ((wordlength + (K - 1)) / 8 + 1 + 16) & ~0xF;
 	data	= (uint8_t *)_aligned_malloc (size, 16);
 	size = 2 * (RATE * (wordlength + (K - 1)) * sizeof(COMPUTETYPE) + 16) & ~0xF;
@@ -173,7 +173,7 @@ uint32_t	size;
 
 
 	viterbiSpiral::~viterbiSpiral	(void) {
-#ifdef	__MINGW32__
+#ifdef	IS_WINDOWS
 	_aligned_free (vp. decisions);
 	_aligned_free (data);
 	_aligned_free (symbols);

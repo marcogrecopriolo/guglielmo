@@ -34,7 +34,7 @@
 int	timeSyncer::sync (int T_null, int T_F) {
 float	cLevel		= 0;
 int	counter		= 0;
-float	envBuffer       [syncBufferSize];
+_VLA(float, envBuffer, syncBufferSize);
 const
 int	syncBufferMask	= syncBufferSize - 1;
 int	i;

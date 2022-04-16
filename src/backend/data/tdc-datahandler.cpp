@@ -20,6 +20,7 @@
  *    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
+#include	"constants.h"
 #include	"tdc-datahandler.h"
 #include	"radio.h"
 
@@ -115,7 +116,7 @@ int32_t	tdc_dataHandler::handleFrame_type_0 (uint8_t *data,
 	                                     int32_t offset, int32_t length) {
 int16_t i;
 //int16_t noS	= getBits (data, offset, 8);
-uint8_t buffer [length];
+_VLA(uint8_t, buffer, length);
 	
 	for (i = 0; i < length; i ++)
 	   buffer [i] = getBits (data, offset + i * 8, 8);
@@ -134,7 +135,7 @@ int32_t	tdc_dataHandler::handleFrame_type_1 (uint8_t *data,
 	                                     int32_t offset,
 	                                     int32_t length) {
 int16_t i;
-uint8_t buffer [length];
+_VLA(uint8_t, buffer, length);
 int	lOffset;
 int	llengths = length - 4;
 #if 0

@@ -483,7 +483,7 @@ void fmProcessor::run(void) {
 		    if (audioRate == workingRate)
 			audioSink->putSample(pcmSample);
 		    else {
-			DSPCOMPLEX out[audioConverter->getOutputsize()];
+			_VLA(DSPCOMPLEX, out, audioConverter->getOutputsize());
 			int32_t amount;
 
 			if (audioConverter->convert(pcmSample, out, &amount))

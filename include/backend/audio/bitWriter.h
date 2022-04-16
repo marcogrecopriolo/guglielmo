@@ -18,6 +18,7 @@
 
 // --- BitWriter ------------------------------------------------------------
 
+#include	"constants.h"
 #include	<stdlib.h>
 #include	<stdint.h>
 #include	<vector>

@@ -93,8 +93,8 @@ int32_t	i;
 int32_t	maxIndex	= -1;
 float	sum		= 0;
 float	Max		= -1000;
-float	lbuf [T_u / 2];
-float	mbuf [T_u / 2];
+_VLA(float, lbuf, T_u / 2);
+_VLA(float, mbuf, T_u / 2);
 std::vector<int> resultVector;
 
 	memcpy (fft_buffer, v. data (), T_u * sizeof (std::complex<float>));
@@ -143,7 +143,7 @@ std::vector<int> resultVector;
 #define	SEARCH_RANGE	(2 * 35)
 int16_t	phaseReference::estimate_CarrierOffset (std::vector<std::complex<float>> v) {
 int16_t	i, j, index_1 = 100, index_2 = 100;
-float	computedDiffs [SEARCH_RANGE + diff_length + 1];
+_VLA(float, computedDiffs, SEARCH_RANGE + diff_length + 1);
 
 	memcpy (fft_buffer, v. data (), T_u * sizeof (std::complex<float>));
 	my_fftHandler. do_FFT();

@@ -21,14 +21,8 @@
  *
  */
 
+#include	"constants.h"
 #include	"fir-filters.h"
-#ifndef	__MINGW32__
-#ifdef	__FREEBSD__
-#include	<stdlib.h>
-#else
-#include	"alloca.h"
-#endif
-#endif
 
 //===================================================================
 //=====================================================================

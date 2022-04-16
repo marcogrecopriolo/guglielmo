@@ -20,6 +20,7 @@
  *    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
+#include	"constants.h"
 #include	"sdrplay-handler-v3.h"
 #include	"sdrplay-commands.h"
 
@@ -78,7 +79,7 @@ stopRequest r;
 }
 //
 int32_t	sdrplayHandler_v3::getSamples (std::complex<float> *V, int32_t size) { 
-std::complex<int16_t> temp [size];
+_VLA(std::complex<int16_t>, temp, size);
 int	i;
 
 	int amount      = _I_Buffer. getDataFromBuffer (temp, size);
@@ -156,7 +157,7 @@ void    StreamACallback (short *xi, short *xq,
 	                 unsigned int reset,
                          void *cbContext) {
 sdrplayHandler_v3 *p	= static_cast<sdrplayHandler_v3 *> (cbContext);
-std::complex<int16_t> localBuf [numSamples];
+_VLA(std::complex<int16_t>, localBuf, numSamples);
 
 	(void)params;
 	if (reset)

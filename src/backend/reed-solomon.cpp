@@ -5,6 +5,7 @@
  * May be used under the terms of the GNU General Public License (GPL)
  */
 #include	<cstdio>
+#include	"constants.h"
 #include	"reed-solomon.h"
 #include	<cstring>
 
@@ -109,8 +110,8 @@ uint8_t feedback;
 }
 
 void	reedSolomon::enc (const uint8_t *r, uint8_t *d, int16_t cutlen) {
-uint8_t rf [codeLength];
-uint8_t bb [nroots];
+_VLA(uint8_t, rf, codeLength);
+_VLA(uint8_t, bb, nroots);
 int16_t i;
 
 	memset (rf, 0, cutlen * sizeof (rf [0]));
@@ -127,7 +128,7 @@ int16_t i;
 
 
 int16_t	reedSolomon::dec (const uint8_t *r, uint8_t *d, int16_t cutlen) {
-uint8_t rf [codeLength];
+_VLA(uint8_t, rf, codeLength);
 int16_t i;
 int16_t	ret;
 
@@ -142,12 +143,12 @@ int16_t	ret;
 }
 
 int16_t	reedSolomon::decode_rs (uint8_t *data) {
-uint8_t syndromes [nroots];
-uint8_t Lambda	  [nroots + 1];
+_VLA(uint8_t, syndromes, nroots);
+_VLA(uint8_t, Lambda, nroots + 1);
 uint16_t lambda_degree, omega_degree;
-uint8_t	rootTable [nroots];
-uint8_t	locTable  [nroots];
-uint8_t	omega	  [nroots + 1];
+_VLA(uint8_t, rootTable, nroots);
+_VLA(uint8_t, locTable, nroots);
+_VLA(uint8_t, omega, nroots + 1);
 int16_t	rootCount;
 int16_t	i;
 //
@@ -268,7 +269,7 @@ uint16_t syn_error = 0;
 //	
 uint16_t reedSolomon::computeLambda (uint8_t *syndromes, uint8_t *Lambda) {
 uint16_t K = 1, L = 0;
-uint8_t Corrector	[nroots];
+_VLA(uint8_t, Corrector, nroots);
 int16_t  i;
 int16_t	deg_lambda;
 
@@ -282,7 +283,7 @@ int16_t	deg_lambda;
 	Corrector [1]	= 1;
 //
 	while (K <= nroots) {
-	   uint8_t oldLambda [nroots];
+	   _VLA(uint8_t, oldLambda, nroots);
 	   memcpy (oldLambda, Lambda, nroots * sizeof (Lambda [0]));
 //
 //	Compute new lambda
@@ -329,7 +330,7 @@ int16_t  reedSolomon::computeErrors (uint8_t *Lambda,
 int16_t i, j, k;
 int16_t rootCount = 0;
 //
-	uint8_t workRegister [nroots + 1];
+	_VLA(uint8_t, workRegister, nroots + 1);
 	memcpy (&workRegister, Lambda, (nroots + 1) * sizeof (uint8_t));
 //
 //	reg is lambda in power notation
