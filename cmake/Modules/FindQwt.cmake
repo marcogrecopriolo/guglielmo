@@ -11,6 +11,7 @@ find_path(QWT_INCLUDE_DIRS
   HINTS
   ${CMAKE_INSTALL_PREFIX}/include/qwt
   PATHS
+  /usr/include/qt5/qwt6
   /usr/include/qt5/qwt
   /usr/local/include/qwt-qt4
   /usr/local/include/qwt
