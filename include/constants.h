@@ -48,6 +48,7 @@
 #define _ALIGN(S, F) F __attribute__ ((aligned (S)))
 #define _VLA(T, N, S) T N[(S)]
 #else
+#include "getopt.h"
 #define _ALWAYS_INLINE __attribute__ inline __forceinline
 #define _ALIGN(S, F) __declspec(align(S)) F
 
@@ -61,14 +62,13 @@
 #include <QThread>
 #define usleep(NS) QThread::usleep(NS)
 
-#ifndef	__FREEBSD__
-//#include	<malloc.h>
-#endif
-
 #if IS_WINDOWS
 //#include	"iostream.h"
 #include	"windows.h"
 #else
+#ifndef	__FREEBSD__
+#include	<malloc.h>
+#endif
 #include	"dlfcn.h"
 typedef	void	*HINSTANCE;
 #endif
