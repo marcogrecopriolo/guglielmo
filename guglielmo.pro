@@ -85,11 +85,6 @@ mingw32 {
 	LIBS		+= -lportaudio
 	LIBS		+= -lsndfile
 	LIBS		+= -lsamplerate
-	LIBS		+= -lole32
-	LIBS		+= -lwinpthread
-	LIBS		+= -lwinmm
-	LIBS 		+= -lstdc++
-	LIBS		+= -lws2_32
 	LIBS		+= -lusb-1.0
 	LIBS		+= -lz
 	LIBS		+= -lqwt
@@ -97,8 +92,8 @@ mingw32 {
 	# comment or uncomment for the devices you want to have support for
 	# (you obviously have libraries installed for the selected ones)
 	CONFIG		+= rtlsdr
-	CONFIG		+= sdrplay
-	CONFIG		+= sdrplay-v3
+#	CONFIG		+= sdrplay
+#	CONFIG		+= sdrplay-v3
 #	CONFIG		+= airspy
 #	CONFIG		+= hackrf
 #	CONFIG		+= lime
@@ -123,26 +118,20 @@ visualStudio {
 	INCLUDEPATH     += "$$incBasePath\SDK\include\shared"
 	INCLUDEPATH     += "$$incBasePath\SDK\include\ucrt"
 	INCLUDEPATH     += "$$incBasePath\SDK\include\um"
-	INCLUDEPATH     += c:\msys64\usr\local\include
+	INCLUDEPATH     += ..\includes
 	INCLUDEPATH     += include/share
-	INCLUDEPATH     += $$[QT_INSTALL_HEADERS]/QtZlib
 	libBasePath     += "C:\Program Files (x86)\Windows Kits\10\Lib\10.0.19041.0"
 	QMAKE_LFLAGS    += /LIBPATH:\"..\libraries\"
 	QMAKE_LFLAGS    += /LIBPATH:\"$$libBasePath\ucrt\x86\"
 	QMAKE_LFLAGS    += /LIBPATH:\"$$libBasePath\um\x86\"
-	QMAKE_LFLAGS    += /LIBPATH:\"c:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.31.31103\lib\x86\"
+	QMAKE_LFLAGS    += /LIBPATH:\c:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.31.31103\lib\x86\"
 
 	LIBS		+= -lfftw3f -lfftw3
 	LIBS		+= -lportaudio
 	LIBS		+= -lsndfile
 	LIBS		+= -lsamplerate
-	LIBS		+= -lole32
-#	LIBS		+= -lwinpthread
-	LIBS		+= -lwinmm
-#	LIBS 		+= -lstdc++
-	LIBS		+= -lws2_32
 	LIBS		+= -lusb-1.0
-#	LIBS		+= -lz
+	LIBS		+= ..\libraries\zlib1.lib
 	LIBS		+= -lqwt
 
 	# comment or uncomment for the devices you want to have support for
