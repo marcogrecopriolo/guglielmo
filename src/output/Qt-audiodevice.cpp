@@ -48,8 +48,8 @@ qint64	amount = 0;
 //	"amount" is in floats
 	amount = Buffer -> getDataFromBuffer (buffer, maxSize / sizeof (float));
 
-	if (sizeof (float) * amount < maxSize) {
-	   int16_t i;
+	if (amount >= 0 && sizeof (float) * amount < maxSize) {
+	   qint64 i;
 	   for (i = amount * sizeof (float); i < maxSize; i ++) 
 	      buffer [i] = 0;
 	}
