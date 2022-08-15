@@ -9,7 +9,7 @@ find_path(FAAD_INCLUDE_DIR faad.h DOC "The directory where faad.h resides"
   PATHS ${MSVC_INCLUDE_PATH}
 )
 
-find_library(FAAD_LIBRARY NAMES faad DOC "The libfaad library"
+find_library(FAAD_LIBRARY NAMES faad libfaad DOC "The libfaad library"
   PATHS ${MSVC_LIBRARIES_PATH}
 )
 
