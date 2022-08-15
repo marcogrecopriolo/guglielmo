@@ -5,7 +5,6 @@
 #  PORTAUDIO_INCLUDE_DIRS - the Portaudio include directory
 #  PORTAUDIO_LIBRARIES - Link these to use Portaudio
 
-include(FindPkgConfig)
 pkg_check_modules(PC_PORTAUDIO portaudio-2.0)
 
 find_path(PORTAUDIO_INCLUDE_DIRS
@@ -14,6 +13,7 @@ find_path(PORTAUDIO_INCLUDE_DIRS
   PATHS
       /usr/local/include
       /usr/include
+      ${MSVC_INCLUDE_PATH}
   HINTS
     ${PC_PORTAUDIO_INCLUDEDIR}
 )
@@ -25,6 +25,7 @@ find_library(PORTAUDIO_LIBRARIES
       /usr/local/lib
       /usr/lib
       /usr/lib64
+     ${MSVC_LIBRARIES_PATH}
   HINTS
     ${PC_PORTAUDIO_LIBDIR}
 )
@@ -43,7 +44,7 @@ if(EXISTS ${PORTAUDIO_INCLUDE_DIRS}/portaudio.h)
   unset(CMAKE_REQUIRED_INCLUDES_SAVED)
   if(PORTAUDIO2_FOUND)
     INCLUDE(FindPackageHandleStandardArgs)
-    FIND_PACKAGE_HANDLE_STANDARD_ARGS(PORTAUDIO DEFAULT_MSG PORTAUDIO_INCLUDE_DIRS PORTAUDIO_LIBRARIES)
+    FIND_PACKAGE_HANDLE_STANDARD_ARGS(Portaudio DEFAULT_MSG PORTAUDIO_INCLUDE_DIRS PORTAUDIO_LIBRARIES)
   else(PORTAUDIO2_FOUND)
     message(STATUS
       "  portaudio.h not compatible (requires API 2.0)")

@@ -6,6 +6,7 @@ if(NOT LIBAIRSPY_FOUND)
     ${LIBAIRSPY_PKG_INCLUDE_DIRS}
     /usr/include
     /usr/local/include
+    ${MSVC_INCLUDE_PATH}
   )
 
   find_library(LIBAIRSPY_LIBRARIES NAMES airspy
@@ -13,6 +14,7 @@ if(NOT LIBAIRSPY_FOUND)
     ${LIBAIRSPY_PKG_LIBRARY_DIRS}
     /usr/lib
     /usr/local/lib
+    ${MSVC_LIBRARIES_PATH}
   )
 
   if(LIBAIRSPY_INCLUDE_DIR AND LIBAIRSPY_LIBRARIES)

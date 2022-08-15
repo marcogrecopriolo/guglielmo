@@ -23,6 +23,8 @@ find_path(QWT_INCLUDE_DIRS
   /usr/include/qwt6-qt5
   /opt/local/include/qwt
   /sw/include/qwt
+  /usr/local/include
+  ${MSVC_INCLUDE_PATH}
   /usr/local/lib/qwt.framework/Headers
 )
 
@@ -38,6 +40,7 @@ find_library (QWT_LIBRARIES
   /opt/local/lib
   /sw/lib
   /usr/local/lib/qwt.framework
+  ${MSVC_LIBRARIES_PATH}
 )
 
 set(QWT_FOUND FALSE)

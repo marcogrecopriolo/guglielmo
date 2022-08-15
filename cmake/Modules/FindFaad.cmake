@@ -5,8 +5,13 @@
 # FAAD_LIBRARIES - List of libraries when using libfaad.
 # FAAD_FOUND - True if libfaad found.
 
-find_path(FAAD_INCLUDE_DIR faad.h DOC "The directory where faad.h resides")
-find_library(FAAD_LIBRARY NAMES faad DOC "The libfaad library")
+find_path(FAAD_INCLUDE_DIR faad.h DOC "The directory where faad.h resides"
+  PATHS ${MSVC_INCLUDE_PATH}
+)
+
+find_library(FAAD_LIBRARY NAMES faad DOC "The libfaad library"
+  PATHS ${MSVC_LIBRARIES_PATH}
+)
 
 if(FAAD_INCLUDE_DIR AND FAAD_LIBRARY)
   set(FAAD_FOUND 1)

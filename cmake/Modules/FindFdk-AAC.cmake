@@ -6,6 +6,7 @@ if(NOT FDK_AAC_FOUND)
     ${FDK_AAC_PKG_INCLUDE_DIRS}
     /usr/include
     /usr/local/include
+    ${MSVC_INCLUDE_PATH}
   )
 
   find_library(FDK_AAC_LIBRARIES NAMES fdk-aac
@@ -14,6 +15,7 @@ if(NOT FDK_AAC_FOUND)
     /usr/lib
     /usr/lib/lib64
     /usr/local/lib
+    ${MSVC_LIBRARIES_PATH}
   )
 
   if(FDK_AAC_INCLUDE_DIR AND FDK_AAC_LIBRARIES)

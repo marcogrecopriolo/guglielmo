@@ -17,6 +17,9 @@ if (UNIX)
     if(${os} STREQUAL "Linux")
 	add_definitions(-DCHOOSE_CONFIG=${os})
     endif()
+else()
+    set (MSVC_INCLUDE_PATH, "${CMAKE_SOURCE_DIR}/../includes")
+    set (MSVC_LIBRARIES_PATH, "${CMAKE_SOURCE_DIR}/../libraries")
 endif()
 
 set (CMAKE_CXX_FLAGS "${CMAKE_XCC_FLAGS} -Wall -std=c++11 -flto")
@@ -34,6 +37,11 @@ if(MINGW)
     add_definitions ( -municode)
 #else (MINGW)
 #	add_definitions (-DSSE_AVAILABLE)
+endif()
+
+if(MSYS)
+    set(CMAKE_FIND_LIBRARY_PREFIXES "")
+    set(CMAKE_FIND_LIBRARY_SUFFIXES ".dll")
 endif()
 
 ########################################################################
@@ -118,7 +126,7 @@ endif()
             message(FATAL_ERROR "please install FFTW3")
         endif ()
 
-	# for MinGW we rely on the system zlin
+	# for MinGW we rely on the system zlib
 	if (!MINGW)
 	    find_package(zlib)
 	    if (NOT ZLIB_FOUND)

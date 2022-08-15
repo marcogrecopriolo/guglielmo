@@ -6,6 +6,7 @@ if(NOT LIBRTLSDR_FOUND)
 	${LIBRTLSDR_PKG_INCLUDE_DIRS}
 	/usr/include
 	/usr/local/include
+	${MSVC_INCLUDE_PATH}
   )
 
   find_library(LIBRTLSDR_LIBRARIES NAMES rtlsdr
@@ -13,6 +14,7 @@ if(NOT LIBRTLSDR_FOUND)
 	${LIBRTLSDR_PKG_LIBRARY_DIRS}
 	/usr/lib
 	/usr/local/lib
+	${MSVC_LIBRARIES_PATH}
   )
 
   if(LIBRTLSDR_INCLUDE_DIR AND LIBRTLSDR_LIBRARIES)
