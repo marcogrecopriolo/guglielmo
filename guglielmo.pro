@@ -7,7 +7,6 @@ orgDomain	= sqsl.org
 TARGET		= $$objectName
 DEFINES		+= TARGET=\\\"$$objectName\\\" CURRENT_VERSION=\\\"$$objectVersion\\\" ORGNAME=\\\"$$orgName\\\" ORGDOMAIN=\\\"$$orgDomain\\\"
 QT		+= widgets multimedia
-CONFIG		-= console
 QMAKE_CXXFLAGS	+= -std=c++11
 QMAKE_CFLAGS	+= -flto -ffast-math
 MAKE_CXXFLAGS	+= -flto -ffast-math
@@ -26,6 +25,7 @@ contains(os, MINGW64.*) {
 }
 
 win32 {
+    CONFIG		+= console
     mingw32 {
 	# powershell hangs on date, so make sure we use a proper shell
 	currDate	= $$system(sh -c date "+\"%Y-%m-%d %H:%M:%S %z\"")
@@ -34,11 +34,12 @@ win32 {
 	# powershell specific date
 	currdate	= $$system("powershell Get-Date -Uformat '%Y-%m-%d %H:%M:%S %Z'")
 	DEFINES		+= "\"CURRENT_DATE=\\\"$$currDate\\\"\""
-	CONFIG += visualStudio
+	CONFIG		+= visualStudio
     }
 } else {
-	currDate	= $$system(date "+\"%Y-%m-%d %H:%M:%S %z\"")
-	DEFINES		+= "CURRENT_DATE='\"$$currDate\"'"
+    CONFIG		-= console
+    currDate		= $$system(date "+\"%Y-%m-%d %H:%M:%S %z\"")
+    DEFINES		+= "CURRENT_DATE='\"$$currDate\"'"
 }
 
 #CONFIG	+= try-epg		# do not use
@@ -124,7 +125,7 @@ visualStudio {
 	QMAKE_LFLAGS    += /LIBPATH:\"..\libraries\"
 	QMAKE_LFLAGS    += /LIBPATH:\"$$libBasePath\ucrt\x86\"
 	QMAKE_LFLAGS    += /LIBPATH:\"$$libBasePath\um\x86\"
-	QMAKE_LFLAGS    += /LIBPATH:\c:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.31.31103\lib\x86\"
+	QMAKE_LFLAGS    += /LIBPATH:\"c:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.31.31103\lib\x86\"
 
 	LIBS		+= -lfftw3f -lfftw3
 	LIBS		+= -lportaudio

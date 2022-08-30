@@ -17,28 +17,49 @@ if (UNIX)
     if(${os} STREQUAL "Linux")
 	add_definitions(-DCHOOSE_CONFIG=${os})
     endif()
+elseif (NOT MSYS AND NOT MINGW)
+    execute_process(COMMAND powershell Get-Date -Uformat \"%Y-%m-%d %H:%M:%S %Z\" OUTPUT_VARIABLE currentDate OUTPUT_STRIP_TRAILING_WHITESPACE)
+        add_definitions (-DCURRENT_DATE=\"${currentDate}\")
+endif()
+
+if (UNIX OR MSYS OR MINGW)
+    set (CMAKE_CXX_FLAGS "${CMAKE_XCC_FLAGS} -std=c++11 -flto")
+    set (CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -flto")
 else()
     set (MSVC_INCLUDE_PATH "${CMAKE_SOURCE_DIR}/../includes")
     set (MSVC_LIBRARIES_PATH "${CMAKE_SOURCE_DIR}/../libraries")
+    set (incBasePath "c:/\"Program\ Files/Microsoft\ Visual\ Studio\"/2022/Community/SDK/ScopeCppSDK/vc15")
+    set (libBasePath "c:/\"Program\ Files/Windows\ Kits\"/10/Lib/10.0.19041.0")
+    include_directories (
+            ${MSVC_INCLUDE_PATH}
+            include/share
+            ${incBasePath}/VC/include
+            ${incBasePath}/SDK/include
+            ${incBasePath}/SDK/include/shared
+            ${incBasePath}/SDK/include/ucrt
+            ${incBasePath}/SDK/include/um
+    )
+    link_directories (
+        ${MSVC_LIBRARIES_PATH}
+        ${libBasePath}/ucrt/x86
+        ${libBasePath}/um/x86
+        c:/"Program\ Files/Microsoft\ Visual\ Studio"/2022/Community/VC/Tools/MSVC/14.31.31103/lib/x86
+    )
+    set (CMAKE_CXX_FLAGS "${CMAKE_XCC_FLAGS} /std:c11")
 endif()
 
-set (CMAKE_CXX_FLAGS "${CMAKE_XCC_FLAGS} -Wall -std=c++11 -flto")
-set (CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -flto")
-
 set(CMAKE_AUTORCC ON)
+set(CMAKE_AUTOMOC ON)
 if (CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
     set (CMAKE_INSTALL_PREFIX "/usr/local/bin" CACHE PATH "default install path" FORCE)
 endif()
 #set (CMAKE_INSTALL_PREFIX /usr/local/bin)
 
-#	modify if you want
-
 if(MINGW)
     add_definitions ( -municode)
-#else (MINGW)
-#	add_definitions (-DSSE_AVAILABLE)
 endif()
 
+# msys2 cmake mishanles prefixes and postfixes
 if(MSYS)
     set(CMAKE_FIND_LIBRARY_PREFIXES "")
     set(CMAKE_FIND_LIBRARY_SUFFIXES ".dll")
@@ -172,7 +193,7 @@ endif()
 	           ./include/support/viterbi-jan
 	           ./include/support/viterbi-spiral
 	           ./include/output
-	           ./include/scopes-qwt6
+		   ./include/share
 	           ./devices
 	           /usr/include/
 	)
@@ -215,7 +236,7 @@ endif()
 	     ./include/backend/frame-processor.h
 	     ./include/backend/charsets.h
 	     ./include/backend/galois.h
-	     ./incluces/backend/reed-solomon.h
+	     ./include/backend/reed-solomon.h
 	     ./include/backend/msc-handler.h
 	     ./include/backend/backend.h
 	     ./include/backend/backend-deconvolver.h
@@ -242,6 +263,9 @@ endif()
 	     ./include/backend/data/data-processor.h
 	     ./include/output/audio-base.h
 	     ./include/output/newconverter.h
+	     ./include/output/audiosink.h
+	     ./include/output/Qt-audio.h
+	     ./include/output/Qt-audiodevice.h
 	     ./include/support/process-params.h
 	     ./include/support/fft-handler.h
 	     ./include/support/ringbuffer.h
@@ -251,6 +275,7 @@ endif()
 	     ./include/support/dab-tables.h
 	     ./include/support/viterbi-jan/viterbi-handler.h
 	     ./include/support/viterbi-spiral/viterbi-spiral.h
+	     ./include/radio.h
 	     ./devices/device-handler.h
 	)
 
@@ -311,6 +336,9 @@ endif()
 	     ./src/backend/data/data-processor.cpp
 	     ./src/output/audio-base.cpp
 	     ./src/output/newconverter.cpp
+	     ./src/output/audiosink.cpp
+	     ./src/output/Qt-audio.cpp
+	     ./src/output/Qt-audiodevice.cpp
 	     ./src/support/fft-handler.cpp
 	     ./src/support/dab-params.cpp
 	     ./src/support/band-handler.cpp
@@ -318,45 +346,9 @@ endif()
 	     ./src/support/dab-tables.cpp
 	     ./src/support/viterbi-jan/viterbi-handler.cpp
 	     ./src/support/viterbi-spiral/viterbi-spiral.cpp
+	     ./src/radio.cpp
+	     ./src/dialogs.cpp
 	     ./devices/device-handler.cpp
-	)
-
-	set (${PROJECT_NAME}_MOCS
-	     ./include/dab/dab-processor.h
-             ./include/fm/fm-demodulator.h
-             ./include/fm/fm-processor.h
-	     ./include/support/fir-filters.h
-             ./include/support/fft.h
-             ./include/support/fft-filters.h
-             ./include/support/iir-filters.h
-             ./include/support/pll.h
-             ./include/support/trigtabs.h
-             ./include/support/squelchClass.h
-             ./include/rds/rds-blocksynchronizer.h
-             ./include/rds/rds-decoder.h
-             ./include/rds/rds-groupdecoder.h
-             ./include/rds/rds-group.h
-	     ./include/output/audio-base.h
-	     ./include/ofdm/sample-reader.h
-	     ./include/ofdm/ofdm-decoder.h
-	     ./include/ofdm/phasereference.h
-	     ./include/ofdm/fib-decoder.h
-	     ./include/ofdm/fic-handler.h
-	     ./include/ofdm/tii_detector.h
-	     ./include/backend/msc-handler.h
-	     ./include/backend/backend.h
-	     ./include/backend/audio/mp2processor.h
-	     ./include/backend/audio/mp4processor.h
-	     ./include/backend/data/virtual-datahandler.h
-	     ./include/backend/data/pad-handler.h
-	     ./include/backend/data/mot/mot-handler.h
-	     ./include/backend/data/mot/mot-object.h
-	     ./include/backend/data/mot/mot-dir.h
-	     ./include/backend/data/ip-datahandler.h
-	     ./include/backend/data/tdc-datahandler.h
-	     ./include/backend/data/journaline-datahandler.h
-	     ./include/backend/data/data-processor.h
-	     ./include/support/band-handler.h
 	)
 
 	set (${PROJECT_NAME}_UIS
@@ -364,20 +356,6 @@ endif()
 	     ./guglielmo.ui
 	     ./about.ui
 	     ./settings.ui
-	   )
-
-	set (${PROJECT_NAME}_MOCS
-	        ${${PROJECT_NAME}_MOCS} ./include/radio.h)
-
-	set ($(PROJECT_NAME)_HDRS
-	           ${${PROJECT_NAME}_HDRS}
-		./include/radio.h
-	   )
-
-	set (${PROJECT_NAME}_SRCS
-	           ${${PROJECT_NAME}_SRCS}
-		./src/radio.cpp
-		./src/dialogs.cpp
 	   )
 
 
@@ -397,10 +375,6 @@ endif()
 	        ${${PROJECT_NAME}_SRCS}
 	        ./src/backend/audio/fdk-aac.cpp
 	   )
-	   set (${PROJECT_NAME}_MOCS
-	        ${${PROJECT_NAME}_MOCS}
-	        ./include/backend/audio/fdk-aac.h
-	   )
            list(APPEND extraLibs ${FDK_AAC_LIBRARIES})
 	   add_definitions (-D__WITH_FDK_AAC__)
 	elseif (NOT FDK_AAC)
@@ -415,10 +389,6 @@ endif()
 	   set (${PROJECT_NAME}_SRCS
                 ${${PROJECT_NAME}_SRCS}
 	        ./src/backend/audio/faad-decoder.cpp
-	   )
-	   set (${PROJECT_NAME}_MOCS
-	        ${${PROJECT_NAME}_MOCS}
-	        ./include/backend/audio/faad-decoder.h
 	   )
 	   add_definitions (-D__WITH_FAAD__)
 	endif (FDK_AAC)
@@ -462,11 +432,6 @@ endif()
 #	The devices
 #
 	if (SDRPLAY)
-	   set (${PROJECT_NAME}_MOCS
-	        ${${PROJECT_NAME}_MOCS}
-	        ./devices/sdrplay-handler/sdrplay-handler.h
-	   )
-
 	   include_directories (
 	     ./devices/sdrplay-handler
 	   )
@@ -486,13 +451,6 @@ endif()
 	endif (SDRPLAY)
 
 	if (SDRPLAY_V3)
-	   set (${PROJECT_NAME}_MOCS
-	        ${${PROJECT_NAME}_MOCS}
-	        ./devices/sdrplay-handler-v3/sdrplay-handler-v3.h
-	        ./devices/sdrplay-handler-v3/sdrplay-commands.h
-	        ./devices/sdrplay-handler-v3/include/sdrplay_api.h
-	   )
-
 	   include_directories (
 	     ./devices/sdrplay-handler-v3
 	     ./devices/sdrplay-handler-v3/include
@@ -518,11 +476,6 @@ endif()
 #           endif ()
 #	   ## include_directories (${AIRSPYLIB_INCLUDE_DIR})
 
-	   set (${PROJECT_NAME}_MOCS
-	        ${${PROJECT_NAME}_MOCS}
-	        ./devices/airspy-handler/airspy-handler.h
-	   )
-
 	   include_directories (
 	     ./devices/airspy-handler
 	     ./devices/airspy-handler/libairspy
@@ -545,12 +498,6 @@ endif()
 	endif (AIRSPY)
 
 	if (HACKRF)
-
-	   set (${PROJECT_NAME}_MOCS
-	        ${${PROJECT_NAME}_MOCS}
-	        ./devices/hackrf-handler/hackrf-handler.h
-	   )
-
 	   include_directories (
 	     ./devices/hackrf-handler
 	     ./devices/hackrf-handler/libhackrf
@@ -571,11 +518,6 @@ endif()
 	endif (HACKRF)
 #
 	if (LIMESDR)
-	   set (${PROJECT_NAME}_MOCS
-	        ${${PROJECT_NAME}_MOCS}
-	        ./devices/lime-handler/lime-handler.h
-	   )
-
 	   include_directories (
 	     ./devices/lime-handler
 	   )
@@ -596,11 +538,6 @@ endif()
 	endif (LIMESDR)
 
 	if (RTLSDR)
-	   set (${PROJECT_NAME}_MOCS
-	        ${${PROJECT_NAME}_MOCS}
-	        ./devices/rtlsdr-handler/rtlsdr-handler.h
-	   )
-
 	   include_directories (
 	        ./devices/rtlsdr-handler/
 	   )
@@ -642,42 +579,23 @@ endif()
 	     ${PORTAUDIO_INCLUDE_DIRS}
 	)
         list(APPEND extraLibs ${PORTAUDIO_LIBRARIES})
-	set (${PROJECT_NAME}_HDRS
-	     ${${PROJECT_NAME}_HDRS}
-	    ./include/output/audiosink.h
-	)
 
-	set (${PROJECT_NAME}_MOCS
-	    ${${PROJECT_NAME}_MOCS}
-	   ./include/output/audiosink.h
-	)
-
-	set (${PROJECT_NAME}_SRCS
-	   ${${PROJECT_NAME}_SRCS}
-	   ./src/output/audiosink.cpp
-	)
 	find_package (Qt5Multimedia REQUIRED)
 	include_directories (
 	  ${Qt5Multimedia_INCLUDE_DIRS}
 	)
         list(APPEND extraLibs ${Qt5Multimedia_LIBRARIES})
-	set (${PROJECT_NAME}_HDRS
-	     ${${PROJECT_NAME}_HDRS}
-	    ./include/output/Qt-audio.h
-	    ./include/output/Qt-audiodevice.h
-	)
 
-	set (${PROJECT_NAME}_MOCS
-	    ${${PROJECT_NAME}_MOCS}
-	   ./include/output/Qt-audio.h
-	   ./include/output/Qt-audiodevice.h
-	)
-
-	set (${PROJECT_NAME}_SRCS
-	   ${${PROJECT_NAME}_SRCS}
-	   ./src/output/Qt-audio.cpp
-	   ./src/output/Qt-audiodevice.cpp
-	)
+	if(WIN32 AND NOT MSYS AND NOT MINGW)
+		set (${PROJECT_NAME}_HDRS
+	 	    ${${PROJECT_NAME}_HDRS}
+		    ./include/share/getopt.h
+		)
+		set (${PROJECT_NAME}_SRCS
+	 	    ${${PROJECT_NAME}_SRCS}
+		    ./src/share/getopt.c
+		)
+	endif()
 
 	QT5_WRAP_UI (UIS ${${PROJECT_NAME}_UIS})
 
@@ -690,7 +608,8 @@ endif()
 	          ${FAAD_INCLUDE_DIRS}
 	)
 
-	QT5_WRAP_CPP (MOCS ${${PROJECT_NAME}_MOCS})
+	list(REMOVE_ITEM ${PROJECT_NAME}_HDRS "./devices/device-handler.h")
+	QT5_WRAP_CPP (MOCS ${${PROJECT_NAME}_HDRS})
 
 	add_executable (${BINARY_TARGET}
 	                ${${PROJECT_NAME}_SRCS}
