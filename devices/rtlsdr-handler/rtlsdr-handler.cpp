@@ -97,13 +97,17 @@ int	i, k;
 
 #if IS_WINDOWS
 	const char *libraryString = "rtlsdr.dll";
-	Handle		= LoadLibrary ((wchar_t *)L"rtlsdr.dll");
+	Handle		= LoadLibrary ((LPTSTR) "rtlsdr.dll");
 #else
 	const char *libraryString = "librtlsdr.so";
 	Handle		= dlopen ("librtlsdr.so", RTLD_NOW);
 #endif
 
 	if (Handle == NULL) {
+	   fprintf (stderr, "failed to open %s\n", libraryString);
+#if !IS_WINDOWS
+	   fprintf (stderr, "Error = %s\n", dlerror ());
+#endif
 	   throw (20);
 	}
 

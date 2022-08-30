@@ -34,7 +34,7 @@ lms_info_str_t limedevices [10];
 
 #if IS_WINDOWS
         const char *libraryString = "LimeSuite.dll";
-        Handle          = LoadLibrary ((wchar_t *)L"LimeSuite.dll");
+        Handle          = LoadLibrary ((LPTSTR) "LimeSuite.dll");
 #elif  __clang__
         const char *libraryString = "/opt/local/lib/libLimeSuite.dylib";
         Handle		= dlopen (libraryString, RTLD_NOW);

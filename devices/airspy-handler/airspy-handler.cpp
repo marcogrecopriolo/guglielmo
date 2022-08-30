@@ -47,7 +47,7 @@ uint32_t samplerateCount;
 	theBuffer		= NULL;
 #if IS_WINDOWS
 	const char *libraryString = "airspy.dll";
-	Handle		= LoadLibrary ((wchar_t *)L"airspy.dll");
+	Handle		= LoadLibrary ((LPTSTR) "airspy.dll");
 #else
 	const char *libraryString = "libairspy.so";
 	Handle		= dlopen ("libairspy.so", RTLD_LAZY);

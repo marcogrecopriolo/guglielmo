@@ -37,7 +37,7 @@ int	res;
 
 #if IS_WINDOWS
         const char *libraryString = "libhackrf.dll";
-        Handle          = LoadLibrary ((wchar_t *)L"libhackrf.dll");
+        Handle          = LoadLibrary ((LPTSTR) "libhackrf.dll");
 #else
         const char *libraryString = "libhackrf.so";
         Handle          = dlopen (libraryString, RTLD_NOW);
