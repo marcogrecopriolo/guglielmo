@@ -10,5 +10,6 @@
 	<file alias="slides.png">icons/slides.png</file>
 	<file alias="stations.png">icons/stations.png</file>
 	<file alias="empty.png">icons/empty.png</file>
+	<file alias="guglielmo_dimmed.png">icons/guglielmo_dimmed.png</file>
     </qresource>
 </RCC>

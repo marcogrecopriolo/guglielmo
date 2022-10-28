@@ -31,6 +31,8 @@
 #ifndef	__FIB_CONFIG__
 #define	__FIB_CONFIG__
 
+#define SERVICES_SIZE 64
+
 class	service {
 public:
 	service() {
@@ -73,7 +75,8 @@ void	reset		() {
 	namePresent	= false;
 	ecc_Present	= false;
 	isSynced	= false;
-	for (int i = 0; i < 64; i ++) 
+	count		= 0;
+	for (int i = 0; i < SERVICES_SIZE; i ++) 
 	   services [i]. reset ();
 }
 
@@ -83,7 +86,8 @@ bool    namePresent;
 bool	ecc_Present;
 uint8_t	ecc_byte;
 bool	isSynced;
-service	services [64];
+int	count;
+service	services [SERVICES_SIZE];
 };
 
 class	subChannelDescriptor {
@@ -183,15 +187,24 @@ public:
 
 void	reset	() {
 	int i;
-	for (i = 0; i < 64; i ++) {
+
+	addedCount = 0;
+	dataCount = 0;
+	count = 0;
+	doSignal = true;
+	for (i = 0; i < SERVICES_SIZE; i ++) {
 	   subChannels  [i]. reset ();
 	   serviceComps [i]. reset ();
 	}
 }
 
-subChannelDescriptor		subChannels [64];
-serviceComponentDescriptor      serviceComps [64];
+subChannelDescriptor		subChannels [SERVICES_SIZE];
+serviceComponentDescriptor      serviceComps [SERVICES_SIZE];
 Cluster				clusterTable [128];
+int				count;
+int				addedCount;
+int				dataCount;
+bool				doSignal;
 };
 
 #endif

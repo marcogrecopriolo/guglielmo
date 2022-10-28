@@ -113,6 +113,18 @@ void RadioInterface::handleSettingsAction() {
 	settingsDialog->connect(settingsUi.styleComboBox, SIGNAL(activated (const QString &)),
         	this, SLOT (setUiStyle(const QString &)));
 
+	// MPRIS
+#ifndef HAVE_MPRIS
+	settingsUi.tabWidget->removeTab(1);
+#else
+	settingsDialog->connect(settingsUi.remoteComboBox, SIGNAL(activated(const QString &)),
+        	this, SLOT(setRemoteMode(const QString &)));
+    	if (skipPresetMode)
+	    settingsUi.remoteComboBox->setCurrentIndex(0);
+	else
+	    settingsUi.remoteComboBox->setCurrentIndex(1);
+#endif
+
 	// Sound tab
 	settingsDialog->connect(settingsUi.modeComboBox, SIGNAL(activated(const QString &)),
         	this, SLOT(setSoundMode(const QString &)));
@@ -240,6 +252,12 @@ void RadioInterface::settingsClose(void) {
 void RadioInterface::setUiStyle(const QString &style) {
     QApplication::setStyle(style);
 }
+
+#ifdef HAVE_MPRIS
+void RadioInterface::setRemoteMode(const QString &mode) {
+	skipPresetMode = (mode == "presets");
+}
+#endif
 
 void RadioInterface::setSoundMode(const QString &mode) {
     bool nextIsQtAudio = (mode == "Qt");

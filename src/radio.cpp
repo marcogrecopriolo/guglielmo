@@ -22,6 +22,7 @@
 #include <QStringList>
 #include <QCloseEvent>
 #include <QFileInfo>
+#include <QStandardPaths>
 #include <fstream>
 #include "constants.h"
 #include "settings.h"
@@ -119,6 +120,11 @@ RadioInterface::RadioInterface (QSettings *Si, QWidget	 *parent):
     ensembleModel.clear();
     ensembleDisplay->setModel(&ensembleModel);
 
+#ifdef HAVE_MPRIS
+    player.setServiceName(QString("guglielmo"));
+    player.setIdentity(QString("guglielmo"));
+#endif
+
     // Settings
     // UI
     settings->beginGroup(GROUP_UI);
@@ -171,13 +177,17 @@ RadioInterface::RadioInterface (QSettings *Si, QWidget	 *parent):
     settings->endGroup();
 
     // base settings
-    lastVolume  = settings->value(GEN_VOLUME, GEN_DEF_VOLUME).toInt();
+    lastVolume = settings->value(GEN_VOLUME, GEN_DEF_VOLUME).toInt();
     if (lastVolume < 0)
 	lastVolume = 0;
     else if (lastVolume > 100)
 	lastVolume = 100;
     soundOut->setVolume(qreal(lastVolume)/100);
     volumeKnob->setValue(double(lastVolume));
+#ifdef HAVE_MPRIS
+    lastPreset = settings->value(GEN_LAST_PRESET, 1).toInt();
+    skipPresetMode = settings->value(GEN_SKIP_PRESET_MODE, true).toBool();
+#endif
 
     findDevices();
     DABband.setupChannels(channelSelector, BAND_III);
@@ -258,6 +268,26 @@ RadioInterface::RadioInterface (QSettings *Si, QWidget	 *parent):
 		this, SLOT(handleVolume(double)));
     connect(squelchKnob, SIGNAL(valueChanged(double)),
 		this, SLOT(handleSquelch(double)));
+
+#ifdef HAVE_MPRIS
+    player.setCanControl(true);
+    player.setVolume(double(lastVolume) / 100);
+    player.setCanQuit(true);
+    player.setCanPlay(true);
+    player.setCanPause(true);
+    player.setCanGoNext(true);
+    player.setCanGoPrevious(true);
+    player.setPlaybackStatus(Mpris::Stopped);
+    connect(&player, SIGNAL(volumeRequested(double)), this, SLOT(mprisVolume(double)));
+    connect(&player, SIGNAL(quitRequested()), this, SLOT(mprisClose()));
+    connect(&player, SIGNAL(playRequested()), this, SLOT(handlePlayButton()));
+    connect(&player, SIGNAL(pauseRequested()), this, SLOT(handlePauseButton()));
+    connect(&player, SIGNAL(playPauseRequested()), this, SLOT(handlePlayPause()));
+    connect(&player, SIGNAL(stopRequested()), this, SLOT(handlePauseButton()));
+    connect(&player, SIGNAL(nextRequested()), this, SLOT(mprisNextButton()));
+    connect(&player, SIGNAL(previousRequested()), this, SLOT(mprisPreviousButton()));
+    player.setMetadata(metadata);
+#endif
 
     channel = settings->value(GEN_CHANNEL, GEN_DEF_CHANNEL).toString();
     i = channelSelector->findText(channel);
@@ -346,6 +376,11 @@ void RadioInterface::terminateProcess() {
     settings->setValue(GEN_DAB_MODE, isSlides? GEN_DAB_SLIDES: GEN_DAB_STATIONS);
     settings->setValue(GEN_VOLUME, int(volumeKnob->value()));
     settings->setValue(GEN_SQUELCH, int(squelchKnob->value()));
+#ifdef HAVE_MPRIS
+    settings->setValue(GEN_LAST_PRESET, int(lastPreset));
+    settings->setValue(GEN_SKIP_PRESET_MODE, bool(skipPresetMode));
+    QFile::remove(currentPicFile);
+#endif
     settings->beginWriteArray(GROUP_PRESETS);
 
     // skip 'presets'
@@ -372,7 +407,7 @@ void RadioInterface::terminateProcess() {
 void RadioInterface::findDevices() {
     deviceDescriptor discoveredDevice;
 
-#ifdef	HAVE_SDRPLAY_V3
+#ifdef HAVE_SDRPLAY_V3
     bool foundV3 = false;
     try {
 	    discoveredDevice.device = new sdrplayHandler_v3();
@@ -382,7 +417,7 @@ void RadioInterface::findDevices() {
 	    foundV3 = true;
     } catch (int e) {}
 #endif
-#ifdef	HAVE_SDRPLAY
+#ifdef HAVE_SDRPLAY
 #ifdef HAVE_SDRPLAY_V3
 
     // rdsplay v2 is a fallback
@@ -395,7 +430,7 @@ void RadioInterface::findDevices() {
 	        deviceList.push_back(discoveredDevice);
 	} catch (int e) {}
 #endif
-#ifdef	HAVE_RTLSDR
+#ifdef HAVE_RTLSDR
 // no LNA
     try {
 	    discoveredDevice.device = new rtlsdrHandler();
@@ -404,7 +439,7 @@ void RadioInterface::findDevices() {
 	    deviceList.push_back(discoveredDevice);
     } catch (int e) {}
 #endif
-#ifdef	HAVE_AIRSPY
+#ifdef HAVE_AIRSPY
 // no LNA
     try {
 	    discoveredDevice.device = new airspyHandler();
@@ -413,7 +448,7 @@ void RadioInterface::findDevices() {
 	    deviceList.push_back(discoveredDevice);
     } catch (int e) {}
 #endif
-#ifdef	HAVE_LIME
+#ifdef HAVE_LIME
     try {
 	    discoveredDevice.device = new limeHandler();
 	    discoveredDevice.deviceName = "Lime";
@@ -421,7 +456,7 @@ void RadioInterface::findDevices() {
 	    deviceList.push_back(discoveredDevice);
     } catch (int e) {}
 #endif
-#ifdef	HAVE_PLUTO
+#ifdef HAVE_PLUTO
 // no LNA
     try {
 	    discoveredDevice.device = new plutoHandler();
@@ -430,7 +465,7 @@ void RadioInterface::findDevices() {
 	    deviceList.push_back(discoveredDevice);
     } catch (int e) {}
 #endif
-#ifdef	HAVE_HACKRF
+#ifdef HAVE_HACKRF
 // no AGC
     try {
 	    discoveredDevice.device = new hackrfHandler();
@@ -548,6 +583,10 @@ void RadioInterface::startFMscan(bool down) {
     setPlaying();
     setRecording();
     setScanning();
+#ifdef HAVE_MPRIS
+    mprisLabelAndText("FM", "Scanning");
+    player.setPlaybackStatus(Mpris::Stopped);
+#endif
     FMfreq = (FMfreq*10+scanIncrement)/10;
     frequencyKnob->setValue(double(FMfreq));
     frequencyLCD->display(int(FMfreq*1000));
@@ -604,9 +643,9 @@ void RadioInterface::scanDone(void) {
 
 //	slots exercised by the processors
 
-void RadioInterface::addToEnsemble(const QString &serviceName, int32_t SId) {
+void RadioInterface::addToEnsemble(const QString &serviceName, uint32_t SId) {
     serviceId ed;
-    int lastId = 0;
+    uint32_t lastId = 0;
     QString lastName = "";
     bool inserted = false;
     std::vector<serviceId>::iterator i;
@@ -625,7 +664,7 @@ void RadioInterface::addToEnsemble(const QString &serviceName, int32_t SId) {
 	inserted = true;
     } else if (serviceOrder == ID_BASED) {
 	for (i=serviceList.begin(); i<serviceList.end(); i++) {
-	    if (lastId < SId && SId <= (int) i->SId) {
+	    if (lastId < SId && SId <= i->SId) {
 	    	serviceList.insert(i, ed);
 		inserted = true;
 		break;
@@ -656,14 +695,40 @@ void RadioInterface::addToEnsemble(const QString &serviceName, int32_t SId) {
 
     ensembleDisplay->setModel(&ensembleModel);
     if (nextService.valid && nextService.serviceName == serviceName) {
+#ifdef HAVE_MPRIS
+	mprisLabelAndText("DAB", serviceName.trimmed());
+#endif
 	startDABService(&nextService);
 	nextService.valid = false;
     }
+#ifdef HAVE_MPRIS
+    else if (currentService.valid && currentService.serviceName == serviceName)
+	mprisLabelAndText("DAB", serviceName.trimmed());
+#endif
 }
 
 void RadioInterface::nameOfEnsemble(int id, const QString &v) {
     ensembleId->setAlignment(Qt::AlignLeft);
     ensembleId->setText(v + " (" + QString::number(id, 16) + ")");
+}
+
+void RadioInterface::ensembleLoaded(int count) {
+    dabService s;
+    int i = 0;
+
+    if (nextService.valid && nextService.serviceName == "" && count > 0) {
+	if (nextService.fromEnd)
+	    i = serviceList.size() - 1;
+	
+	s.serviceName = serviceList.at(i).name;
+	s.valid = true;
+#ifdef HAVE_MPRIS
+	mprisLabelAndText("DAB", s.serviceName.trimmed());
+#endif
+	startDABService(&s);
+    }
+    nextService.serviceName = "";
+    nextService.valid = false;
 }
 
 void RadioInterface::showStrength(float strength) {
@@ -691,6 +756,15 @@ void RadioInterface::showQuality(bool b) {
 
 void RadioInterface::showText(QString s) {
     dynamicLabel->setText(s);
+#ifdef HAVE_MPRIS
+
+    // some MPRIS mistakenly report "no track playing" if the title is empty
+    // note that blank but no empty does the trick
+    if (s != "") {
+	metadata["xesam:title"] = s;
+	player.setMetadata(metadata);
+    }
+#endif
 }
 
 void RadioInterface::showSoundMode(bool s) {
@@ -702,6 +776,10 @@ void RadioInterface::showSoundMode(bool s) {
 void RadioInterface::showLabel(const QString s) {
     serviceLabel->setAlignment(Qt::AlignLeft);
     serviceLabel->setText(s);
+#ifdef HAVE_MPRIS
+    metadata["xesam:artist"] = s;
+    player.setMetadata(metadata);
+#endif
 }
 
 void RadioInterface::showSlides(QByteArray data, int contentType, QString pictureName, int dirs) {
@@ -734,12 +812,23 @@ void RadioInterface::showSlides(QByteArray data, int contentType, QString pictur
 }
 
 void RadioInterface::showSlides(QPixmap p) {
+#ifdef HAVE_MPRIS
+    QString tmpPicFile = currentPicFile;
+#endif
     int h = slidesLabel->height();
     int w = slidesLabel->width();
 
     slidesLabel->setPixmap(p.scaled(w, h, Qt::KeepAspectRatio));
     if (isSlides)
 	slidesLabel->show();
+#ifdef HAVE_MPRIS
+    if (tmpPicFile != "")
+	QFile::remove(tmpPicFile);
+    currentPicFile = QStandardPaths::writableLocation(QStandardPaths::TempLocation) + QString("/guglielmo%1.png").arg(rand());
+    p.save(currentPicFile);
+    metadata["mpris:artUrl"] = currentPicFile;
+    player.setMetadata(metadata);
+#endif
 }
 
 void RadioInterface::handleMotObject (QByteArray result,
@@ -770,6 +859,9 @@ void RadioInterface::closeEvent(QCloseEvent *event) {
 
 void RadioInterface::handleVolume(double vol) {
     soundOut->setVolume(qreal(vol)/100);
+#ifdef HAVE_MPRIS
+    player.setVolume(vol / 100);
+#endif
 }
 
 void RadioInterface::handleSquelch(double val) {
@@ -800,7 +892,9 @@ void deletePreset(QComboBox *presetSelector, QString preset) {
 }
 
 void RadioInterface::handlePresetSelector(const QString &preset) {
-    if ((preset == "Presets") || (presetSelector->currentIndex() == 0))
+    int newPreset;
+
+    if ((preset == "Presets") || (presetSelector->count() <= 1))
 	return;
 
     QStringList list = preset.split(":", QString::SkipEmptyParts);
@@ -811,6 +905,11 @@ void RadioInterface::handlePresetSelector(const QString &preset) {
     }
     playing = false;
     stopRecording();
+#ifdef HAVE_MPRIS
+    newPreset = presetSelector->findText(preset, Qt::MatchExactly);
+    if (newPreset > 0)
+	lastPreset = newPreset;
+#endif
 
     if (list.at(0) == "FM") {
 	bool ok;
@@ -925,6 +1024,10 @@ void RadioInterface::stopDABService() {
     }
     currentService.valid = false;
     cleanScreen();
+#ifdef HAVE_MPRIS
+    mprisLabelAndText("DAB", currentService.serviceName.trimmed());
+    player.setPlaybackStatus(Mpris::Stopped);
+#endif
 }
 
 void RadioInterface::handleSelectService(QModelIndex ind) {
@@ -985,7 +1088,7 @@ void RadioInterface::startDABService(dabService *s) {
 
 	    ensembleDisplay->setCurrentIndex(ensembleModel.index(i, 0));
 	    serviceLabel->setStyleSheet("QLabel {color: black}");
-	    serviceLabel->setText (serviceName);
+	    showLabel(serviceName);
 	    if (DABprocessor->is_audioService(serviceName)) {
 		DABprocessor->dataforAudioService (serviceName, &ad);
 		if (!ad.defined)
@@ -1000,6 +1103,10 @@ void RadioInterface::startDABService(dabService *s) {
 		playing = true;
 		setPlaying();
 		setRecording();
+#ifdef HAVE_MPRIS
+		mprisLabelAndText(serviceName.trimmed(), " ");
+		player.setPlaybackStatus(Mpris::Playing);
+#endif
 	    } else
 		warning(this, tr(BAD_SERVICE));
 	    return;
@@ -1012,7 +1119,11 @@ void RadioInterface::startDAB(const QString &channel) {
 
     if (inputDevice == nullptr || DABprocessor == nullptr)
 	return;
-    slidesLabel->clear();
+#ifdef HAVE_MPRIS
+    mprisEmptyArt(true);
+    mprisLabelAndText("DAB", channel);
+    player.setPlaybackStatus(Mpris::Stopped);
+#endif
     inputDevice->restartReader(tunedFrequency);
     DABprocessor->start(tunedFrequency);
 }
@@ -1040,6 +1151,10 @@ void RadioInterface::stopDAB() {
     ensembleDisplay->setModel(&ensembleModel);
     ensembleId->clear();
     cleanScreen();
+#ifdef HAVE_MPRIS
+    mprisLabelAndText("DAB", " ");
+    player.setPlaybackStatus(Mpris::Stopped);
+#endif
 }
 
 void RadioInterface::handleSelectChannel(const QString &channel) {
@@ -1082,8 +1197,10 @@ void RadioInterface::handleNextChanButton() {
     channelSelector->setCurrentIndex(currentChannel);
     connect (channelSelector, SIGNAL(activated (const QString &)),
 		this, SLOT(handleSelectChannel(const QString &)));
-    startDAB(channelSelector->currentText());
     currentService.valid = false;
+    nextService.valid = true;
+    nextService.fromEnd = false;
+    startDAB(channelSelector->currentText());
 }
 
 void RadioInterface::handlePrevChanButton() {
@@ -1121,8 +1238,10 @@ void RadioInterface::handlePrevChanButton() {
     channelSelector->setCurrentIndex(currentChannel);
     connect(channelSelector, SIGNAL(activated(const QString &)),
 		this, SLOT(handleSelectChannel(const QString &)));
-    startDAB(channelSelector->currentText());
     currentService.valid = false;
+    nextService.valid = true;
+    nextService.fromEnd = true;
+    startDAB(channelSelector->currentText());
 }
 
 //	FM ops
@@ -1140,6 +1259,11 @@ void RadioInterface::startFM(int32_t freq) {
     recording = false;
     setPlaying();
     setRecording();
+#ifdef HAVE_MPRIS
+    mprisEmptyArt(false);
+    mprisLabelAndText("FM", QString().sprintf("%3.3f", FMfreq));
+    player.setPlaybackStatus(Mpris::Playing);
+#endif
 }
 
 void RadioInterface::stopFM() {
@@ -1159,6 +1283,11 @@ void RadioInterface::stopFM() {
     setRecording();
     setScanning();
     cleanScreen();
+#ifdef HAVE_MPRIS
+    mprisEmptyArt(true);
+    mprisLabelAndText("FM", QString().sprintf("%3.3f", FMfreq));
+    player.setPlaybackStatus(Mpris::Stopped);
+#endif
 }
 
 void RadioInterface::handleScanDown() {
@@ -1220,7 +1349,21 @@ void RadioInterface::handlePauseButton() {
 	stopDABService();
 }
 
+void RadioInterface::handlePlayPause() {
+    if (playing)
+	handlePauseButton();
+    else
+	handlePlayButton();
+}
+
+#define PAUSED "paused - "
+
 void RadioInterface::setPlaying() {
+    QString title;
+
+    title = windowTitle();
+    if (title.startsWith(PAUSED))
+	title.remove(0, strlen(PAUSED));
     if (inputDevice != nullptr && ((isFM && !scanning) || (!isFM && currentService.valid))) {
 	playButton->setEnabled(true);
 	if (playing) {
@@ -1233,12 +1376,15 @@ void RadioInterface::setPlaying() {
 			this, SLOT(handlePlayButton(void)));
 	    playButton->setIcon(style()->standardIcon(QStyle::SP_MediaPlay));
 	    playButton->setToolTip("Start playback");
+	    title.prepend(PAUSED);
 	}
     } else {
 	playButton->setToolTip("");
 	playButton->setIcon(style()->standardIcon(QStyle::SP_MediaPlay));
 	playButton->setEnabled(false);
+	title.prepend(PAUSED);
     }
+    setWindowTitle(title);
 }
 
 void RadioInterface::handleRecordButton() {
@@ -1386,19 +1532,122 @@ void RadioInterface::toFM() {
     FMButton->setChecked(true);
     slidesAction->setVisible(false);
     stationsAction->setVisible(false);
+#ifdef HAVE_MPRIS
+    mprisEmptyArt(true);
+    mprisLabelAndText("FM", QString().sprintf("%3.3f", FMfreq));
+    player.setPlaybackStatus(Mpris::Stopped);
+#endif
 }
 
 // utility
 
 void RadioInterface::cleanScreen() {
-    serviceLabel->clear();
+    QPixmap p;
+
     if (isFM)
 	ensembleId->clear();
+    serviceLabel->clear();
     dynamicLabel->clear();
-    slidesLabel->clear();
+#ifdef HAVE_MPRISX
+    mprisEmptyArt(true);
+#endif
     presetSelector->setCurrentIndex(0);
     stereoLabel->setStyleSheet(stereoStyle);
     stereoLabel->clear();
     signalQuality->setValue(0);
     signalStrength->setValue(0);
 }
+
+void RadioInterface::changePreset(int d) {
+#ifdef HAVE_MPRIS
+     if (presetSelector->count() <= 1)
+	return;
+     lastPreset += d;
+     if (lastPreset >= presetSelector->count())
+	lastPreset = 1;
+     else if (lastPreset <= 1)
+	lastPreset = presetSelector->count()-1;
+     handlePresetSelector(presetSelector->itemText(lastPreset));
+#endif
+}
+
+void RadioInterface::changeStation(int d) {
+    if (isFM) {
+	if (d < 0 && FMfreq <= MIN_FM) {
+		handleDABButton();
+		channelSelector->setCurrentIndex(channelSelector->count()-1);
+		nextService.serviceName = "";
+	        nextService.valid = true;
+		nextService.fromEnd = true;
+		startDAB(channelSelector->currentText());
+		return;
+	} else if (d > 0 && FMfreq >= MAX_FM) {
+		handleDABButton();
+		channelSelector->setCurrentIndex(0);
+		nextService.serviceName = "";
+	        nextService.valid = true;
+		nextService.fromEnd = false;
+		startDAB(channelSelector->currentText());
+		return;
+	}
+    } else {
+	if (d < 0 && channelSelector->currentIndex() == 0) {
+		handleFMButton();
+		FMfreq = MAX_FM;
+	}
+	else if (d >0 && channelSelector->currentIndex() == channelSelector->count()-1) {
+		handleFMButton();
+		FMfreq = MIN_FM;
+	}
+    }
+    if (isFM)
+	startFMscan((d > 0));
+    else if (d < 0)
+	handlePrevChanButton();
+    else
+	handleNextChanButton();
+}
+
+// MPRIS
+
+#ifdef HAVE_MPRIS
+void RadioInterface::mprisLabelAndText(QString l, QString t) {
+    metadata["xesam:artist"] = l;
+    metadata["xesam:title"] = t;
+    player.setMetadata(metadata);
+}
+
+void RadioInterface::mprisEmptyArt(bool dimmed) {
+    QPixmap p;
+
+    if (dimmed)
+	p.load(":/guglielmo_dimmed.png");
+    else
+	p.load(":/guglielmo.ico");
+    showSlides(p);
+}
+
+void RadioInterface::mprisClose() {
+	terminateProcess();
+	exit(0);
+}
+
+void RadioInterface::mprisVolume(double vol) {
+    volumeKnob->setValue(vol * 100);
+    soundOut->setVolume(qreal(vol));
+}
+
+void RadioInterface::mprisNextButton() {
+    if (skipPresetMode)
+	changePreset(1);
+    else
+	changeStation(1);
+}
+
+void RadioInterface::mprisPreviousButton() {
+    if (skipPresetMode)
+	changePreset(-1);
+    else
+	changeStation(-1);
+}
+#endif

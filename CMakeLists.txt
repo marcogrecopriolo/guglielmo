@@ -16,6 +16,7 @@ if (UNIX)
     execute_process(COMMAND uname OUTPUT_VARIABLE os OUTPUT_STRIP_TRAILING_WHITESPACE)
     if(${os} STREQUAL "Linux")
 	add_definitions(-DCHOOSE_CONFIG=${os})
+	set(MPRIS true)
     endif()
 elseif (NOT MSYS AND NOT MINGW)
     execute_process(COMMAND powershell Get-Date -Uformat \"%Y-%m-%d %H:%M:%S %Z\" OUTPUT_VARIABLE currentDate OUTPUT_STRIP_TRAILING_WHITESPACE)
@@ -167,6 +168,15 @@ endif()
             message(FATAL_ERROR "please install libsamplerate")
         endif ()
         list(APPEND extraLibs ${LIBSAMPLERATE_LIBRARY})
+
+	if (MPRIS)
+		pkg_check_modules(MPRIS mpris-qt5)
+		if (MPRIS_FOUND)
+			add_definitions(-DHAVE_MPRIS)
+			include_directories(${MPRIS_INCLUDE_DIRS})
+			list(APPEND extraLibs ${MPRIS_LIBRARIES})
+		endif ()
+	endif ()
 
 #######################################################################
 #

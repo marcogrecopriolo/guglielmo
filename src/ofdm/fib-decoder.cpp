@@ -1,24 +1,27 @@
-#
 /*
- *    Copyright (C) 2018, 2019, 2020
- *    Jan van Katwijk (J.vanKatwijk@gmail.com)
- *    Lazy Chair Computing
+ *    Copyright (C) 2022
+ *    Marco Greco <marcogrecopriolo@gmail.com>
  *
- *    This file is part of the Qt-DAB program
+ *    This file is part of the guglielmo FM DAB tuner software package.
  *
- *    Qt-DAB is free software; you can redistribute it and/or modify
+ *    guglielmo is free software; you can redistribute it and/or modify
  *    it under the terms of the GNU General Public License as published by
- *    the Free Software Foundation; either version 2 of the License, or
- *    (at your option) any later version.
+ *    the Free Software Foundation, version 2 of the License.
  *
- *    Qt-DAB is distributed in the hope that it will be useful,
+ *    guglielmo is distributed in the hope that it will be useful,
  *    but WITHOUT ANY WARRANTY; without even the implied warranty of
  *    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *    GNU General Public License for more details.
  *
  *    You should have received a copy of the GNU General Public License
- *    along with Qt-DAB; if not, write to the Free Software
+ *    along with guglielmo; if not, write to the Free Software
  *    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ *
+ *    Taken Qt-DAB program with bug fixes and enhancements.
+ *
+ *    Copyright (C) 2018, 2019, 2020
+ *    Jan van Katwijk (J.vanKatwijk@gmail.com)
+ *    Lazy Chair Computing
  *
  * 	fib decoder. Functionality is shared between fic handler, i.e. the
  *	one preparing the FIC blocks for processing, and the mainthread
@@ -37,8 +40,10 @@
 	myRadioInterface	= mr;
 	memset (dateTime, 0, sizeof (dateTime));
 
-	connect (this, SIGNAL (addToEnsemble (const QString &, int)),
-	         myRadioInterface, SLOT (addToEnsemble (const QString &, int)));
+	connect (this, SIGNAL (addToEnsemble (const QString &, uint)),
+		 myRadioInterface, SLOT (addToEnsemble (const QString &, uint)));
+	connect (this, SIGNAL (ensembleLoaded (int)),
+	         myRadioInterface, SLOT (ensembleLoaded (int)));
 	connect (this, SIGNAL (nameOfEnsemble (int, const QString &)),
 	         myRadioInterface,
 	                    SLOT (nameOfEnsemble (int, const QString &)));
@@ -1085,48 +1090,59 @@ void	fibDecoder::bind_audioService (dabConfig *base,
 	                               int16_t	ps_flag,
 	                               int16_t	ASCTy) {
 int16_t	i;
-int16_t	firstFree	= -1;
+int16_t	firstFree;
 bool	showFlag	= true;
-int	serviceIndex	= findService (SId);
-
-	if (serviceIndex == -1)
-	   return;
+int	serviceIndex;
 
 	if (!base -> subChannels [subChId]. inUse)
 	   return;
 
-	for (i = 0; i < 64; i ++) {
-	   if (!base -> serviceComps [i]. inUse) {
-	      if (firstFree == -1)
-	         firstFree = i;
-	      break;
-	   }
-
+	for (i = 0; i < base -> count; i ++) {
 	   if ((base -> serviceComps [i]. SId == SId) &&
-	       (base -> serviceComps [i]. componentNr == compnr))
+	       (base -> serviceComps [i]. componentNr == compnr)) {
+	      if (base -> doSignal && base -> addedCount + base -> dataCount == ensemble -> count &&
+		 base -> count == ensemble -> count) {
+		 ensembleLoaded(base -> addedCount);
+	 	 base -> doSignal = false;
+	      } else if (!base -> serviceComps [i]. inUse) {
+		 serviceIndex = findService(SId);
+		 if (serviceIndex != -1) {
+	   	    QString dataName = ensemble -> services [serviceIndex]. serviceLabel;
+		    base -> serviceComps [i]. inUse = true;
+	   	    ensemble -> services [serviceIndex]. SCIds		= 0;
+		    base -> addedCount++;
+	            addToEnsemble (dataName, SId);
+		    ensemble -> services [serviceIndex]. is_shown	= true;
+		 }
+	      }
 	      return;
+	   }
 	}
 
-	QString dataName = ensemble -> services [serviceIndex]. serviceLabel;
-	if (ensemble -> services [serviceIndex]. is_shown)
-	   showFlag = false;
+	firstFree = base -> count;
+	base	-> count++;
+	base	-> serviceComps [firstFree]. SId		= SId;
+	base	-> serviceComps [firstFree]. SCIds		= 0;
+	base	-> serviceComps [firstFree]. TMid		= TMid;
+	base	-> serviceComps [firstFree]. componentNr	= compnr;
+	base	-> serviceComps [firstFree]. subchannelId	= subChId;
+	base	-> serviceComps [firstFree]. PS_flag		= ps_flag;
+	base	-> serviceComps [firstFree]. ASCTy		= ASCTy;
+	base	-> serviceComps [firstFree]. inUse		= false;
+	serviceIndex = findService(SId);
+	if (serviceIndex != -1) {
+	   QString dataName = ensemble -> services [serviceIndex]. serviceLabel;
 
-	bool	useFlag	 = base -> serviceComps [firstFree]. inUse;
-	if (!useFlag) {
-	   base -> serviceComps [firstFree]. SId		= SId;
-	   base	-> serviceComps [firstFree]. SCIds		= 0;
-	   base	-> serviceComps [firstFree]. TMid		= TMid;
-	   base	-> serviceComps [firstFree]. componentNr	= compnr;
-	   base	-> serviceComps [firstFree]. subchannelId	= subChId;
-	   base	-> serviceComps [firstFree]. PS_flag		= ps_flag;
-	   base	-> serviceComps [firstFree]. ASCTy		= ASCTy;
+	   if (ensemble -> services [serviceIndex]. is_shown)
+	      showFlag = false;
 	   base	-> serviceComps [firstFree]. inUse		= true;
 	   ensemble -> services [serviceIndex]. SCIds		= 0;
 	   if (showFlag) {
+	      base -> addedCount++;
 	      addToEnsemble (dataName, SId);
-	   }
+	    }
+	    ensemble -> services [serviceIndex]. is_shown	= true;
 	}
-	ensemble -> services [serviceIndex]. is_shown	= true;
 }
 
 //      bind_packetService is the main processor for - what the name suggests -
@@ -1153,32 +1169,27 @@ int	firstFree = -1;
 
 	QString serviceName = ensemble -> services [serviceIndex]. serviceLabel;
 
-	for (i = 0; i < 64; i ++) {
-	   if (!base -> serviceComps [i]. inUse) {
-	      if (firstFree == -1)
-	         firstFree = i;
-	      break;
-	   }
-
+	for (i = 0; i < base -> count; i ++) {
 	   if ((base -> serviceComps [i]. SId == SId) &&
 	       (base -> serviceComps [i]. componentNr == compnr))
 	      return;
 	}
+	firstFree = base -> count;
 
-	if (!base -> serviceComps [firstFree]. inUse) {
-	   base -> serviceComps [firstFree]. inUse		= true;
-	   base -> serviceComps [firstFree]. SId		= SId;
-	   if (compnr == 0)
-	      base -> serviceComps [firstFree]. SCIds		= 0;
-	   else
-	      base -> serviceComps [firstFree]. SCIds		= -1;
-	   base -> serviceComps [firstFree]. SCId		= SCId;
-	   base -> serviceComps [firstFree]. TMid		= TMid;
-	   base -> serviceComps [firstFree]. componentNr	= compnr;
-	   base -> serviceComps [firstFree]. PS_flag		= ps_flag;
-	   base -> serviceComps [firstFree]. CAflag		= CAflag;
-	   base -> serviceComps [firstFree]. is_madePublic	= false;
-	}
+	base -> count++;
+	base -> dataCount++;
+	base -> serviceComps [firstFree]. inUse		= true;
+	base -> serviceComps [firstFree]. SId		= SId;
+	if (compnr == 0)
+	   base -> serviceComps [firstFree]. SCIds	= 0;
+	else
+	   base -> serviceComps [firstFree]. SCIds	= -1;
+	base -> serviceComps [firstFree]. SCId		= SCId;
+	base -> serviceComps [firstFree]. TMid		= TMid;
+	base -> serviceComps [firstFree]. componentNr	= compnr;
+	base -> serviceComps [firstFree]. PS_flag	= ps_flag;
+	base -> serviceComps [firstFree]. CAflag	= CAflag;
+	base -> serviceComps [firstFree]. is_madePublic	= false;
 }
 
 static inline
@@ -1188,8 +1199,8 @@ bool	match (QString s1, QString s2) {
 //
 int	fibDecoder::findService		(const QString &s) {
 int	i;
-	for (i = 0; i < 64; i ++) {
-	   if (!ensemble -> services [i]. inUse)
+	for (i = 0; i < ensemble -> count; i ++) {
+	   if (!ensemble -> services [i]. inUse) // FIXME
 	      continue;
 	   if (match (s, ensemble -> services [i]. serviceLabel))
 	      return i;
@@ -1198,9 +1209,9 @@ int	i;
 }
 int	fibDecoder::findService	 (uint32_t SId) {
 int	i;
-	for (i = 0; i < 64; i ++) {
-	   if (!ensemble -> services [i]. inUse)
-	      return -1;
+	for (i = 0; i < ensemble -> count; i ++) {
+	   if (!ensemble -> services [i]. inUse) // FIXME
+	      continue;
 	   if (ensemble -> services [i]. SId == SId)
 	      return i;
 	}
@@ -1209,7 +1220,7 @@ int	i;
 
 //	find data component using the SCId
 int	fibDecoder::findServiceComponent (dabConfig *db, int16_t SCId) {
-	for (int i = 0; i < 64; i ++)
+	for (int i = 0; i < db -> count; i ++)
 	   if (db -> serviceComps [i]. inUse &&
 	       (db -> serviceComps [i]. SCId == SCId))
 	      return i;
@@ -1224,9 +1235,9 @@ int serviceIndex = findService (SId);
 	if (serviceIndex == -1)
 	   return -1;
 	
-	for (int i = 0; i < 64; i ++) {
+	for (int i = 0; i < db -> count; i ++) {
 	   if (!db -> serviceComps [i]. inUse)
-	      return -1;
+	      continue;
 	   if ((db -> serviceComps [i]. SCIds == SCIds) &&
 	       (db -> serviceComps [i]. SId == SId))
 	      return i;
@@ -1237,9 +1248,9 @@ int serviceIndex = findService (SId);
 //	find serviceComponent using the SId and the subchannelId
 int	fibDecoder::findComponent	(dabConfig *db,
 	                                 uint32_t SId, int16_t subChId) {
-	for (int i = 0; i < 64; i ++) {
+	for (int i = 0; i < db -> count; i ++) {
 	   if (!db -> serviceComps [i]. inUse)
-	      return -1;
+	      continue;
 	   if ((db ->serviceComps [i]. SId == SId) &&
 	       (db -> serviceComps [i]. subchannelId == subChId))
 	      return i;
@@ -1248,25 +1259,22 @@ int	fibDecoder::findComponent	(dabConfig *db,
 }
 
 void	fibDecoder::createService (QString name, uint32_t SId, int SCIds) {
-	for (int i = 0; i < 64; i ++) {
-	   if (ensemble -> services [i]. inUse) {
-	      continue;
-	   }
-	   ensemble	-> services [i]. inUse		= true;
-	   ensemble	-> services [i]. hasName	= true;
-	   ensemble	-> services [i]. serviceLabel	= name;
-	   ensemble	-> services [i]. SId		= SId;
-	   ensemble	-> services [i]. SCIds		= SCIds;
-	   return;
-	}
+	int i = ensemble->count;
+
+	ensemble	-> count++;
+	ensemble	-> services [i]. inUse		= true; // FIXME
+	ensemble	-> services [i]. hasName	= true;
+	ensemble	-> services [i]. serviceLabel	= name;
+	ensemble	-> services [i]. SId		= SId;
+	ensemble	-> services [i]. SCIds		= SCIds;
 }
 //
 //	called after a change in configuration to verify
 //	the services health
 //
 void	fibDecoder::cleanupServiceList () {
-	for (int i = 0; i < 64; i ++) {
-	   if (!ensemble -> services [i]. inUse)
+	for (int i = 0; i < SERVICES_SIZE; i ++) {
+	   if (!ensemble -> services [i]. inUse)	// FIXME
 	      continue;
 	   uint32_t SId		= ensemble -> services [i]. SId;
 	   int	    SCIds	= ensemble -> services [i]. SCIds;
@@ -1274,6 +1282,7 @@ void	fibDecoder::cleanupServiceList () {
 	      ensemble -> services [i]. inUse = false;
 	   }
 	}
+	ensemble -> count = 0;
 }
 
 QString	fibDecoder::announcements (uint16_t a) {
@@ -1499,8 +1508,8 @@ int     serviceIndex;
 std::vector<serviceId> fibDecoder::getServices (int order) {
 std::vector<serviceId> services;
 
-	for (int i = 0; i < 64; i ++)
-	   if (ensemble -> services [i]. inUse &&
+	for (int i = 0; i < ensemble -> count; i ++)
+	   if (ensemble -> services [i]. inUse &&	// FIXME
 	       ensemble -> services [i]. hasName) {
 	      serviceId ed;
 	      ed. name = ensemble -> services [i]. serviceLabel;
@@ -1541,8 +1550,8 @@ std::vector<serviceId> k;
 
 QString	fibDecoder::findService (uint32_t SId, int SCIds) {
 QString result;
-	for (int i = 0; i < 64; i ++)
-	   if (ensemble -> services [i]. inUse &&
+	for (int i = 0; i < ensemble -> count; i ++)
+	   if (ensemble -> services [i]. inUse &&		// FIXME
 	       (ensemble -> services [i]. SId == SId) &&
 	       (ensemble -> services [i]. SCIds == SCIds))
 	      return ensemble -> services [i]. serviceLabel;
@@ -1743,8 +1752,8 @@ int32_t	theTime	[6];
 
 void	fibDecoder::set_epgData	(uint32_t SId, int32_t theTime, 
 	                            const QString theText) {
-	for (int i = 0; i < 64; i ++) {
-           if (ensemble -> services [i]. inUse &&
+	for (int i = 0; i < ensemble -> count; i ++) {
+           if (ensemble -> services [i]. inUse &&		// FIXME
                ensemble -> services [i]. SId == SId) {
 	      service *S = &(ensemble -> services [i]);
 	      for (uint16_t j = 0; j < S -> epgData. size (); j ++) {

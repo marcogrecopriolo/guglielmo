@@ -30,6 +30,10 @@
 #include <QSettings>
 #include <QTimer>
 #include <sndfile.h>
+#ifdef HAVE_MPRIS
+#include <Mpris>
+#include <MprisPlayer>
+#endif
 #include "ui_guglielmo.h"
 #include "ui_settings.h"
 #include "constants.h"
@@ -54,6 +58,7 @@ public:
     uint32_t SId;
     int SCIds;
     bool valid;
+    bool fromEnd;
 };
 
 enum deviceControls {
@@ -118,6 +123,15 @@ private:
     std::vector<serviceId> serviceList;
     std::vector<deviceDescriptor> deviceList;
 
+// Control
+#ifdef HAVE_MPRIS
+    MprisPlayer player;
+    QVariantMap metadata;
+    int lastPreset;
+    bool skipPresetMode;
+    QString currentPicFile;
+#endif
+
 // devices, processors
     dabProcessor *DABprocessor;
     fmProcessor *FMprocessor;
@@ -164,12 +178,21 @@ private:
     void setRecording();
     void stopRecording();
     void setScanning();
+    void changePreset(int);
+    void changeStation(int);
     void cleanScreen();
     void terminateProcess();
 
+// MPRIS
+#ifdef HAVE_MPRIS
+    void mprisLabelAndText(QString, QString);
+    void mprisEmptyArt(bool);
+#endif
+
 public slots:
-    void addToEnsemble(const QString &, int);
+    void addToEnsemble(const QString &, uint);
     void nameOfEnsemble(int, const QString &);
+    void ensembleLoaded(int);
     void showQuality(bool);
     void showStrength(float);
     void showLabel(QString);
@@ -201,6 +224,7 @@ private slots:
     void handlePresetSelector(const QString &);
     void handlePlayButton();
     void handlePauseButton();
+    void handlePlayPause();
     void handleRecordButton();
     void handleStopRecordButton();
     void handleVolume(double);
@@ -213,6 +237,10 @@ private slots:
 // settings
     void settingsClose(void);
     void setUiStyle(const QString &);
+
+#ifdef HAVE_MPRIS
+    void setRemoteMode(const QString &);
+#endif
 
     void setSoundMode(const QString &);
     void setSoundOutput(int);
@@ -229,5 +257,13 @@ private slots:
 
 // scan
     void nextFrequency();
+
+#ifdef HAVE_MPRIS
+// MPRIS
+    void mprisNextButton();
+    void mprisPreviousButton();
+    void mprisVolume(double);
+    void mprisClose();
+#endif
 };
 #endif		// __RADIO_H__

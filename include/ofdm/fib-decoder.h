@@ -163,8 +163,9 @@ private:
 	int		CIFcount;
 
 signals:
-	void		addToEnsemble		(const QString &, int);
+	void		addToEnsemble		(const QString &, uint);
 	void		nameOfEnsemble		(int, const QString &);
+	void		ensembleLoaded		(int);
 	void		clockTime		(int, int, int, int, int);
 	void		changeinConfiguration	();
 	void		startAnnouncement	(const QString &, int);

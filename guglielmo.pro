@@ -11,7 +11,7 @@ QMAKE_CXXFLAGS	+= -std=c++11
 QMAKE_CFLAGS	+= -flto -ffast-math
 MAKE_CXXFLAGS	+= -flto -ffast-math
 QMAKE_CXXFLAGS  += -isystem $$[QT_INSTALL_HEADERS]
-RC_ICONS	= icons/guglielmo.ico
+RC_ICONS	= icons/guglielmo.png
 RESOURCES	+= guglielmo.qrc
 
 contains(os, Linux) {
@@ -43,6 +43,7 @@ win32 {
 }
 
 #CONFIG	+= try-epg		# do not use
+CONFIG += 
 
 unix {
 	DESTDIR		= ./linux-bin
@@ -71,7 +72,7 @@ unix {
 	CONFIG		+= faad
 #	CONFIG		+= fdk-aac
 
-	CONFIG          += qt-audio
+	CONFIG		+= mpris
 
 	CONFIG		+= PC
 #	CONFIG		+= RPI
@@ -101,8 +102,6 @@ mingw32 {
 #	CONFIG		+= pluto
 
 	CONFIG		+= faad
-
-	CONFIG          += qt-audio
 
 #	CONFIG		+= PC
 	CONFIG		+= NO_SSE
@@ -146,8 +145,6 @@ visualStudio {
 #	CONFIG		+= pluto
 
 	CONFIG		+= faad
-
-	CONFIG          += qt-audio
 
 #	CONFIG		+= PC
 	CONFIG		+= NO_SSE
@@ -381,6 +378,12 @@ try-epg	{
 	INCLUDEPATH	+= ./include/backend/data/epg 
 	HEADERS		+= ./include/backend/data/epg/epgdec.h 
 	SOURCES		+= ./src/backend/data/epg/epgdec.cpp 
+}
+
+mpris {
+	DEFINES		+= HAVE_MPRIS
+	CONFIG		+= link_pkgconfig
+	PKGCONFIG	 = mpris-qt5
 }
 
 # for RPI2 use:
