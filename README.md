@@ -130,10 +130,13 @@ Note that when AGC is selected, any change to the IF gain will only take place a
 
 Guglielmo can send slides to MPRIS controllers and accept volume changes, play, pause, stop signals, as
 well as skip to next and skip to previous.
+
 Mpris-qt5 does not implement playlists, and even if it did, I haven't found a single MPRIS controller that
 handles them.
+
 For this reason I haven't currently implemented my plan of having playlists for presets and skip previous
 and next for stations, and unless matters change, I am unlikely to implement it ever.
+
 For now, you can change the skip track buttons mode of operation between presets and stations.
 
 ## Building
