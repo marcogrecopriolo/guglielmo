@@ -1082,6 +1082,20 @@ uint8_t		XPAD_apptype;
 //	bind_audioService is the main processor for - what the name suggests -
 //	connecting the description of audioservices to a SID
 //	by creating a service Component
+//
+//	We wish to signal when an ensemble is fully loaded so that we ca skip
+//	from the last station of one ensemble to the first of the next ensemble
+//	or vicevera.
+//	Unluckily, UK ensembles do not seem to carry FIG 0/7 so we don't have a
+//	station count to rely on.
+//	Additionally, while some ensembles receive services and service components
+//	in order, some do not, and in fact you see a service component repeatedly
+//	before seeing the corresponding service.
+//	To that end, we accumulate all the components as we see them, add them to
+//	the ensembles as the corresponding services are seen, and signal that the
+//	ensemble is fully loaded when all the components have a matching service.
+//	This avoids having an esemble marked as loaded early, just because we only
+//	keep track of components with a matching service.
 void	fibDecoder::bind_audioService (dabConfig *base,
 	                               int8_t	TMid,
 	                               uint32_t	SId,
@@ -1120,6 +1134,8 @@ int	serviceIndex;
 	}
 
 	firstFree = base -> count;
+	if (firstFree >= SERVICES_SIZE)
+	   return;
 	base	-> count++;
 	base	-> serviceComps [firstFree]. SId		= SId;
 	base	-> serviceComps [firstFree]. SCIds		= 0;
@@ -1175,6 +1191,8 @@ int	firstFree = -1;
 	      return;
 	}
 	firstFree = base -> count;
+	if (firstFree >= SERVICES_SIZE)
+	   return;
 
 	base -> count++;
 	base -> dataCount++;
@@ -1261,6 +1279,8 @@ int	fibDecoder::findComponent	(dabConfig *db,
 void	fibDecoder::createService (QString name, uint32_t SId, int SCIds) {
 	int i = ensemble->count;
 
+	if (i >= SERVICES_SIZE)
+	   return;
 	ensemble	-> count++;
 	ensemble	-> services [i]. inUse		= true; // FIXME
 	ensemble	-> services [i]. hasName	= true;

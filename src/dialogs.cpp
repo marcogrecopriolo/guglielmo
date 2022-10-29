@@ -115,7 +115,10 @@ void RadioInterface::handleSettingsAction() {
 
 	// MPRIS
 #ifndef HAVE_MPRIS
-	settingsUi.tabWidget->removeTab(1);
+
+	// setTabVisible only exists in 5.15
+	if (settingsUi.tabWidget->tabText(1) == "Remote control")
+	    settingsUi.tabWidget->removeTab(1);
 #else
 	settingsDialog->connect(settingsUi.remoteComboBox, SIGNAL(activated(const QString &)),
         	this, SLOT(setRemoteMode(const QString &)));
