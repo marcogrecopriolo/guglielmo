@@ -81,9 +81,10 @@ The burger menu button at the top right activates the about and settings windows
 
 ![settings screen](/images/settings.png)
 
-Currently there are 4 tabs, controlling
+Currently there are 5 tabs, controlling
 
 - the UI interface 
+- remote control settings
 - the sound output
 - FM settings
 - device settings
@@ -93,6 +94,12 @@ There's no tweakable DAB settings on offer.
 #### UI
 
 The actual themes depend on the platform and the build.
+
+#### Remote control
+
+This tab determines if the next / previous track signal sent by MPRIS controllers
+switches presets or stations.
+This tab is disabled for build that do not support MPRIS.
 
 #### Sound
 
@@ -118,6 +125,16 @@ The gains range from 0 to 100 and are remapped internally to suit each device.
 The defaults are mid range.
 
 Note that when AGC is selected, any change to the IF gain will only take place after AGC is turned off.
+
+## MPRIS control
+
+Guglielmo can send slides to MPRIS controllers and accept volume changes, play, pause, stop signals, as
+well as skip to next and skip to previous.
+Mpris-qt5 does not implement playlists, and even if it did, I haven't found a single MPRIS controller that
+handles them.
+For this reason I haven't currently implemented my plan of having playlists for presets and skip previous
+and next for stations, and unless matters change, I am unlikely to implement it ever.
+For now, you can change the skip track buttons mode of operation between presets and stations.
 
 ## Building
 
@@ -155,17 +172,18 @@ The binary supplied with each version supports all available devices except for 
 
 At this moment in time, the only devices tested are the SDR RTL stick and the SDRplay RSP1a,
 and the only build linux.
+Windows does build with Visual Studio, Mingw and Msys and Msys2, but the process needs a fair
+amount of manual intervention.
 
 ## TODO
 
 - integrate Qt audio with pulseaudio
 - debug verbosity (and logging in general)
-- MPRIS support
 - cleanup the source, remove objects that are not needed, consolidate buffer usage
 - make loading settings more resilient to duff values
 - selecting devices when multiple devices of the same type are available
 - improve on IF and LNA gain settings
-- Windows and Mac builds
+- macOS builds
 
 ## Acknowledgements, copyright, etc...
 
