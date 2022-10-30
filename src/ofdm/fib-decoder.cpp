@@ -17,7 +17,7 @@
  *    along with guglielmo; if not, write to the Free Software
  *    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
- *    Taken Qt-DAB program with bug fixes and enhancements.
+ *    Taken from the Qt-DAB program with bug fixes and enhancements.
  *
  *    Copyright (C) 2018, 2019, 2020
  *    Jan van Katwijk (J.vanKatwijk@gmail.com)
