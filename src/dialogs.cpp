@@ -93,7 +93,6 @@ void RadioInterface::handleSettingsAction() {
     if (settingsDialog == nullptr) {
 	settingsDialog = new QDialog;
 	settingsUi.setupUi(settingsDialog);
-	settingsDialog->setWindowTitle(windowTitle());
 //	settingsDialog->move(window()->frameGeometry().topLeft() +
 //		window()->rect().center() - settingsDialog->rect().center());
 	settingsUi.closeButton->setIcon(settingsDialog->style()->standardIcon(QStyle::SP_DialogCloseButton));
@@ -207,6 +206,7 @@ void RadioInterface::handleSettingsAction() {
 	    settingsUi.lnaSpinBox->setEnabled(false);
 	}
     }
+    settingsDialog->setWindowTitle(windowTitle());
     settingsUi.decoderComboBox->setEnabled(FMprocessor != nullptr);
     settingsUi.deemphasisComboBox->setEnabled(FMprocessor != nullptr);
     settingsUi.lowPassComboBox->setEnabled(FMprocessor != nullptr);
