@@ -34,9 +34,11 @@
 #include "radio.h"
 #include "fm-demodulator.h"
 #include "ui_about.h"
+#include "logging.h"
 
 // yes / no confirmation
 bool yesNo(QWidget *parent) {
+    log(LOG_UI, LOG_MIN, "yes / no dialog");
     QMessageBox::StandardButton resultButton = QMessageBox::question(parent, TARGET,
 		QWidget::tr("Are you sure?"), QMessageBox::No | QMessageBox::Yes, QMessageBox::Yes);
     return resultButton == QMessageBox::Yes;
@@ -44,12 +46,15 @@ bool yesNo(QWidget *parent) {
 
 // generic warning
 void warning(QWidget *parent, QString what) {
-     QMessageBox::warning(parent, QWidget::tr("Warning"), what);
+    log(LOG_UI, LOG_MIN, "warning %s", qPrintable(what));
+    QMessageBox::warning(parent, QWidget::tr("Warning"), what);
 }
 
 // open write file
 QString chooseFileName(QWidget *parent, QSettings *settings, QString what, QString filters, QString state, QString fileName ) {
     QFileDialog *saveDialog = new QFileDialog(parent);
+
+    log(LOG_UI, LOG_MIN, "choose file dialog");
     settings->beginGroup(GROUP_DIALOGS);
     QByteArray saveState = settings->value(state, "").toByteArray();
     settings->endGroup();
@@ -71,6 +76,7 @@ void RadioInterface::handleAboutAction() {
     QDialog *aboutDialog = new QDialog;
     Ui::aboutWindow aboutUi;
 
+    log(LOG_UI, LOG_MIN, "about window");
     aboutUi.setupUi(aboutDialog);
 //  aboutDialog->move(window()->frameGeometry().topLeft() +
 //		window()->rect().center() - aboutDialog->rect().center());
@@ -90,6 +96,7 @@ void RadioInterface::handleAboutAction() {
 
 // "settings" window
 void RadioInterface::handleSettingsAction() {
+    log(LOG_UI, LOG_MIN, "settings window");
     if (settingsDialog == nullptr) {
 	settingsDialog = new QDialog;
 	settingsUi.setupUi(settingsDialog);
@@ -181,23 +188,23 @@ void RadioInterface::handleSettingsAction() {
 	}
 	settingsDialog->connect(settingsUi.deviceComboBox, SIGNAL(activated(int)),
         	this, SLOT(setDevice(int)));
+	settingsDialog->connect(settingsUi.agcCheckBox, SIGNAL(stateChanged(int)),
+       		this, SLOT(setAgcControl(int)));
+	settingsDialog->connect(settingsUi.gainSpinBox, SIGNAL(valueChanged(int)),
+       		this, SLOT(setIfGain(int)));
+	settingsDialog->connect(settingsUi.lnaSpinBox, SIGNAL(valueChanged(int)),
+		this, SLOT(setLnaGain(int)));
 	if (inputDevice != nullptr) {
 	    if (deviceUiControls & AGC) {
 		settingsUi.agcCheckBox->setChecked(agc);
-		settingsDialog->connect(settingsUi.agcCheckBox, SIGNAL(stateChanged(int)),
-        		inputDevice, SLOT(setAgcControl(int)));
 	    } else
 		settingsUi.agcCheckBox->setEnabled(false);
 	    if (deviceUiControls & IF_GAIN) {
 		settingsUi.gainSpinBox->setValue(ifGain);
-		settingsDialog->connect(settingsUi.gainSpinBox, SIGNAL(valueChanged(int)),
-        		inputDevice, SLOT(setIfGain(int)));
 	    } else
 		settingsUi.gainSpinBox->setEnabled(false);
 	    if (deviceUiControls & LNA_GAIN) {
 		settingsUi.lnaSpinBox->setValue(lnaGain);
-		settingsDialog->connect(settingsUi.lnaSpinBox, SIGNAL(valueChanged(int)),
-			inputDevice, SLOT(setLnaGain(int)));
 	    } else
 		settingsUi.lnaSpinBox->setEnabled(false);
 	} else {
@@ -219,6 +226,8 @@ void RadioInterface::handleSettingsAction() {
 }
 
 void RadioInterface::settingsClose(void) {
+    log(LOG_UI, LOG_MIN, "close settings");
+
     // Ui tab
     settings->beginGroup(GROUP_UI);
     settings->setValue(UI_THEME, QApplication::style()->objectName().toLower());
@@ -253,12 +262,14 @@ void RadioInterface::settingsClose(void) {
 }
 
 void RadioInterface::setUiStyle(const QString &style) {
+    log(LOG_UI, LOG_MIN, "style %s", qPrintable(style));
     QApplication::setStyle(style);
 }
 
 #ifdef HAVE_MPRIS
 void RadioInterface::setRemoteMode(const QString &mode) {
-	skipPresetMode = (mode == "presets");
+    log(LOG_UI, LOG_MIN, "mpris mode %s", qPrintable(mode));
+    skipPresetMode = (mode == "presets");
 }
 #endif
 
@@ -266,6 +277,7 @@ void RadioInterface::setSoundMode(const QString &mode) {
     bool nextIsQtAudio = (mode == "Qt");
     bool stop = playing;
 
+    log(LOG_UI, LOG_MIN, "audio mode %s", qPrintable(mode));
     if (nextIsQtAudio == isQtAudio)
 	return;
     isQtAudio = nextIsQtAudio;
@@ -305,6 +317,7 @@ void RadioInterface::setSoundMode(const QString &mode) {
 }
 
 void RadioInterface::setSoundOutput(int c) {
+    log(LOG_UI, LOG_MIN, "sound channel %i", c);
     soundChannel = c;
     ((audioSink *) soundOut)->selectDevice(int16_t(c));
 }
@@ -312,6 +325,7 @@ void RadioInterface::setSoundOutput(int c) {
 void RadioInterface::setLatency(int newLatency) {
     bool stop = playing;
 
+    log(LOG_UI, LOG_MIN, "sound latency %i", newLatency);
     if (latency == newLatency)
 	return;
     if (stop) {
@@ -335,11 +349,13 @@ void RadioInterface::setLatency(int newLatency) {
 }
 
 void RadioInterface::setDecoder(int decoder) {
+    log(LOG_UI, LOG_MIN, "fm decoder %i", decoder);
     FMprocessor->setFMDecoder(fm_Demodulator::fm_demod(decoder));
     FMdecoder = decoder;
 }
 
 void RadioInterface::setDeemphasis(const QString &v) {
+    log(LOG_UI, LOG_MIN, "fm deemphasis %s", qPrintable(v));
     if (v == "None")
 	deemphasis = 1;
     else
@@ -348,6 +364,7 @@ void RadioInterface::setDeemphasis(const QString &v) {
 }
 
 void RadioInterface::setFMFilter(const QString &v) {
+    log(LOG_UI, LOG_MIN, "fm filter %s", qPrintable(v));
     if (v == "None")
 	FMfilter = 0;
     else
@@ -356,11 +373,13 @@ void RadioInterface::setFMFilter(const QString &v) {
 }
 
 void RadioInterface::setFMDegree(int degree) {
+    log(LOG_UI, LOG_MIN, "fm degree %i", degree);
     FMprocessor->setBandFilterDegree(degree);
     FMdegree = degree;
 }
 
 void RadioInterface::setLowPassFilter(const QString &v) {
+    log(LOG_UI, LOG_MIN, "fm low pass filter %s", qPrintable(v));
     if (v == "None")
 	lowPassFilter = 0;
     else
@@ -369,31 +388,27 @@ void RadioInterface::setLowPassFilter(const QString &v) {
 }
 
 void RadioInterface::setFMaudioGain(int gain) {
+    log(LOG_UI, LOG_MIN, "fm audio gain %i", gain);
     FMprocessor->setAudioGain(gain);
     FMaudioGain = gain;
 }
 
 void RadioInterface::setDevice(int d) {
+    log(LOG_UI, LOG_MIN, "device %i", d);
     if (deviceList[d].device == inputDevice)
 	return;
 
     settings->beginGroup(deviceName);
     if (settingsUi.agcCheckBox->isEnabled()) {
 	settings->setValue(DEV_AGC, settingsUi.agcCheckBox->isChecked()? "1": "0");
-	settingsDialog->disconnect(settingsUi.agcCheckBox, SIGNAL(stateChanged(int)),
-        	inputDevice, SLOT(setAgcControl(int)));
     } else
 	settingsUi.agcCheckBox->setEnabled(true);
     if (settingsUi.gainSpinBox->isEnabled()) {
 	settings->setValue(DEV_IF_GAIN, settingsUi.gainSpinBox->value());
-	settingsDialog->disconnect(settingsUi.gainSpinBox, SIGNAL(valueChanged(int)),
-        	inputDevice, SLOT(setIfGain(int)));
     } else
 	settingsUi.gainSpinBox->setEnabled(true);
     if (settingsUi.lnaSpinBox->isEnabled()) {
 	settings->setValue(DEV_LNA_GAIN, settingsUi.lnaSpinBox->value());
-	settingsDialog->disconnect(settingsUi.lnaSpinBox, SIGNAL(valueChanged(int)),
-		inputDevice, SLOT(setLnaGain(int)));
     } else
 	settingsUi.lnaSpinBox->setEnabled(true);
     settings->endGroup();
@@ -420,25 +435,37 @@ void RadioInterface::setDevice(int d) {
 	agc = (settings->value(DEV_AGC, DEV_DEF_AGC).toInt() > 0);
 	inputDevice->setAgcControl(agc);
 	settingsUi.agcCheckBox->setChecked(agc);
-	settingsDialog->connect(settingsUi.agcCheckBox, SIGNAL(stateChanged(int)),
-		inputDevice, SLOT(setAgcControl(int)));
     } else
 	settingsUi.agcCheckBox->setEnabled(false);
     if (deviceUiControls & IF_GAIN) {
 	ifGain = settings->value(DEV_IF_GAIN, DEV_DEF_IF_GAIN).toInt();
 	inputDevice->setIfGain(ifGain);
 	settingsUi.gainSpinBox->setValue(ifGain);
-	settingsDialog->connect(settingsUi.gainSpinBox, SIGNAL(valueChanged(int)),
-		inputDevice, SLOT(setIfGain(int)));
     } else
 	settingsUi.gainSpinBox->setEnabled(false);
     if (deviceUiControls & LNA_GAIN) {
 	lnaGain = settings->value(DEV_LNA_GAIN, DEV_DEF_LNA_GAIN).toInt();
 	inputDevice->setLnaGain(lnaGain);
 	settingsUi.lnaSpinBox->setValue(lnaGain);
-	settingsDialog->connect(settingsUi.lnaSpinBox, SIGNAL(valueChanged(int)),
-		inputDevice, SLOT(setLnaGain(int)));
     } else
 	settingsUi.lnaSpinBox->setEnabled(false);
     settings->endGroup();
+}
+
+void RadioInterface::setAgcControl(int gain) {
+    log(LOG_UI, LOG_MIN, "AGC %i", gain);
+    if (inputDevice != NULL)
+	inputDevice->setAgcControl(gain);
+}
+
+void RadioInterface::setIfGain(int gain) {
+    log(LOG_UI, LOG_MIN, "IF %i", gain);
+    if (inputDevice != NULL)
+	inputDevice->setIfGain(gain);
+}
+
+void RadioInterface::setLnaGain(int gain) {
+    log(LOG_UI, LOG_MIN, "LNA %i", gain);
+    if (inputDevice != NULL)
+	inputDevice->setLnaGain(gain);
 }

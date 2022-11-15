@@ -1,6 +1,6 @@
 /*
  *    Copyright (C) 2021
- *    Marco Greco <marcogrecopiolo@gmail.com>
+ *    Marco Greco <marcogrecopriolo@gmail.com>
  *
  *    This file is part of the guglielmo FM DAB tuner software package.
  *

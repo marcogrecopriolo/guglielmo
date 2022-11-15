@@ -25,20 +25,23 @@
 #include <QDir>
 #include <iostream>
 #include "constants.h"
+#include "logger.h"
 #include "radio.h"
 
-#ifdef CHOOSE_CONFIG
+#if CHOOSE_CONFIG == Linux
 #define DEFAULT_CFG ".config/" TARGET ".conf"
+#elif CHOOSE_CONFIG == Windows
+#define DEFAULT_CFG TARGET ".ini"
 #else
-#define DEFAULT_CFG TARGET
-#endif	/* CHOOSE_CONFIG */
+#define "." DEFAULT_CFG TARGET
+#endif
 
 static
 void usage(const char *name) {
 #ifdef CHOOSE_CONFIG
-    std::cerr << "usage: " << name << " [[-i <config file>] [-d <debug level>]|-h|-V]" << std::endl;
+    fprintf(stderr, "usage: %s [[-i <config file>] [-d <debug level>][-v]|-h|-V]\n", name);
 #else
-    std::cerr << "usage: " << name << " [[-d <debug level>]|-h|-V]" << std::endl;
+    fprintf(stderr, "usage: %s [-d <debug level>][-v]|-h|-V]\n", name);
 #endif
 }
 
@@ -48,8 +51,15 @@ int main(int argc, char **argv) {
     QTranslator *translator;
     QSettings *settings;
     RadioInterface *radioInterface;
-    int v, opt;
+    int opt;
+    qint64 mask;
 
+#if IS_WINDOWS
+    if (AttachConsole(ATTACH_PARENT_PROCESS)) {
+	freopen("CONOUT$", "w", stdout);
+	freopen("CONOUT$", "w", stderr);
+    }
+#endif
 #ifdef CHOOSE_CONFIG
     configFile = QDir::homePath();
     configFile.append("/");
@@ -61,19 +71,14 @@ int main(int argc, char **argv) {
     QCoreApplication::setApplicationVersion(QString(CURRENT_VERSION));
 
 #ifdef CHOOSE_CONFIG
-    while ((opt = getopt(argc, argv, "d:hi:V")) != -1)
+    while ((opt = getopt(argc, argv, "d:hi:vV")) != -1)
 #else
-    while ((opt = getopt(argc, argv, "d:hV")) != -1)
+    while ((opt = getopt(argc, argv, "d:hvV")) != -1)
 #endif
 	switch (opt) {
 	case 'd':
-	    v = QString(optarg).toInt();
-	    if (v<1 || v>8) {
-		std::cerr << "invalid debug level " << optarg << std::endl;
-		usage(argv[0]);
-		exit(1);
-	    }
-// FIXME set verbosity v
+	    mask = QString(optarg).toLongLong(NULL, 0);
+	    setLogMask(mask);
 	    break;
 #ifdef CHOOSE_CONFIG
 	case 'i':
@@ -82,8 +87,11 @@ int main(int argc, char **argv) {
 	    configFile = optarg;
 	    break;
 #endif
+	case 'v':
+	    incLogVerbosity();
+	    break;
 	case 'V':
-	    std::cerr << argv[0] << " Version " << CURRENT_VERSION << " (" << CURRENT_DATE << ")" << std::endl;
+	    fprintf(stderr, "%s Version %s (%s)\n", argv[0], CURRENT_VERSION, CURRENT_DATE);
 	    exit(0);
 	case 'h':
 	    usage(argv[0]);

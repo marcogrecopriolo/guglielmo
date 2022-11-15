@@ -1,29 +1,36 @@
-#
 /*
- *    Copyright (C) 2020
- *    Jan van Katwijk (J.vanKatwijk@gmail.com)
- *    Lazy Chair Computing
+ *    Copyright (C) 2021
+ *    Marco Greco <marcogrecopriolo@gmail.com>
  *
- *    This file is part of dabMini
+ *    This file is part of the guglielmo FM DAB tuner software package.
  *
- *    dabMini is free software; you can redistribute it and/or modify
+ *    guglielmo is free software; you can redistribute it and/or modify
  *    it under the terms of the GNU General Public License as published by
- *    the Free Software Foundation version 2 of the License.
+ *    the Free Software Foundation, version 2 of the License.
  *
- *    dabMini is distributed in the hope that it will be useful,
+ *    guglielmo is distributed in the hope that it will be useful,
  *    but WITHOUT ANY WARRANTY; without even the implied warranty of
  *    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *    GNU General Public License for more details.
  *
  *    You should have received a copy of the GNU General Public License
- *    along with dabMini if not, write to the Free Software
+ *    along with guglielmo; if not, write to the Free Software
  *    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ *
+ *    Taken from qt-dab, with bug fixes and enhancements.
+ *
+ *    Copyright (C) 2020
+ *    Jan van Katwijk (J.vanKatwijk@gmail.com)
+ *    Lazy Chair Computing
  */
 
 #include	<QThread>
 #include	<QDebug>
 #include	"pluto-handler.h"
 #include	"ad9361.h"
+#include	"logging.h"
+
+#define DEV_PLUTO LOG_DEV
 
 #define MAX_GAIN	59
 
@@ -111,31 +118,31 @@ struct iio_channel *chn		= nullptr;
 	ctx	= iio_create_default_context ();
 	if (ctx == nullptr) {
 	   if (debugFlag)
-	      fprintf (stderr, "default context failed\n");
+	      log (DEV_PLUTO, LOG_MIN, "default context failed");
 	   ctx = iio_create_local_context ();
 	}
 
 #ifdef USE_NETWORK
 	if (ctx == nullptr) {
 	   if (debugFlag)
-	      fprintf (stderr, "creating local context failed\n");
+	      log (DEV_PLUTO, LOG_MIN, "creating local context failed");
 	   ctx = iio_create_network_context ("pluto.local");
 	}
 
 	if (ctx == nullptr) {
 	   if (debugFlag)
-	      fprintf (stderr, "creating network context with pluto.local failed\n");
+	      log (DEV_PLUTO, LOG_MIN, "creating network context with pluto.local failed");
 	   ctx = iio_create_network_context (HOST);
 	}
 #endif
 
 	if (ctx == nullptr) {
-	   fprintf (stderr, "No pluto found, fatal\n");
+	   log (DEV_PLUTO, LOG_MIN, "No pluto found, fatal");
 	   throw (24);
 	}
 
 	if (debugFlag)
-	   fprintf (stderr, "context name found %s\n",
+	   log (DEV_PLUTO, LOG_MIN, "context name found %s",
 	                            iio_context_get_name (ctx));
 
 	if (iio_context_get_devices_count (ctx) <= 0) {
@@ -151,11 +158,11 @@ struct iio_channel *chn		= nullptr;
 
 // Configure phy and lo channels
 	if (debugFlag)
-	   fprintf (stderr, "* Acquiring AD9361 phy channel %d\n", 0);
+	   log (DEV_PLUTO, LOG_MIN, "Acquiring AD9361 phy channel %d", 0);
 	phys_dev = iio_context_find_device (ctx, "ad9361-phy");
 	if (phys_dev == nullptr) {
 	   if (debugFlag) 
-	      fprintf (stderr, "no ad9361 found\n");
+	      log (DEV_PLUTO, LOG_MIN, "no ad9361 found");
 	   iio_context_destroy (ctx);
 	   throw (27);
 	}
@@ -166,7 +173,7 @@ struct iio_channel *chn		= nullptr;
                                        false);
 	if (chn == nullptr) {
 	   if (debugFlag)
-	      fprintf (stderr, "cannot acquire phy channel %d\n", 0);
+	      log (DEV_PLUTO, LOG_MIN, "cannot acquire phy channel %d", 0);
 	   iio_context_destroy (ctx);
 	   throw (27);
 	}
@@ -177,7 +184,7 @@ struct iio_channel *chn		= nullptr;
 	   if (debugFlag) {
 	      char error [255];
 	      iio_strerror (res, error, 255); 
-	      fprintf (stderr, "error in port selection %s\n", error);
+	      log (DEV_PLUTO, LOG_MIN, "error in port selection %s", error);
 	   }
 	   iio_context_destroy (ctx);
 	   throw (28);
@@ -190,7 +197,7 @@ struct iio_channel *chn		= nullptr;
 	   if (debugFlag) {
 	      char errorText [255];
 	      iio_strerror (res, errorText, 255); 
-	      fprintf (stderr, "cannot select bandwidth %s\n", errorText);
+	      log (DEV_PLUTO, LOG_MIN, "cannot select bandwidth %s", errorText);
 	   }
 	   iio_context_destroy (ctx);
 	   throw (29);
@@ -202,7 +209,7 @@ struct iio_channel *chn		= nullptr;
 	   if (debugFlag) {
 	      char errorText [255];
 	      iio_strerror (res, errorText, 255); 
-	      fprintf (stderr, "cannot set sampling frequency %s\n", errorText);
+	      log (DEV_PLUTO, LOG_MIN, "cannot set sampling frequency %s", errorText);
 	   }
 	   iio_context_destroy (ctx);
 	   throw (30);
@@ -212,7 +219,7 @@ struct iio_channel *chn		= nullptr;
 
 // Configure LO channel
 	if (debugFlag)
-	   fprintf (stderr, "* Acquiring AD9361 %s lo channel\n", "RX");
+	   log (DEV_PLUTO, LOG_MIN, "Acquiring AD9361 %s lo channel", "RX");
 	phys_dev = iio_context_find_device (ctx, "ad9361-phy");
 //
 	this -> lo_channel =
@@ -221,7 +228,7 @@ struct iio_channel *chn		= nullptr;
                                               true);
 	if (this -> lo_channel == nullptr) {
 	   if (debugFlag)
-	      fprintf (stderr, "cannot find lo for channel\n");
+	      log (DEV_PLUTO, LOG_MIN, "cannot find lo for channel");
 	   iio_context_destroy (ctx);
 	   throw (31);
 	}
@@ -233,7 +240,7 @@ struct iio_channel *chn		= nullptr;
 	   if (debugFlag) {
 	      char error [255];
 	      iio_strerror (res, error, 255); 
-	      fprintf (stderr, "cannot set local oscillator frequency %s\n",
+	      log (DEV_PLUTO, LOG_MIN, "cannot set local oscillator frequency %s",
 	                                                           error);
 	   }
 	   iio_context_destroy (ctx);
@@ -242,14 +249,14 @@ struct iio_channel *chn		= nullptr;
 
         if (!get_ad9361_stream_ch (ctx, rx, 0, &rx0_i)) {
 	   if (debugFlag)
-	      fprintf (stderr, "Rx chan i not found\n");
+	      log (DEV_PLUTO, LOG_MIN, "Rx chan i not found");
 	   iio_context_destroy (ctx);
 	   throw (33);
 	}
 
         if (!get_ad9361_stream_ch (ctx, rx, 1, &rx0_q)) {
 	   if (debugFlag)
-              fprintf (stderr, "Rx chan i not found\n");
+              log (DEV_PLUTO, LOG_MIN, "Rx chan i not found");
            iio_context_destroy (ctx);
            throw (34);
 	}
@@ -260,7 +267,7 @@ struct iio_channel *chn		= nullptr;
         rxbuf	= iio_device_create_buffer (rx, 1024*1024, false);
 	if (rxbuf == nullptr) {
 	   if (debugFlag) 
-	      fprintf (stderr, "could not create RX buffer, fatal\n");
+	      log (DEV_PLUTO, LOG_MIN, "could not create RX buffer, fatal");
 	   iio_context_destroy (ctx);
 	   throw (35);
 	}
@@ -331,10 +338,9 @@ int ret;
 	                                       newGain * MAX_GAIN / 100);
 	if (ret < 0) {
 	   if (debugFlag) 
-	      fprintf (stderr,
-	               "could not set hardware gain to %d\n", newGain);
+	      log (DEV_PLUTO, LOG_MIN, 
+	               "could not set hardware gain to %d", newGain);
 	}
-	emit configurationChanged();
 }
 
 void	plutoHandler::setAgcControl	(int m) {
@@ -347,7 +353,7 @@ int ret;
 	                                         "slow_attack");
 	   if (ret < 0) {
 	      if (debugFlag)
-	         fprintf (stderr, "error in setting agc\n");
+	         log (DEV_PLUTO, LOG_MIN, "error in setting agc");
 	      return;
 	   }
 
@@ -358,7 +364,7 @@ int ret;
 	                                         "manual");
 	   if (ret < 0) {
 	      if (debugFlag)
-	         fprintf (stderr, "error in gain setting\n");
+	         log (DEV_PLUTO, LOG_MIN, "error in gain setting");
 	      return;
 	   }
 
@@ -367,18 +373,17 @@ int ret;
 	                                          gainControl * MAX_GAIN / 100);
 	   if (ret < 0) {
 	      if (debugFlag)
-	         fprintf (stderr,
-	                  "could not set hardware gain to %d\n",
+	         log (DEV_PLUTO, LOG_MIN, 
+	                  "could not set hardware gain to %d",
 	                                          gainControl);
 	   }
 	}
-	emit configurationChanged();
 }
 
 bool	plutoHandler::restartReader	(int32_t freq) {
 int ret;
 	if (debugFlag)
-	   fprintf (stderr, "restart called with %d\n", freq);
+	   log (DEV_PLUTO, LOG_MIN, "restart called with %d", freq);
 	if (!connected)		// should not happen
 	   return false;
 	if (running. load())
@@ -389,7 +394,7 @@ int ret;
 	                                       "slow_attack" : "manual");
 	if (ret < 0) {
 	   if (debugFlag)
-	      fprintf (stderr, "error in setting agc\n");
+	      log (DEV_PLUTO, LOG_MIN, "error in setting agc");
 	}
 
 	if (!agcMode) {
@@ -398,8 +403,8 @@ int ret;
 	                                          gainControl * MAX_GAIN / 100);
 	   if (ret < 0) {
 	      if (debugFlag) 
-	         fprintf (stderr,
-	                  "could not set hardware gain to %d\n", 
+	         log (DEV_PLUTO, LOG_MIN, 
+	                  "could not set hardware gain to %d", 
 	                                         gainControl);
 	   }
 	}
@@ -410,7 +415,7 @@ int ret;
 	                                       this -> lo_hz);
 	if (ret < 0) {
 	   if (debugFlag)
-	      fprintf (stderr, "cannot set local oscillator frequency\n");
+	      log (DEV_PLUTO, LOG_MIN, "cannot set local oscillator frequency");
 	   return false;
 	}
 	else
@@ -432,7 +437,7 @@ int	p_inc;
 int	nbytes_rx;
 std::complex<float> localBuf [DAB_RATE / DIVIDER];
 
-	fprintf (stderr, "we are running\n");
+	log (DEV_PLUTO, LOG_MIN, "we are running");
 	running. store (true);
 	while (running. load ()) {
 	   nbytes_rx	= iio_buffer_refill	(rxbuf);
@@ -461,7 +466,7 @@ std::complex<float> localBuf [DAB_RATE / DIVIDER];
 	      }
 	   }
 	}
-	fprintf (stderr, "... and stopped\n");
+	log (DEV_PLUTO, LOG_MIN, "stopped");
 }
 
 int32_t	plutoHandler::getSamples (std::complex<float> *V, int32_t size) { 

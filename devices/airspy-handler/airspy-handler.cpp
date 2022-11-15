@@ -1,5 +1,24 @@
-
-/**
+/*
+ *    Copyright (C) 2021
+ *    Marco Greco <marcogrecopriolo@gmail.com>
+ *
+ *    This file is part of the guglielmo FM DAB tuner software package.
+ *
+ *    guglielmo is free software; you can redistribute it and/or modify
+ *    it under the terms of the GNU General Public License as published by
+ *    the Free Software Foundation, version 2 of the License.
+ *
+ *    guglielmo is distributed in the hope that it will be useful,
+ *    but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *    GNU General Public License for more details.
+ *
+ *    You should have received a copy of the GNU General Public License
+ *    along with guglielmo; if not, write to the Free Software
+ *    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ *
+ *    Taken from qt-dab, with bug fixes and enhancements.
+**
  *  IW0HDV Extio
  *
  *  Copyright 2015 by Andrea Montefusco IW0HDV
@@ -15,8 +34,6 @@
  *	Lazy Chair Computing
  */
 
-#include "constants.h"
-
 #if IS_WINDOWS
 #define	GETPROCADDRESS	GetProcAddress
 #else
@@ -25,6 +42,10 @@
 
 #include	"airspy-handler.h"
 #include	"airspyfilter.h"
+#include 	"constants.h"
+#include	"logging.h"
+
+#define DEV_AIRSPY LOG_DEV
 
 static
 const	int	EXTIO_NS	=  8192;
@@ -38,6 +59,7 @@ int	result, i;
 int	distance	= 10000000;
 std::vector <uint32_t> sampleRates;
 uint32_t samplerateCount;
+char    *samplerateString;
 
 	agcControl		= false;
 	ifGain			= 50;
@@ -47,16 +69,17 @@ uint32_t samplerateCount;
 	theBuffer		= NULL;
 #if IS_WINDOWS
 	const char *libraryString = "airspy.dll";
-	Handle		= LoadLibrary ((LPTSTR) "airspy.dll");
+	Handle		= LoadLibraryA (libraryString);
 #else
 	const char *libraryString = "libairspy.so";
-	Handle		= dlopen ("libairspy.so", RTLD_LAZY);
+	Handle		= dlopen (libraryString, RTLD_LAZY);
 #endif
 
 	if (Handle == NULL) {
-	   fprintf (stderr, "failed to open %s\n", libraryString);
-#if !IS_WINDOWS
-	   fprintf (stderr, "Error = %s\n", dlerror ());
+#if IS_WINDOWS
+	   log (DEV_AIRSPY, LOG_MIN, "failed to open %s - Error = %li", libraryString, GetLastError ());
+#else
+	   log (DEV_AIRSPY, LOG_MIN, "failed to open %s - Error = %s", libraryString, dlerror ());
 #endif
 	   throw (20);
 	}
@@ -64,7 +87,7 @@ uint32_t samplerateCount;
 	libraryLoaded	= true;
 
 	if (!load_airspyFunctions ()) {
-	   fprintf (stderr, "problem in loading functions\n");
+	   log (DEV_AIRSPY, LOG_MIN, "problem in loading functions");
 #if IS_WINDOWS
 	   FreeLibrary (Handle);
 #else
@@ -76,7 +99,7 @@ uint32_t samplerateCount;
 	strcpy (serial,"");
 	result = this -> my_airspy_init ();
 	if (result != AIRSPY_SUCCESS) {
-	   printf ("my_airspy_init () failed: %s (%d)\n",
+	   log (DEV_AIRSPY, LOG_MIN, "my_airspy_init () failed: %s (%d)",
 	             my_airspy_error_name((airspy_error)result), result);
 #if IS_WINDOWS
 	   FreeLibrary (Handle);
@@ -88,7 +111,7 @@ uint32_t samplerateCount;
 
 	result = my_airspy_open (&device);
 	if (result != AIRSPY_SUCCESS) {
-	   printf ("my_airpsy_open () failed: %s (%d)\n",
+	   log (DEV_AIRSPY, LOG_MIN, "my_airpsy_open () failed: %s (%d)",
 	             my_airspy_error_name ((airspy_error)result), result);
 #if IS_WINDOWS
 	   FreeLibrary (Handle);
@@ -100,22 +123,24 @@ uint32_t samplerateCount;
 
 	(void) my_airspy_set_sample_type (device, AIRSPY_SAMPLE_INT16_IQ);
 	(void) my_airspy_get_samplerates (device, &samplerateCount, 0);
-	fprintf (stderr, "%d samplerates are supported\n", samplerateCount); 
 	sampleRates. resize (samplerateCount);
 	my_airspy_get_samplerates (device,
 	                            sampleRates. data (), samplerateCount);
 
 	selectedRate	= 0;
+	samplerateString  = new char[samplerateCount *10 + 1];
+	*samplerateString = '\0';
 	for (i = 0; i < (int)samplerateCount; i ++) {
-	   fprintf (stderr, "%d \n", sampleRates [i]);
+	   sprintf (samplerateString + strlen(samplerateString), "%d ", sampleRates [i]);
 	   if (abs ((int)sampleRates [i] - 2048000) < distance) {
 	      distance	= abs ((int)sampleRates [i] - 2048000);
 	      selectedRate = sampleRates [i];
 	   }
 	}
+	log (DEV_AIRSPY, LOG_MIN, "%d samplerates are supported, %s", samplerateCount, samplerateString); 
 
 	if (selectedRate == 0) {
-	   fprintf (stderr, "Sorry. cannot help you\n");
+	   log (DEV_AIRSPY, LOG_MIN, "no sample rate selected");
 #if IS_WINDOWS
 	   FreeLibrary (Handle);
 #else
@@ -124,11 +149,11 @@ uint32_t samplerateCount;
 	   throw (23);
 	}
 	else
-	   fprintf (stderr, "selected samplerate = %d\n", selectedRate);
+	   log (DEV_AIRSPY, LOG_MIN, "selected samplerate = %d", selectedRate);
 
 	result = my_airspy_set_samplerate (device, selectedRate);
 	if (result != AIRSPY_SUCCESS) {
-           printf("airspy_set_samplerate() failed: %s (%d)\n",
+           log (DEV_AIRSPY, LOG_MIN, "airspy_set_samplerate() failed: %s (%d)",
 	             my_airspy_error_name ((enum airspy_error)result), result);
 #if IS_WINDOWS
 	   FreeLibrary (Handle);
@@ -169,13 +194,13 @@ uint32_t samplerateCount;
 	if (device != NULL) {
 	   int result = my_airspy_stop_rx (device);
 	   if (result != AIRSPY_SUCCESS) {
-	      printf ("my_airspy_stop_rx () failed: %s (%d)\n",
+	      log (DEV_AIRSPY, LOG_MIN, "my_airspy_stop_rx () failed: %s (%d)",
 	             my_airspy_error_name((airspy_error)result), result);
 	   }
 
 	   result = my_airspy_close (device);
 	   if (result != AIRSPY_SUCCESS) {
-	      printf ("airspy_close () failed: %s (%d)\n",
+	      log (DEV_AIRSPY, LOG_MIN, "airspy_close () failed: %s (%d)",
 	             my_airspy_error_name((airspy_error)result), result);
 	   }
 	}
@@ -209,7 +234,7 @@ int32_t	bufSize	= EXTIO_NS * EXTIO_BASE_TYPE_SIZE * 2;
 
 	result = my_airspy_set_sample_type (device, AIRSPY_SAMPLE_INT16_IQ);
 	if (result != AIRSPY_SUCCESS) {
-	   printf ("my_airspy_set_sample_type () failed: %s (%d)\n",
+	   log (DEV_AIRSPY, LOG_MIN, "my_airspy_set_sample_type () failed: %s (%d)",
 	            my_airspy_error_name ((airspy_error)result), result);
 	   return false;
 	}
@@ -224,7 +249,7 @@ int32_t	bufSize	= EXTIO_NS * EXTIO_BASE_TYPE_SIZE * 2;
 	result = my_airspy_start_rx (device,
 	            (airspy_sample_block_cb_fn)callback, this);
 	if (result != AIRSPY_SUCCESS) {
-	   printf ("my_airspy_start_rx () failed: %s (%d)\n",
+	   log (DEV_AIRSPY, LOG_MIN, "my_airspy_start_rx () failed: %s (%d)",
 	         my_airspy_error_name((airspy_error)result), result);
 	   return false;
 	}
@@ -241,7 +266,7 @@ int	result;
 	result = my_airspy_stop_rx (device);
 
 	if (result != AIRSPY_SUCCESS ) 
-	   printf ("my_airspy_stop_rx() failed: %s (%d)\n",
+	   log (DEV_AIRSPY, LOG_MIN, "my_airspy_stop_rx() failed: %s (%d)",
 	          my_airspy_error_name ((airspy_error)result), result);
 
 	running. store (false);
@@ -323,7 +348,7 @@ airspy_read_partid_serialno_t read_partid_serialno;
 int result = my_airspy_board_partid_serialno_read (device,
 	                                          &read_partid_serialno);
 	if (result != AIRSPY_SUCCESS) {
-	   printf ("failed: %s (%d)\n",
+	   log (DEV_AIRSPY, LOG_MIN, "failed: %s (%d)",
 	         my_airspy_error_name ((airspy_error)result), result);
 	   return "UNKNOWN";
 	} else {
@@ -339,7 +364,7 @@ int	airspyHandler::open (void) {
 int result = my_airspy_open (&device);
 
 	if (result != AIRSPY_SUCCESS) {
-	   printf ("airspy_open() failed: %s (%d)\n",
+	   log (DEV_AIRSPY, LOG_MIN, "airspy_open() failed: %s (%d)",
 	          my_airspy_error_name((airspy_error)result), result);
 	   return -1;
 	} else {
@@ -371,7 +396,7 @@ int32_t	airspyHandler::Samples	(void) {
 void	airspyHandler::setIfGain (int theGain) {
 int	result = my_airspy_set_sensitivity_gain (device, theGain * MAX_GAIN / 100);
 	if (result != AIRSPY_SUCCESS) {
-	   printf ("airspy_set_mixer_gain() failed: %s (%d)\n",
+	   log (DEV_AIRSPY, LOG_MIN, "airspy_set_mixer_gain() failed: %s (%d)",
 	            my_airspy_error_name ((airspy_error)result), result);
 	   return;
 	}
@@ -388,7 +413,7 @@ void	airspyHandler::setAgcControl (int b) {
 int result = my_airspy_set_mixer_agc (device, b);
 
 	if (result != AIRSPY_SUCCESS) {
-	   printf ("airspy_set_mixer_agc () failed: %s (%d)\n",
+	   log (DEV_AIRSPY, LOG_MIN, "airspy_set_mixer_agc () failed: %s (%d)",
 	            my_airspy_error_name ((airspy_error)result), result);
 	   return;
 	} else
@@ -413,149 +438,147 @@ bool	airspyHandler::load_airspyFunctions (void) {
 	my_airspy_init	= (pfn_airspy_init)
 	                       GETPROCADDRESS (Handle, "airspy_init");
 	if (my_airspy_init == NULL) {
-	   fprintf (stderr, "Could not find airspy_init\n");
+	   log (DEV_AIRSPY, LOG_MIN, "Could not find airspy_init");
 	   return false;
 	}
 
 	my_airspy_exit	= (pfn_airspy_exit)
 	                       GETPROCADDRESS (Handle, "airspy_exit");
 	if (my_airspy_exit == NULL) {
-	   fprintf (stderr, "Could not find airspy_exit\n");
+	   log (DEV_AIRSPY, LOG_MIN, "Could not find airspy_exit");
 	   return false;
 	}
 
 	my_airspy_open	= (pfn_airspy_open)
 	                       GETPROCADDRESS (Handle, "airspy_open");
 	if (my_airspy_open == NULL) {
-	   fprintf (stderr, "Could not find airspy_open\n");
+	   log (DEV_AIRSPY, LOG_MIN, "Could not find airspy_open");
 	   return false;
 	}
 
 	my_airspy_close	= (pfn_airspy_close)
 	                       GETPROCADDRESS (Handle, "airspy_close");
 	if (my_airspy_close == NULL) {
-	   fprintf (stderr, "Could not find airspy_close\n");
+	   log (DEV_AIRSPY, LOG_MIN, "Could not find airspy_close");
 	   return false;
 	}
 
 	my_airspy_get_samplerates	= (pfn_airspy_get_samplerates)
 	                       GETPROCADDRESS (Handle, "airspy_get_samplerates");
 	if (my_airspy_get_samplerates == NULL) {
-	   fprintf (stderr, "Could not find airspy_get_samplerates\n");
+	   log (DEV_AIRSPY, LOG_MIN, "Could not find airspy_get_samplerates");
 	   return false;
 	}
 
 	my_airspy_set_samplerate	= (pfn_airspy_set_samplerate)
 	                       GETPROCADDRESS (Handle, "airspy_set_samplerate");
 	if (my_airspy_set_samplerate == NULL) {
-	   fprintf (stderr, "Could not find airspy_set_samplerate\n");
+	   log (DEV_AIRSPY, LOG_MIN, "Could not find airspy_set_samplerate");
 	   return false;
 	}
 
 	my_airspy_start_rx	= (pfn_airspy_start_rx)
 	                       GETPROCADDRESS (Handle, "airspy_start_rx");
 	if (my_airspy_start_rx == NULL) {
-	   fprintf (stderr, "Could not find airspy_start_rx\n");
+	   log (DEV_AIRSPY, LOG_MIN, "Could not find airspy_start_rx");
 	   return false;
 	}
 
 	my_airspy_stop_rx	= (pfn_airspy_stop_rx)
 	                       GETPROCADDRESS (Handle, "airspy_stop_rx");
 	if (my_airspy_stop_rx == NULL) {
-	   fprintf (stderr, "Could not find airspy_stop_rx\n");
+	   log (DEV_AIRSPY, LOG_MIN, "Could not find airspy_stop_rx");
 	   return false;
 	}
 
 	my_airspy_set_sample_type	= (pfn_airspy_set_sample_type)
 	                       GETPROCADDRESS (Handle, "airspy_set_sample_type");
 	if (my_airspy_set_sample_type == NULL) {
-	   fprintf (stderr, "Could not find airspy_set_sample_type\n");
+	   log (DEV_AIRSPY, LOG_MIN, "Could not find airspy_set_sample_type");
 	   return false;
 	}
 
 	my_airspy_set_freq	= (pfn_airspy_set_freq)
 	                       GETPROCADDRESS (Handle, "airspy_set_freq");
 	if (my_airspy_set_freq == NULL) {
-	   fprintf (stderr, "Could not find airspy_set_freq\n");
+	   log (DEV_AIRSPY, LOG_MIN, "Could not find airspy_set_freq");
 	   return false;
 	}
 
 	my_airspy_set_lna_gain	= (pfn_airspy_set_lna_gain)
 	                       GETPROCADDRESS (Handle, "airspy_set_lna_gain");
 	if (my_airspy_set_lna_gain == NULL) {
-	   fprintf (stderr, "Could not find airspy_set_lna_gain\n");
+	   log (DEV_AIRSPY, LOG_MIN, "Could not find airspy_set_lna_gain");
 	   return false;
 	}
 
 	my_airspy_set_mixer_gain	= (pfn_airspy_set_mixer_gain)
 	                       GETPROCADDRESS (Handle, "airspy_set_mixer_gain");
 	if (my_airspy_set_mixer_gain == NULL) {
-	   fprintf (stderr, "Could not find airspy_set_mixer_gain\n");
+	   log (DEV_AIRSPY, LOG_MIN, "Could not find airspy_set_mixer_gain");
 	   return false;
 	}
 
 	my_airspy_set_vga_gain	= (pfn_airspy_set_vga_gain)
 	                       GETPROCADDRESS (Handle, "airspy_set_vga_gain");
 	if (my_airspy_set_vga_gain == NULL) {
-	   fprintf (stderr, "Could not find airspy_set_vga_gain\n");
+	   log (DEV_AIRSPY, LOG_MIN, "Could not find airspy_set_vga_gain");
 	   return false;
 	}
 	
 	my_airspy_set_linearity_gain = (pfn_airspy_set_linearity_gain)
 	                       GETPROCADDRESS (Handle, "airspy_set_linearity_gain");
 	if (my_airspy_set_linearity_gain == NULL) {
-	   fprintf (stderr, "Could not find airspy_set_linearity_gain\n");
-	   fprintf (stderr, "You probably did install an old library\n");
+	   log (DEV_AIRSPY, LOG_MIN, "Could not find airspy_set_linearity_gain");
 	   return false;
 	}
 
 	my_airspy_set_sensitivity_gain = (pfn_airspy_set_sensitivity_gain)
 	                       GETPROCADDRESS (Handle, "airspy_set_sensitivity_gain");
 	if (my_airspy_set_sensitivity_gain == NULL) {
-	   fprintf (stderr, "Could not find airspy_set_sensitivity_gain\n");
-	   fprintf (stderr, "You probably did install an old library\n");
+	   log (DEV_AIRSPY, LOG_MIN, "Could not find airspy_set_sensitivity_gain");
 	   return false;
 	}
 
 	my_airspy_set_lna_agc	= (pfn_airspy_set_lna_agc)
 	                       GETPROCADDRESS (Handle, "airspy_set_lna_agc");
 	if (my_airspy_set_lna_agc == NULL) {
-	   fprintf (stderr, "Could not find airspy_set_lna_agc\n");
+	   log (DEV_AIRSPY, LOG_MIN, "Could not find airspy_set_lna_agc");
 	   return false;
 	}
 
 	my_airspy_set_mixer_agc	= (pfn_airspy_set_mixer_agc)
 	                       GETPROCADDRESS (Handle, "airspy_set_mixer_agc");
 	if (my_airspy_set_mixer_agc == NULL) {
-	   fprintf (stderr, "Could not find airspy_set_mixer_agc\n");
+	   log (DEV_AIRSPY, LOG_MIN, "Could not find airspy_set_mixer_agc");
 	   return false;
 	}
 
 	my_airspy_set_rf_bias	= (pfn_airspy_set_rf_bias)
 	                       GETPROCADDRESS (Handle, "airspy_set_rf_bias");
 	if (my_airspy_set_rf_bias == NULL) {
-	   fprintf (stderr, "Could not find airspy_set_rf_bias\n");
+	   log (DEV_AIRSPY, LOG_MIN, "Could not find airspy_set_rf_bias");
 	   return false;
 	}
 
 	my_airspy_error_name	= (pfn_airspy_error_name)
 	                       GETPROCADDRESS (Handle, "airspy_error_name");
 	if (my_airspy_error_name == NULL) {
-	   fprintf (stderr, "Could not find airspy_error_name\n");
+	   log (DEV_AIRSPY, LOG_MIN, "Could not find airspy_error_name");
 	   return false;
 	}
 
 	my_airspy_board_id_read	= (pfn_airspy_board_id_read)
 	                       GETPROCADDRESS (Handle, "airspy_board_id_read");
 	if (my_airspy_board_id_read == NULL) {
-	   fprintf (stderr, "Could not find airspy_board_id_read\n");
+	   log (DEV_AIRSPY, LOG_MIN, "Could not find airspy_board_id_read");
 	   return false;
 	}
 
 	my_airspy_board_id_name	= (pfn_airspy_board_id_name)
 	                       GETPROCADDRESS (Handle, "airspy_board_id_name");
 	if (my_airspy_board_id_name == NULL) {
-	   fprintf (stderr, "Could not find airspy_board_id_name\n");
+	   log (DEV_AIRSPY, LOG_MIN, "Could not find airspy_board_id_name");
 	   return false;
 	}
 
@@ -563,7 +586,7 @@ bool	airspyHandler::load_airspyFunctions (void) {
 	                (pfn_airspy_board_partid_serialno_read)
 	                       GETPROCADDRESS (Handle, "airspy_board_partid_serialno_read");
 	if (my_airspy_board_partid_serialno_read == NULL) {
-	   fprintf (stderr, "Could not find airspy_board_partid_serialno_read\n");
+	   log (DEV_AIRSPY, LOG_MIN, "Could not find airspy_board_partid_serialno_read");
 	   return false;
 	}
 

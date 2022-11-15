@@ -34,6 +34,7 @@
 #include "trigtabs.h"
 #include "device-handler.h"
 #include "newconverter.h"
+#include "logging.h"
 
 #define	AUDIO_MAX_PEAK		2.0
 #define	PILOT_FREQUENCY		19000
@@ -391,7 +392,7 @@ void fmProcessor::run(void) {
 		    DSPFLOAT signal = getLevel(signalBuffer, signalMinBin, signalMaxBin);
 		    DSPFLOAT noise = getLevel(signalBuffer, noiseMinBin, noiseMaxBin);
 		    if (get_db(signal, 256)-get_db(noise, 256) > threshold) {
-		        fprintf(stderr, "signal found %f %f\n",
+		        log(LOG_FM, LOG_MIN, "signal found %f %f",
 		                get_db(signal, 256), get_db(noise, 256));
 		        scanning = false;
 			scanresult();
@@ -437,12 +438,12 @@ void fmProcessor::run(void) {
 		    totPilotSnr += pilotDb;
 		    if (pilotDb >= PILOT_THRESHOLD) {
 			noPilot = false;
-			fprintf(stderr, "pilot %f usePilot %i\n", pilotDb, !noPilot);
+			log(LOG_FM, LOG_MIN, "pilot %f usePilot %i", pilotDb, !noPilot);
 			snrCount = 0;
 		    } else if (snrCount == 0) {
 			DSPFLOAT avgPilotSnr = totPilotSnr / PILOT_SAMPLES;
 			noPilot = (avgPilotSnr < PILOT_MIN_THRESHOLD);
-			fprintf(stderr, "pilot %f usePilot %i\n", avgPilotSnr, !noPilot);
+			log(LOG_FM, LOG_MIN, "pilot %f usePilot %i", avgPilotSnr, !noPilot);
 		    }
 		}
 	    }
@@ -534,7 +535,7 @@ void fmProcessor::run(void) {
 
 			   // we check the max width and the distribution of drifts
 			   pilot = (meanDriftDiff < RDS_MEAN_DRIFT_LIMIT && avgDriftDiff < RDS_AVG_DRIFT_LIMIT); 
-			   fprintf(stderr, "pll drift avg %f%% mean %f%% pilot %i\n", 100*avgDriftDiff/2/M_PI, 100*meanDriftDiff/2/M_PI, pilot);
+			   log(LOG_FM, LOG_MIN, "pll drift avg %f%% mean %f%% pilot %i", 100*avgDriftDiff/2/M_PI, 100*meanDriftDiff/2/M_PI, pilot);
 			}
 		    }
 		}

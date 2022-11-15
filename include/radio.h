@@ -1,6 +1,6 @@
 /*
  *    Copyright (C) 2021
- *    Marco Greco <marcogrecopiolo@gmail.com>
+ *    Marco Greco <marcogrecopriolo@gmail.com>
  *
  *    This file is part of the guglielmo FM DAB tuner software package.
  *
@@ -224,7 +224,6 @@ private slots:
     void handlePresetSelector(const QString &);
     void handlePlayButton();
     void handlePauseButton();
-    void handlePlayPause();
     void handleRecordButton();
     void handleStopRecordButton();
     void handleVolume(double);
@@ -254,12 +253,18 @@ private slots:
     void setFMaudioGain(int);
 
     void setDevice(int);
+    void setAgcControl(int);
+    void setIfGain(int);
+    void setLnaGain(int);
 
 // scan
     void nextFrequency();
 
 #ifdef HAVE_MPRIS
 // MPRIS
+    void mprisPlayButton();
+    void mprisPauseButton();
+    void mprisPlayPause();
     void mprisNextButton();
     void mprisPreviousButton();
     void mprisVolume(double);

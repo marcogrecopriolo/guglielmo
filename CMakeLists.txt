@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.12)
 cmake_policy(SET CMP0048 NEW)
-project(guglielmo VERSION 0.4)
+project(guglielmo VERSION 0.5)
 set (BINARY_TARGET ${PROJECT_NAME})
 set (orgName SQSL)
 set (orgDomain sqsl.org)
@@ -21,6 +21,7 @@ if (UNIX)
 elseif (NOT MSYS AND NOT MINGW)
     execute_process(COMMAND powershell Get-Date -Uformat \"%Y-%m-%d %H:%M:%S %Z\" OUTPUT_VARIABLE currentDate OUTPUT_STRIP_TRAILING_WHITESPACE)
         add_definitions (-DCURRENT_DATE=\"${currentDate}\")
+	add_definitions(-DCHOOSE_CONFIG=Windows)
 endif()
 
 if (UNIX OR MSYS OR MINGW)
@@ -211,6 +212,8 @@ endif()
 	set (${PROJECT_NAME}_HDRS
              ./include/country-codes.h
 	     ./include/constants.h
+	     ./include/logger.h
+	     ./include/logging.h
 	     ./include/settings.h
 	     ./include/dab/dab-processor.h
              ./include/fm/fm-demodulator.h

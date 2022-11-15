@@ -1,7 +1,7 @@
 TEMPLATE	= app
 objectName      = guglielmo
 os		= $$system(uname)
-objectVersion	= 0.4
+objectVersion	= 0.5
 orgName		= SQSL
 orgDomain	= sqsl.org
 TARGET		= $$objectName
@@ -11,7 +11,7 @@ QMAKE_CXXFLAGS	+= -std=c++11
 QMAKE_CFLAGS	+= -flto -ffast-math
 MAKE_CXXFLAGS	+= -flto -ffast-math
 QMAKE_CXXFLAGS  += -isystem $$[QT_INSTALL_HEADERS]
-RC_ICONS	= icons/guglielmo.png
+RC_ICONS	= icons/guglielmo.ico
 RESOURCES	+= guglielmo.qrc
 
 contains(os, Linux) {
@@ -25,7 +25,8 @@ contains(os, MINGW64.*) {
 }
 
 win32 {
-    CONFIG		+= console
+    CONFIG		+= windows
+    DEFINES		+= CHOOSE_CONFIG=Windows
     mingw32 {
 	# powershell hangs on date, so make sure we use a proper shell
 	currDate	= $$system(sh -c date "+\"%Y-%m-%d %H:%M:%S %z\"")
@@ -83,11 +84,12 @@ mingw32 {
 
 	INCLUDEPATH	+= /usr/local/include
 	LIBS		+= -L/usr/local/lib
-	LIBS		+= -lfftw3f -lfftw3
+	LIBS		+= -lfftw3f
+#	LIBS		+= -lfftw3
 	LIBS		+= -lportaudio
 	LIBS		+= -lsndfile
 	LIBS		+= -lsamplerate
-	LIBS		+= -lusb-1.0
+#	LIBS		+= -lusb-1.0
 	LIBS		+= -lz
 	LIBS		+= -lqwt
 
@@ -201,6 +203,8 @@ INCLUDEPATH += . \
 # Input
 HEADERS += ./include/radio.h \
 	   ./include/constants.h \
+	   ./include/logger.h \
+	   ./include/logging.h \
 	   ./include/settings.h \
 	   ./include/country-codes.h \
 	   ./include/dab/dab-processor.h \

@@ -58,6 +58,7 @@
 #ifdef	HAVE_PLUTO
 #include "pluto-handler.h"
 #endif
+#include "logging.h"
 
 // A few repeated Ui constants
 #define BAD_SERVICE	"cannot run this service"
@@ -280,10 +281,10 @@ RadioInterface::RadioInterface (QSettings *Si, QWidget	 *parent):
     player.setPlaybackStatus(Mpris::Stopped);
     connect(&player, SIGNAL(volumeRequested(double)), this, SLOT(mprisVolume(double)));
     connect(&player, SIGNAL(quitRequested()), this, SLOT(mprisClose()));
-    connect(&player, SIGNAL(playRequested()), this, SLOT(handlePlayButton()));
-    connect(&player, SIGNAL(pauseRequested()), this, SLOT(handlePauseButton()));
-    connect(&player, SIGNAL(playPauseRequested()), this, SLOT(handlePlayPause()));
-    connect(&player, SIGNAL(stopRequested()), this, SLOT(handlePauseButton()));
+    connect(&player, SIGNAL(playRequested()), this, SLOT(mprisPlayButton()));
+    connect(&player, SIGNAL(pauseRequested()), this, SLOT(mprisPauseButton()));
+    connect(&player, SIGNAL(playPauseRequested()), this, SLOT(mprisPlayPause()));
+    connect(&player, SIGNAL(stopRequested()), this, SLOT(mprisPauseButton()));
     connect(&player, SIGNAL(nextRequested()), this, SLOT(mprisNextButton()));
     connect(&player, SIGNAL(previousRequested()), this, SLOT(mprisPreviousButton()));
     player.setMetadata(metadata);
@@ -611,6 +612,7 @@ void RadioInterface::stopFMscan() {
 //	slots
 
 void RadioInterface::nextFrequency(void) {
+    log(LOG_EVENT, LOG_MIN, "fm scan timer signal");
     if (FMfreq <= MIN_FM || FMfreq >= MAX_FM) {
 	stopFMscan();
     } else {
@@ -628,6 +630,7 @@ void RadioInterface::nextFrequency(void) {
 }
 
 void RadioInterface::scanDone(void) {
+    log(LOG_EVENT, LOG_MIN, "fm station found");
     scanTimer->stop();
     FMprocessor->stopScanning();
     scanning = false;
@@ -650,6 +653,7 @@ void RadioInterface::addToEnsemble(const QString &serviceName, uint32_t SId) {
     bool inserted = false;
     std::vector<serviceId>::iterator i;
 
+    log(LOG_EVENT, LOG_MIN, "received service %s %i", qPrintable(serviceName), SId);
     if (!DABprocessor->is_audioService(serviceName))
        return;
     for (const auto serv: serviceList)
@@ -708,6 +712,7 @@ void RadioInterface::addToEnsemble(const QString &serviceName, uint32_t SId) {
 }
 
 void RadioInterface::nameOfEnsemble(int id, const QString &v) {
+    log(LOG_EVENT, LOG_DETAILED, "station name %s %i", qPrintable(v), id);
     ensembleId->setAlignment(Qt::AlignLeft);
     ensembleId->setText(v + " (" + QString::number(id, 16) + ")");
 }
@@ -716,6 +721,7 @@ void RadioInterface::ensembleLoaded(int count) {
     dabService s;
     int i = 0;
 
+    log(LOG_EVENT, LOG_MIN, "ensemble complete with %i services", count);
     if (nextService.valid && nextService.serviceName == "" && count > 0) {
 	if (nextService.fromEnd)
 	    i = serviceList.size() - 1;
@@ -732,6 +738,7 @@ void RadioInterface::ensembleLoaded(int count) {
 }
 
 void RadioInterface::showStrength(float strength) {
+    log(LOG_EVENT, LOG_VERBOSE, "signal strength %f", strength);
     if (strength < 50)
 	signalStrength->setFillBrush(QBrush(Qt::red));
     else
@@ -740,6 +747,7 @@ void RadioInterface::showStrength(float strength) {
 }
 
 void RadioInterface::showQuality(bool b) {
+    log(LOG_EVENT, LOG_VERBOSE, "quality %i", b);
     if (b) 
 	ficSuccess++;
     if (++ficBlocks >= 25) {
@@ -755,6 +763,7 @@ void RadioInterface::showQuality(bool b) {
 }
 
 void RadioInterface::showText(QString s) {
+    log(LOG_EVENT, LOG_DETAILED, "radio text %s", qPrintable(s));
     dynamicLabel->setText(s);
 #ifdef HAVE_MPRIS
 
@@ -768,12 +777,14 @@ void RadioInterface::showText(QString s) {
 }
 
 void RadioInterface::showSoundMode(bool s) {
+    log(LOG_EVENT, LOG_VERBOSE, "stereo mode %i", s);
     stereoLabel->setStyleSheet (s?  "QLabel {background-color: green; color: white}":
                          "QLabel {background-color: red; color: white}");
     stereoLabel->setText(s? "stereo" : "mono");
 }
 
 void RadioInterface::showLabel(const QString s) {
+    log(LOG_EVENT, LOG_DETAILED, "radio label %s", qPrintable(s));
     serviceLabel->setAlignment(Qt::AlignLeft);
     serviceLabel->setText(s);
 #ifdef HAVE_MPRIS
@@ -786,6 +797,7 @@ void RadioInterface::showSlides(QByteArray data, int contentType, QString pictur
     const char *type;
     QPixmap p;
 
+    log(LOG_EVENT, LOG_MIN, "slide %s %i", qPrintable(pictureName), contentType);
     if (pictureName == QString(""))
 	return;
     switch (static_cast<MOTContentType>(contentType)) {
@@ -826,6 +838,7 @@ void RadioInterface::showSlides(QPixmap p) {
 	QFile::remove(tmpPicFile);
     currentPicFile = QStandardPaths::writableLocation(QStandardPaths::TempLocation) + QString("/guglielmo%1.png").arg(rand());
     p.save(currentPicFile);
+    log(LOG_MPRIS, LOG_MIN, "slide file %s", qPrintable(currentPicFile));
     metadata["mpris:artUrl"] = currentPicFile;
     player.setMetadata(metadata);
 #endif
@@ -848,16 +861,21 @@ void RadioInterface::handleMotObject (QByteArray result,
 
 // 	close button
 void RadioInterface::closeEvent(QCloseEvent *event) {
+    log(LOG_UI, LOG_MIN, "close window received");
     if (yesNo(this)) {
+	log(LOG_UI, LOG_MIN, "close window accepted");
 	terminateProcess();
 	event->accept();
-    } else 
+    } else {
+	log(LOG_UI, LOG_MIN, "close window denied");
 	event->ignore();
+    }
 }
 
 //	audio
 
 void RadioInterface::handleVolume(double vol) {
+    log(LOG_UI, LOG_MIN, "volume changed to %f", vol);
     soundOut->setVolume(qreal(vol)/100);
 #ifdef HAVE_MPRIS
     player.setVolume(vol / 100);
@@ -865,6 +883,7 @@ void RadioInterface::handleVolume(double vol) {
 }
 
 void RadioInterface::handleSquelch(double val) {
+    log(LOG_UI, LOG_MIN, "squelch changed to %f", val);
     FMprocessor->setSquelchValue(100-int(val));
 }
 
@@ -872,11 +891,14 @@ void RadioInterface::handleSquelch(double val) {
 
 static
 void addPreset(QComboBox *presetSelector, QString preset, QString comment) {
+    log(LOG_UI, LOG_MIN, "add preset %s", qPrintable(preset));
 
     // don't add duplicates
     for (int i = 0; i < presetSelector->count(); i ++)
-	if (presetSelector->itemText(i).contains(preset))
+	if (presetSelector->itemText(i).contains(preset)) {
+	    log(LOG_UI, LOG_MIN, "preset already there %s", qPrintable(preset));
 	    return;
+	}
     if (comment != "")
 	preset = preset + ":" + comment;
     presetSelector->addItem(preset);
@@ -884,16 +906,20 @@ void addPreset(QComboBox *presetSelector, QString preset, QString comment) {
 
 static
 void deletePreset(QComboBox *presetSelector, QString preset) {
+    log(LOG_UI, LOG_MIN, "delete preset %s", qPrintable(preset));
+
     for (int i = 0; i < presetSelector->count(); i ++)
 	if (presetSelector->itemText(i).contains(preset)) {
 	    presetSelector->removeItem(i);
 	    return;
 	}
+    log(LOG_UI, LOG_MIN, "preset not found %s", qPrintable(preset));
 }
 
 void RadioInterface::handlePresetSelector(const QString &preset) {
     int newPreset;
 
+    log(LOG_UI, LOG_MIN, "play preset %s", qPrintable(preset));
     if ((preset == "Presets") || (presetSelector->count() <= 1))
 	return;
 
@@ -985,15 +1011,19 @@ void RadioInterface::handlePresetSelector(const QString &preset) {
 }
 
 void RadioInterface::handleAddDABPreset() {
-    if (currentService.serviceName.at(1) == ' ')
+    if (currentService.serviceName.at(1) == ' ') {
+        log(LOG_UI, LOG_MIN, "add dab empty preset");
 	return;
+    }
 
     addPreset(presetSelector, channelSelector->currentText() + ":" + currentService.serviceName, "");
 }
 
 void RadioInterface::handleDeleteDABPreset() {
-    if (currentService.serviceName.at(1) == ' ')
+    if (currentService.serviceName.at(1) == ' ') {
+        log(LOG_UI, LOG_MIN, "delete dab empty preset");
 	return;
+    }
 
     deletePreset(presetSelector, channelSelector->currentText() + ":" + currentService.serviceName);
 }
@@ -1034,8 +1064,11 @@ void RadioInterface::handleSelectService(QModelIndex ind) {
     dabService s;
 
     QString currentProgram = ind.data(Qt::DisplayRole).toString();
-    if (currentProgram == "")
+    if (currentProgram == "") {
+	log(LOG_UI, LOG_MIN, "switching to an empty service");
 	return;
+    }
+    log(LOG_UI, LOG_MIN, "switching to dab %s", qPrintable(currentProgram));
 
     stopDABService();
     DABprocessor->getParameters(currentProgram, &s. SId, &s.SCIds);
@@ -1048,6 +1081,7 @@ void RadioInterface::handleSelectService(QModelIndex ind) {
 }
 
 void RadioInterface::handleStationsAction() {
+	log(LOG_UI, LOG_MIN, "switching to dab stations");
 	isSlides = false;
 	slidesAction->setVisible(true);
 	stationsAction->setVisible(false);
@@ -1056,6 +1090,7 @@ void RadioInterface::handleStationsAction() {
 }
 
 void RadioInterface::handleSlidesAction() {
+	log(LOG_UI, LOG_MIN, "switching to dab slides");
 	isSlides = true;
 	slidesAction->setVisible(false);
 	stationsAction->setVisible(true);
@@ -1070,8 +1105,7 @@ void RadioInterface::startDABService(dabService *s) {
     QPixmap p;
 
     if (playing && !isFM && currentService.valid) {
-	fprintf (stderr, "service %s is still valid\n",
-		currentService.serviceName.toLatin1().data());
+	log(LOG_UI, LOG_MIN, "service %s is still valid", currentService.serviceName.toLatin1().data());
 	stopDABService();
     }
     p.load(":/empty.png");
@@ -1158,6 +1192,7 @@ void RadioInterface::stopDAB() {
 }
 
 void RadioInterface::handleSelectChannel(const QString &channel) {
+    log(LOG_UI, LOG_MIN, "switching to dab channel %s", qPrintable(channel));
     stopDAB();
     startDAB(channel);
 }
@@ -1172,6 +1207,7 @@ void RadioInterface::handleNextChanButton() {
 	    if (serviceList.at(i).name == currentService.serviceName) {
 		dabService s;
 
+		log(LOG_UI, LOG_MIN, "switching to next station");
 		i++;
 		if (playing) {
 		    s.serviceName = serviceList.at(i).name;
@@ -1188,6 +1224,7 @@ void RadioInterface::handleNextChanButton() {
 	    }
 
     // no dice, switch channel
+    log(LOG_UI, LOG_MIN, "switching to next channel");
     stopDAB();
     currentChannel++;
     if (currentChannel >= channelSelector->count())
@@ -1213,6 +1250,7 @@ void RadioInterface::handlePrevChanButton() {
 	    if (serviceList.at(i).name == currentService.serviceName) {
 		dabService s;
 
+		log(LOG_UI, LOG_MIN, "switching to previous station");
 		i--;
 		if (playing) {
 		    s.serviceName = serviceList.at(i).name;
@@ -1229,6 +1267,7 @@ void RadioInterface::handlePrevChanButton() {
 	    }
 
     // no dice, switch channel
+    log(LOG_UI, LOG_MIN, "switching to previous channel");
     stopDAB();
     currentChannel--;
     if (currentChannel < 0)
@@ -1291,14 +1330,17 @@ void RadioInterface::stopFM() {
 }
 
 void RadioInterface::handleScanDown() {
+    log(LOG_UI, LOG_MIN, "starting previous station scan");
     startFMscan(true);
 }
 
 void RadioInterface::handleScanUp() {
+    log(LOG_UI, LOG_MIN, "starting next station scan");
     startFMscan(false);
 }
 
 void RadioInterface::handleStopScan() {
+    log(LOG_UI, LOG_MIN, "stopping station scan");
     stopFMscan();
 }
 
@@ -1321,6 +1363,7 @@ void RadioInterface::setScanning() {
 }
 
 void RadioInterface::handleFMfrequency(double freq) {
+    log(LOG_UI, LOG_MIN, "new fm frequency %f", freq);
     FMfreq = freq;
     frequencyLCD->display(int(FMfreq*1000));
     if (playing) {
@@ -1332,6 +1375,7 @@ void RadioInterface::handleFMfrequency(double freq) {
 //	play, pause, record, stop record
 
 void RadioInterface::handlePlayButton() {
+    log(LOG_UI, LOG_MIN, "play");
     disconnect(playButton, SIGNAL (clicked (void)),
                  this, SLOT (handlePlayButton(void)));
     if (isFM)
@@ -1341,19 +1385,13 @@ void RadioInterface::handlePlayButton() {
 }
 
 void RadioInterface::handlePauseButton() {
+    log(LOG_UI, LOG_MIN, "pause");
     disconnect(playButton, SIGNAL(clicked(void)),
 	this, SLOT(handlePauseButton(void)));
     if (isFM)
 	stopFM();
     else
 	stopDABService();
-}
-
-void RadioInterface::handlePlayPause() {
-    if (playing)
-	handlePauseButton();
-    else
-	handlePlayButton();
 }
 
 #define PAUSED "paused - "
@@ -1388,6 +1426,7 @@ void RadioInterface::setPlaying() {
 }
 
 void RadioInterface::handleRecordButton() {
+    log(LOG_UI, LOG_MIN, "record");
     QString outputFileName;
     QString baseFileName;
     QString ext;
@@ -1430,6 +1469,7 @@ void RadioInterface::handleRecordButton() {
 }
 
 void RadioInterface::handleStopRecordButton() {
+    log(LOG_UI, LOG_MIN, "stop recording");
     disconnect(recordButton, SIGNAL(clicked(void)),
 		this, SLOT(handleStopRecordButton(void)));
     stopRecording();
@@ -1469,6 +1509,7 @@ void RadioInterface::setRecording() {
 //	dab and fm buttons
 
 void RadioInterface::handleDABButton() {
+    log(LOG_UI, LOG_MIN, "to dab");
     if (!isFM)
 	return;
     stopFM();
@@ -1505,6 +1546,7 @@ void RadioInterface::toDAB() {
 }
 
 void RadioInterface::handleFMButton() {
+    log(LOG_UI, LOG_MIN, "to fm");
     if (isFM)
 	return;
     stopDAB();
@@ -1612,6 +1654,7 @@ void RadioInterface::changeStation(int d) {
 
 #ifdef HAVE_MPRIS
 void RadioInterface::mprisLabelAndText(QString l, QString t) {
+    log(LOG_MPRIS, LOG_MIN, "mpris artist %s title %s", qPrintable(l), qPrintable(t));
     metadata["xesam:artist"] = l;
     metadata["xesam:title"] = t;
     player.setMetadata(metadata);
@@ -1628,16 +1671,37 @@ void RadioInterface::mprisEmptyArt(bool dimmed) {
 }
 
 void RadioInterface::mprisClose() {
+	log(LOG_MPRIS, LOG_MIN, "mpris close");
 	terminateProcess();
 	exit(0);
 }
 
 void RadioInterface::mprisVolume(double vol) {
+    log(LOG_MPRIS, LOG_MIN, "mpris volume %f", vol);
     volumeKnob->setValue(vol * 100);
     soundOut->setVolume(qreal(vol));
 }
 
+void RadioInterface::mprisPlayButton() {
+    log(LOG_MPRIS, LOG_MIN, "mpris play");
+    handlePlayButton();
+}
+
+void RadioInterface::mprisPauseButton() {
+    log(LOG_MPRIS, LOG_MIN, "mpris pause");
+    handlePauseButton();
+}
+
+void RadioInterface::mprisPlayPause() {
+    log(LOG_MPRIS, LOG_MIN, "mpris play/pause");
+    if (playing)
+	handlePauseButton();
+    else
+	handlePlayButton();
+}
+
 void RadioInterface::mprisNextButton() {
+    log(LOG_MPRIS, LOG_MIN, "mpris next");
     if (skipPresetMode)
 	changePreset(1);
     else
@@ -1645,6 +1709,7 @@ void RadioInterface::mprisNextButton() {
 }
 
 void RadioInterface::mprisPreviousButton() {
+    log(LOG_MPRIS, LOG_MIN, "mpris previous");
     if (skipPresetMode)
 	changePreset(-1);
     else

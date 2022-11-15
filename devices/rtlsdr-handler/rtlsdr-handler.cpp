@@ -1,24 +1,27 @@
-#
 /*
- *    Copyright (C) 2013 .. 2017
- *    Jan van Katwijk (J.vanKatwijk@gmail.com)
- *    Lazy Chair Computing
+ *    Copyright (C) 2021
+ *    Marco Greco <marcogrecopriolo@gmail.com>
  *
- *    This file is part of dabMini
+ *    This file is part of the guglielmo FM DAB tuner software package.
  *
- *    dabMini is free software; you can redistribute it and/or modify
+ *    guglielmo is free software; you can redistribute it and/or modify
  *    it under the terms of the GNU General Public License as published by
- *    the Free Software Foundation; either version 2 of the License, or
- *    (at your option) any later version.
+ *    the Free Software Foundation, version 2 of the License.
  *
- *    dabMini is distributed in the hope that it will be useful,
+ *    guglielmo is distributed in the hope that it will be useful,
  *    but WITHOUT ANY WARRANTY; without even the implied warranty of
  *    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *    GNU General Public License for more details.
  *
  *    You should have received a copy of the GNU General Public License
- *    along with dab-Mini; if not, write to the Free Software
+ *    along with guglielmo; if not, write to the Free Software
  *    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ *
+ *    Taken from qt-dab, with bug fixes and enhancements.
+ *
+ *    Copyright (C) 2013 .. 2017
+ *    Jan van Katwijk (J.vanKatwijk@gmail.com)
+ *    Lazy Chair Computing
  *
  * 	This particular driver is a very simple wrapper around the
  * 	librtlsdr.  In order to keep things simple, we dynamically
@@ -29,7 +32,9 @@
 #include	<QThread>
 #include	"rtlsdr-handler.h"
 #include	"rtl-sdr.h"
+#include	"logging.h"
 
+#define DEV_RTLSDR LOG_DEV
 #if IS_WINDOWS
 #define	GETPROCADDRESS	GetProcAddress
 #else
@@ -84,7 +89,8 @@ virtual void	run (void) {
 	                                 _I_Buffer (4 * 1024 * 1024) {
 int16_t	deviceCount;
 int32_t	r;
-int	i, k;
+int	i;
+char    *gainsString;
 
 	agcControl		= false;
 	ifGain			= 50;
@@ -97,16 +103,17 @@ int	i, k;
 
 #if IS_WINDOWS
 	const char *libraryString = "rtlsdr.dll";
-	Handle		= LoadLibrary ((LPTSTR) "rtlsdr.dll");
+	Handle		= LoadLibraryA (libraryString)
 #else
 	const char *libraryString = "librtlsdr.so";
-	Handle		= dlopen ("librtlsdr.so", RTLD_NOW);
+	Handle		= dlopen (libraryString, RTLD_NOW);
 #endif
 
 	if (Handle == NULL) {
-	   fprintf (stderr, "failed to open %s\n", libraryString);
-#if !IS_WINDOWS
-	   fprintf (stderr, "Error = %s\n", dlerror ());
+#if IS_WINDOWS
+	   log (DEV_RTLSDR, LOG_MIN, "failed to open %s Error = %li", libraryString, GetLastError());
+#else
+	   log (DEV_RTLSDR, LOG_MIN, "failed to open %s Error = %s", libraryString, dlerror());
 #endif
 	   throw (20);
 	}
@@ -135,7 +142,7 @@ int	i, k;
 //	OK, now open the hardware
 	r			= this -> rtlsdr_open (&device, 0);
 	if (r < 0) {
-	   fprintf (stderr, "Opening rtlsdr device failed\n");
+	   log (DEV_RTLSDR, LOG_MIN, "opening device failed");
 #if IS_WINDOWS
 	   FreeLibrary (Handle);
 #else
@@ -148,7 +155,7 @@ int	i, k;
 	r			= this -> rtlsdr_set_sample_rate (device,
 	                                                          inputRate);
 	if (r < 0) {
-	   fprintf (stderr, "Setting samplerate failed\n");
+	   log (DEV_RTLSDR, LOG_MIN, "setting samplerate failed");
 	   rtlsdr_close (device);
 #if IS_WINDOWS
 	   FreeLibrary (Handle);
@@ -159,16 +166,18 @@ int	i, k;
 	}
 
 	r			= this -> rtlsdr_get_sample_rate (device);
-	fprintf (stderr, "samplerate set to %d\n", r);
+	log (DEV_RTLSDR, LOG_MIN, "samplerate set to %d", r);
 
-	gainsCount = rtlsdr_get_tuner_gains (device, NULL);
-	fprintf(stderr, "Supported gain values (%d): ", gainsCount);
-	gains		= new int [gainsCount];
-	gainsCount = rtlsdr_get_tuner_gains (device, gains);
+	gainsCount   = rtlsdr_get_tuner_gains (device, NULL);
+	gains	     = new int [gainsCount];
+	gainsString  = new char[gainsCount *5 + 1];
+	*gainsString = '\0';
+	gainsCount   = rtlsdr_get_tuner_gains (device, gains);
 	for (i = gainsCount; i > 0; i--) {
-	   fprintf (stderr, "%.1f ", gains [i - 1] / 10.0);
+	   sprintf (gainsString + strlen(gainsString), "%.1f ", gains [i - 1] / 10.0);
 	}
-	fprintf(stderr, "\n");
+	log (DEV_RTLSDR, LOG_MIN, "supported gain values (%d): %s", gainsCount, gainsString);
+	delete gainsString;
 
 	if (agcControl)
 	   rtlsdr_set_agc_mode (device, 1);
@@ -244,12 +253,11 @@ void	rtlsdrHandler::stopReader	(void) {
 //
 //	when selecting  the gain from a table, use the table value
 void	rtlsdrHandler::setIfGain (int gain) {
-	fprintf (stderr, "gain will be set %d to %d\n",
+	log (DEV_RTLSDR, LOG_MIN, "gain will be set %d to %d",
 	                     gain, gains [gain * gainsCount / 100]);
 	ifGain = gain;
 	rtlsdr_set_tuner_gain (device,
 	                        gains [gain * gainsCount / 100]);
-	emit configurationChanged();
 }
 //
 void	rtlsdrHandler::setAgcControl	(int v) {
@@ -257,7 +265,6 @@ void	rtlsdrHandler::setAgcControl	(int v) {
 	rtlsdr_set_agc_mode (device, v);
 	rtlsdr_set_tuner_gain (device,
 	             gains [(int)(ifGain * gainsCount / 100)]);
-	emit configurationChanged();
 }
 
 //
@@ -308,34 +315,34 @@ bool	rtlsdrHandler::load_rtlFunctions (void) {
 	rtlsdr_open	= (pfnrtlsdr_open)
 	                       GETPROCADDRESS (Handle, "rtlsdr_open");
 	if (rtlsdr_open == NULL) {
-	   fprintf (stderr, "Could not find rtlsdr_open\n");
+	   log (DEV_RTLSDR, LOG_MIN, "Could not find rtlsdr_open");
 	   return false;
 	}
 	rtlsdr_close	= (pfnrtlsdr_close)
 	                     GETPROCADDRESS (Handle, "rtlsdr_close");
 	if (rtlsdr_close == NULL) {
-	   fprintf (stderr, "Could not find rtlsdr_close\n");
+	   log (DEV_RTLSDR, LOG_MIN, "Could not find rtlsdr_close");
 	   return false;
 	}
 
 	rtlsdr_set_sample_rate =
 	    (pfnrtlsdr_set_sample_rate)GETPROCADDRESS (Handle, "rtlsdr_set_sample_rate");
 	if (rtlsdr_set_sample_rate == NULL) {
-	   fprintf (stderr, "Could not find rtlsdr_set_sample_rate\n");
+	   log (DEV_RTLSDR, LOG_MIN, "Could not find rtlsdr_set_sample_rate");
 	   return false;
 	}
 
 	rtlsdr_get_sample_rate	=
 	    (pfnrtlsdr_get_sample_rate)GETPROCADDRESS (Handle, "rtlsdr_get_sample_rate");
 	if (rtlsdr_get_sample_rate == NULL) {
-	   fprintf (stderr, "Could not find rtlsdr_get_sample_rate\n");
+	   log (DEV_RTLSDR, LOG_MIN, "Could not find rtlsdr_get_sample_rate");
 	   return false;
 	}
 
 	rtlsdr_get_tuner_gains		= (pfnrtlsdr_get_tuner_gains)
 	                     GETPROCADDRESS (Handle, "rtlsdr_get_tuner_gains");
 	if (rtlsdr_get_tuner_gains == NULL) {
-	   fprintf (stderr, "Could not find rtlsdr_get_tuner_gains\n");
+	   log (DEV_RTLSDR, LOG_MIN, "Could not find rtlsdr_get_tuner_gains");
 	   return false;
 	}
 
@@ -343,94 +350,94 @@ bool	rtlsdrHandler::load_rtlFunctions (void) {
 	rtlsdr_set_tuner_gain_mode	= (pfnrtlsdr_set_tuner_gain_mode)
 	                     GETPROCADDRESS (Handle, "rtlsdr_set_tuner_gain_mode");
 	if (rtlsdr_set_tuner_gain_mode == NULL) {
-	   fprintf (stderr, "Could not find rtlsdr_set_tuner_gain_mode\n");
+	   log (DEV_RTLSDR, LOG_MIN, "Could not find rtlsdr_set_tuner_gain_mode");
 	   return false;
 	}
 
 	rtlsdr_set_agc_mode	= (pfnrtlsdr_set_agc_mode)
 	                     GETPROCADDRESS (Handle, "rtlsdr_set_agc_mode");
 	if (rtlsdr_set_agc_mode == NULL) {
-	   fprintf (stderr, "Could not find rtlsdr_set_agc_mode\n");
+	   log (DEV_RTLSDR, LOG_MIN, "Could not find rtlsdr_set_agc_mode");
 	   return false;
 	}
 
 	rtlsdr_set_tuner_gain	= (pfnrtlsdr_set_tuner_gain)
 	                     GETPROCADDRESS (Handle, "rtlsdr_set_tuner_gain");
 	if (rtlsdr_set_tuner_gain == NULL) {
-	   fprintf (stderr, "Cound not find rtlsdr_set_tuner_gain\n");
+	   log (DEV_RTLSDR, LOG_MIN, "Cound not find rtlsdr_set_tuner_gain");
 	   return false;
 	}
 
 	rtlsdr_get_tuner_gain	= (pfnrtlsdr_get_tuner_gain)
 	                     GETPROCADDRESS (Handle, "rtlsdr_get_tuner_gain");
 	if (rtlsdr_get_tuner_gain == NULL) {
-	   fprintf (stderr, "Could not find rtlsdr_get_tuner_gain\n");
+	   log (DEV_RTLSDR, LOG_MIN, "Could not find rtlsdr_get_tuner_gain");
 	   return false;
 	}
 	rtlsdr_set_center_freq	= (pfnrtlsdr_set_center_freq)
 	                     GETPROCADDRESS (Handle, "rtlsdr_set_center_freq");
 	if (rtlsdr_set_center_freq == NULL) {
-	   fprintf (stderr, "Could not find rtlsdr_set_center_freq\n");
+	   log (DEV_RTLSDR, LOG_MIN, "Could not find rtlsdr_set_center_freq");
 	   return false;
 	}
 
 	rtlsdr_get_center_freq	= (pfnrtlsdr_get_center_freq)
 	                     GETPROCADDRESS (Handle, "rtlsdr_get_center_freq");
 	if (rtlsdr_get_center_freq == NULL) {
-	   fprintf (stderr, "Could not find rtlsdr_get_center_freq\n");
+	   log (DEV_RTLSDR, LOG_MIN, "Could not find rtlsdr_get_center_freq");
 	   return false;
 	}
 
 	rtlsdr_reset_buffer	= (pfnrtlsdr_reset_buffer)
 	                     GETPROCADDRESS (Handle, "rtlsdr_reset_buffer");
 	if (rtlsdr_reset_buffer == NULL) {
-	   fprintf (stderr, "Could not find rtlsdr_reset_buffer\n");
+	   log (DEV_RTLSDR, LOG_MIN, "Could not find rtlsdr_reset_buffer");
 	   return false;
 	}
 
 	rtlsdr_read_async	= (pfnrtlsdr_read_async)
 	                     GETPROCADDRESS (Handle, "rtlsdr_read_async");
 	if (rtlsdr_read_async == NULL) {
-	   fprintf (stderr, "Cound not find rtlsdr_read_async\n");
+	   log (DEV_RTLSDR, LOG_MIN, "Cound not find rtlsdr_read_async");
 	   return false;
 	}
 
 	rtlsdr_get_device_count	= (pfnrtlsdr_get_device_count)
 	                     GETPROCADDRESS (Handle, "rtlsdr_get_device_count");
 	if (rtlsdr_get_device_count == NULL) {
-	   fprintf (stderr, "Could not find rtlsdr_get_device_count\n");
+	   log (DEV_RTLSDR, LOG_MIN, "Could not find rtlsdr_get_device_count");
 	   return false;
 	}
 
 	rtlsdr_cancel_async	= (pfnrtlsdr_cancel_async)
 	                     GETPROCADDRESS (Handle, "rtlsdr_cancel_async");
 	if (rtlsdr_cancel_async == NULL) {
-	   fprintf (stderr, "Could not find rtlsdr_cancel_async\n");
+	   log (DEV_RTLSDR, LOG_MIN, "Could not find rtlsdr_cancel_async");
 	   return false;
 	}
 
 	rtlsdr_set_direct_sampling = (pfnrtlsdr_set_direct_sampling)
 	                  GETPROCADDRESS (Handle, "rtlsdr_set_direct_sampling");
 	if (rtlsdr_set_direct_sampling == NULL) {
-	   fprintf (stderr, "Could not find rtlsdr_set_direct_sampling\n");
+	   log (DEV_RTLSDR, LOG_MIN, "Could not find rtlsdr_set_direct_sampling");
 	   return false;
 	}
 
 	rtlsdr_set_freq_correction = (pfnrtlsdr_set_freq_correction)
 	                  GETPROCADDRESS (Handle, "rtlsdr_set_freq_correction");
 	if (rtlsdr_set_freq_correction == NULL) {
-	   fprintf (stderr, "Could not find rtlsdr_set_freq_correction\n");
+	   log (DEV_RTLSDR, LOG_MIN, "Could not find rtlsdr_set_freq_correction");
 	   return false;
 	}
 	
 	rtlsdr_get_device_name = (pfnrtlsdr_get_device_name)
 	                  GETPROCADDRESS (Handle, "rtlsdr_get_device_name");
 	if (rtlsdr_get_device_name == NULL) {
-	   fprintf (stderr, "Could not find rtlsdr_get_device_name\n");
+	   log (DEV_RTLSDR, LOG_MIN, "Could not find rtlsdr_get_device_name");
 	   return false;
 	}
 
-	fprintf (stderr, "OK, functions seem to be loaded\n");
+	log (DEV_RTLSDR, LOG_MIN, "functions seem to be loaded");
 	return true;
 }
 
