@@ -103,7 +103,7 @@ char    *gainsString;
 
 #if IS_WINDOWS
 	const char *libraryString = "rtlsdr.dll";
-	Handle		= LoadLibraryA (libraryString)
+	Handle		= LoadLibraryA (libraryString);
 #else
 	const char *libraryString = "librtlsdr.so";
 	Handle		= dlopen (libraryString, RTLD_NOW);
