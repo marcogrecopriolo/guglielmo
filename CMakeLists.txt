@@ -201,7 +201,6 @@ endif()
 	           ./include/backend/data/journaline
 	           ./include/backend/data/mot
 	           ./include/support
-	           ./include/support/viterbi-jan
 	           ./include/support/viterbi-spiral
 	           ./include/output
 		   ./include/share
@@ -286,7 +285,6 @@ endif()
 	     ./include/support/band-handler.h
 	     ./include/support/text-mapper.h
 	     ./include/support/dab-tables.h
-	     ./include/support/viterbi-jan/viterbi-handler.h
 	     ./include/support/viterbi-spiral/viterbi-spiral.h
 	     ./include/radio.h
 	     ./devices/device-handler.h
@@ -357,7 +355,6 @@ endif()
 	     ./src/support/band-handler.cpp
 	     ./src/support/text-mapper.cpp
 	     ./src/support/dab-tables.cpp
-	     ./src/support/viterbi-jan/viterbi-handler.cpp
 	     ./src/support/viterbi-spiral/viterbi-spiral.cpp
 	     ./src/radio.cpp
 	     ./src/dialogs.cpp

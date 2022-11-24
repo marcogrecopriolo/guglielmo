@@ -139,6 +139,22 @@ and next for stations, and unless matters change, I am unlikely to implement it 
 
 For now, you can change the skip track buttons mode of operation between presets and stations.
 
+## Debugging
+
+Two options you can use to produce diagnostic output: -v and -d <component mask>.
+
+The first set the verbosity level, and can be repeated to increase it, the second specifies what
+components should produce diagnostic output.
+
+The available components are listed in include/logging.h, to have all possible logging just use -d -1.
+
+There is no need to specify both options: using -d on its own implies -v, and using -v implies -d -1.
+
+## Running
+
+Whether you are using an AppImage or your own build, you are expected to have installed the package(s)
+supporting the device you intend to use.
+
 ## Building
 
 The executable is created either with qmake or cmake.
@@ -175,7 +191,7 @@ The binary supplied with each version supports all available devices except for 
 
 At this moment in time, the only devices tested are the SDR RTL stick and the SDRplay RSP1a,
 and the only build linux.
-Windows does build with Visual Studio, Mingw and Msys and Msys2, but the process needs a fair
+Windows does build with Visual Studio, and Mingw plus Msys or Msys2, but the process needs a fair
 amount of manual intervention.
 
 ## TODO

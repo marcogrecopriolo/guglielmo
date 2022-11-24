@@ -68,14 +68,14 @@ unix {
 	CONFIG		+= airspy
 	CONFIG		+= hackrf
 	CONFIG		+= lime
-#	CONFIG		+= pluto
+	CONFIG		+= pluto
 
 	CONFIG		+= faad
 #	CONFIG		+= fdk-aac
 
 	CONFIG		+= mpris
 
-	CONFIG		+= PC
+	CONFIG		+= NO_SSE
 #	CONFIG		+= RPI
 }
 
@@ -166,7 +166,6 @@ DEPENDPATH += . \
 	      ./src/backend/data/journaline \
 	      ./src/output \
 	      ./src/support \
-	      ./src/support/viterbi-jan \
 	      ./src/support/viterbi-spiral \
 	      ./include/fm \
 	      ./include/rds \
@@ -196,7 +195,6 @@ INCLUDEPATH += . \
 	      ./include/backend/data/journaline \
 	      ./include/output \
 	      ./include/support \
-	      ./include/support/viterbi-jan \
 	      ./include/support/viterbi-spiral \
 	      ./devices 
 
@@ -234,7 +232,6 @@ HEADERS += ./include/radio.h \
 	   ./include/backend/msc-handler.h \
 	   ./include/backend/galois.h \
 	   ./include/backend/reed-solomon.h \
-	   ./include/backend/rscodec.h \
 	   ./include/backend/charsets.h \
 	   ./include/backend/firecode-checker.h \
 	   ./include/backend/frame-processor.h \
@@ -267,7 +264,6 @@ HEADERS += ./include/radio.h \
 	   ./include/output/Qt-audio.h \
            ./include/output/Qt-audiodevice.h \
 	   ./include/support/process-params.h \
-	   ./include/support/viterbi-jan/viterbi-handler.h \
 	   ./include/support/viterbi-spiral/viterbi-spiral.h \
 	   ./include/support/fir-filters.h \
 	   ./include/support/fft.h \
@@ -281,7 +277,6 @@ HEADERS += ./include/radio.h \
 	   ./include/support/band-handler.h \
 	   ./include/support/text-mapper.h \
 	   ./include/support/dab-tables.h \
-	   ./include/support/ensemble-printer.h \
 	   ./devices/device-handler.h
 
 FORMS	+= ./guglielmo.ui \
@@ -306,7 +301,7 @@ SOURCES += ./src/main.cpp \
 	   ./src/ofdm/freq-interleaver.cpp \
 	   ./src/ofdm/tii_detector.cpp \
 	   ./src/ofdm/fic-handler.cpp \
-	   ./src/ofdm/fib-decoder.cpp  \
+	   ./src/ofdm/fib-decoder.cpp \
 	   ./src/protection/protTables.cpp \
 	   ./src/protection/protection.cpp \
 	   ./src/protection/eep-protection.cpp \
@@ -314,7 +309,6 @@ SOURCES += ./src/main.cpp \
 	   ./src/backend/msc-handler.cpp \
 	   ./src/backend/galois.cpp \
 	   ./src/backend/reed-solomon.cpp \
-	   ./src/backend/rscodec.cpp \
 	   ./src/backend/charsets.cpp \
 	   ./src/backend/firecode-checker.cpp \
 	   ./src/backend/backend.cpp \
@@ -349,14 +343,12 @@ SOURCES += ./src/main.cpp \
 	   ./src/support/iir-filters.cpp \
 	   ./src/support/pll.cpp \
 	   ./src/support/trigtabs.cpp \
-	   ./src/support/viterbi-jan/viterbi-handler.cpp \
 	   ./src/support/viterbi-spiral/viterbi-spiral.cpp \
            ./src/support/fft-handler.cpp \
 	   ./src/support/dab-params.cpp \
 	   ./src/support/band-handler.cpp \
 	   ./src/support/text-mapper.cpp \
 	   ./src/support/dab-tables.cpp \
-	   ./src/support/ensemble-printer.cpp \
 	   ./devices/device-handler.cpp
 
 faad	{

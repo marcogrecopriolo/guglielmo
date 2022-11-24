@@ -380,7 +380,8 @@ void RadioInterface::terminateProcess() {
 #ifdef HAVE_MPRIS
     settings->setValue(GEN_LAST_PRESET, int(lastPreset));
     settings->setValue(GEN_SKIP_PRESET_MODE, bool(skipPresetMode));
-    QFile::remove(currentPicFile);
+    if (currentPicFile != "")
+	QFile::remove(currentPicFile);
 #endif
     settings->beginWriteArray(GROUP_PRESETS);
 
