@@ -34,16 +34,16 @@
  *	Lazy Chair Computing
  */
 
+#include	"airspy-handler.h"
+#include	"airspyfilter.h"
+#include 	"constants.h"
+#include	"logging.h"
+
 #if IS_WINDOWS
 #define	GETPROCADDRESS	GetProcAddress
 #else
 #define	GETPROCADDRESS	dlsym
 #endif
-
-#include	"airspy-handler.h"
-#include	"airspyfilter.h"
-#include 	"constants.h"
-#include	"logging.h"
 
 #define DEV_AIRSPY LOG_DEV
 

@@ -96,11 +96,11 @@ mingw32 {
 	# comment or uncomment for the devices you want to have support for
 	# (you obviously have libraries installed for the selected ones)
 	CONFIG		+= rtlsdr
-#	CONFIG		+= sdrplay
-#	CONFIG		+= sdrplay-v3
-#	CONFIG		+= airspy
-#	CONFIG		+= hackrf
-#	CONFIG		+= lime
+	CONFIG		+= sdrplay
+	CONFIG		+= sdrplay-v3
+	CONFIG		+= airspy
+	CONFIG		+= hackrf
+	CONFIG		+= lime
 #	CONFIG		+= pluto
 
 	CONFIG		+= faad

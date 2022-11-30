@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Package>
+    <DisplayName>RTL SDR windows driver</DisplayName>
+    <Description>Install RTL SDR windows driver</Description>
+    <Version>2.4</Version>
+    <ReleaseDate>2022-11-28</ReleaseDate>
+    <Script>installscript.qs</Script>
+    <Default>script</Default>
+</Package>

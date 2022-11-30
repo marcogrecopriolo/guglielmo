@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Package>
+    <DisplayName>RSP SDRplay windows API and driver</DisplayName>
+    <Description>Install RSP SDRplay windows API and driver</Description>
+    <Version>3.11</Version>
+    <ReleaseDate>2022-11-28</ReleaseDate>
+    <Script>installscript.qs</Script>
+    <Default>script</Default>
+</Package>

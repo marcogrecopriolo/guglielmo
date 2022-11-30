@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Package>
+    <DisplayName>Guglielmo</DisplayName>
+    <Description>Install Guglielmo</Description>
+    <Version>0.5</Version>
+    <ReleaseDate>2022-11-25</ReleaseDate>
+    <Licenses>
+        <License name="GNU GENERAL PUBLIC LICENSE" file="COPYING" />
+    </Licenses>
+    <Script>installscript.qs</Script>
+    <Default>true</Default>
+</Package>
