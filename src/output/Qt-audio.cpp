@@ -26,12 +26,12 @@
  */
 
 #include	<stdio.h>
+#include	"Qt-audio.h"
+#include	"Qt-audiodevice.h"
 #if QT_VERSION >= 0x060000
 #include	<QAudioDevice>
 #include	<QMediaDevices>
 #endif
-#include	"Qt-audiodevice.h"
-#include	"Qt-audio.h"
 
 	Qt_Audio::Qt_Audio (void) {
 	Buffer		= new RingBuffer<float> (8 * 32768);
@@ -70,7 +70,7 @@ void	Qt_Audio::setParams (int outputRate) {
 	AudioFormat. setChannelCount	(2);
 #if QT_VERSION >= 0x060000
 	AudioFormat. setSampleFormat	(QAudioFormat::Float);
-	QAudioDevice info(QMediaDevices::defaultOutputDevice());
+	QAudioDevice info(QMediaDevices::defaultAudioOutput());
 #else
 	AudioFormat. setSampleSize	(sizeof (float) * 8);
 	AudioFormat. setCodec		("audio/pcm");

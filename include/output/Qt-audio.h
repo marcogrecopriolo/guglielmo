@@ -52,7 +52,7 @@ private:
 	void		setParams	(int32_t);
 	QAudioFormat	AudioFormat;
 #if QT_VERSION >= 0x060000
-	QAudioSink	*theAudioSink;
+	QAudioSink	*theAudioOutput;
 #else
 	QAudioOutput	*theAudioOutput;
 #endif

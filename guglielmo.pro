@@ -58,7 +58,7 @@ linux {
 macx {
 	DESTDIR		= ./macx-bin
 	INCLUDEPATH	+= /usr/local/opt/qwt/include
-	INCLUDEPATH	+= /usr/local/opt/Cellar/qwt/6.2.0_1/lib/qwt.framework/Version/6/Headers
+	INCLUDEPATH	+= /usr/local/Cellar/qwt/6.2.0_1/lib/qwt.framework/Versions/6/Headers
 	LIBS		+= -L/usr/local/lib
 	LIBS		+= -framework qwt
 }
@@ -81,7 +81,7 @@ unix {
 	CONFIG		+= airspy
 	CONFIG		+= hackrf
 	CONFIG		+= lime
-	CONFIG		+= pluto
+#	CONFIG		+= pluto
 
 	CONFIG		+= faad
 #	CONFIG		+= fdk-aac

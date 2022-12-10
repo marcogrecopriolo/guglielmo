@@ -66,12 +66,12 @@
 //#include	"iostream.h"
 #include	"windows.h"
 #else
-#if !defined(__FREEBSD__) && !defined(__OSX__)
+#if !defined(__FREEBSD__) && !defined(__APPLE_CC__)
 #include	<malloc.h>
 #endif
 #include	"dlfcn.h"
 typedef	void	*HINSTANCE;
-#ifdef __OSX__
+#ifdef __APPLE_CC__
 #define LIBEXT ".dylib"
 #else
 #define LIBEXT ".so"
