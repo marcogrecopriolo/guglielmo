@@ -84,8 +84,8 @@ ULONG APIkeyValue_length = 255;
 	   }
 	}
 #else
-	Handle		= dlopen ("libusb-1.0.so", RTLD_NOW | RTLD_GLOBAL);
-	Handle		= dlopen ("libmirsdrapi-rsp.so", RTLD_NOW);
+	Handle		= dlopen ("libusb-1.0" LIBEXT, RTLD_NOW | RTLD_GLOBAL);
+	Handle		= dlopen ("libmirsdrapi-rsp" LIBEXT, RTLD_NOW);
 	if (Handle == NULL) {
 	   log (DEV_PLAY, LOG_MIN, "we could not load libmirsdrapi-rsp");
 	   throw (23);

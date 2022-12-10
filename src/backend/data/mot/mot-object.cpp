@@ -86,7 +86,7 @@ uint16_t	rawContentType = 0;
 	         if (paramId == 12) {
                     int16_t i;
                     for (i = 0; i < length - 1; i ++)
-                       name. append (segment [pointer + i + 1]);
+                       name. append (QChar(segment [pointer + i + 1]));
                  }
                  pointer += length;
            }

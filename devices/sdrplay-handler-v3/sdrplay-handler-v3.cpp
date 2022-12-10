@@ -601,8 +601,8 @@ ULONG APIkeyValue_length = 255;
 	   }
 	}
 #else
-	Handle		= dlopen ("libusb-1.0.so", RTLD_NOW | RTLD_GLOBAL);
-	Handle		= dlopen ("libsdrplay_api.so", RTLD_NOW);
+	Handle		= dlopen ("libusb-1.0" LIBEXT, RTLD_NOW | RTLD_GLOBAL);
+	Handle		= dlopen ("libsdrplay_api" LIBEXT, RTLD_NOW);
 	if (Handle == nullptr) {
 	   log (DEV_PLAYV3, LOG_MIN, "error report %s", dlerror());
 	   return nullptr;

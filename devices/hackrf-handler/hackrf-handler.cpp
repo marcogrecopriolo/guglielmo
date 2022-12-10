@@ -46,7 +46,7 @@ int	res;
         const char *libraryString = "libhackrf.dll";
         Handle          = LoadLibraryA (libraryString);
 #else
-        const char *libraryString = "libhackrf.so";
+        const char *libraryString = "libhackrf" LIBEXT;
         Handle          = dlopen (libraryString, RTLD_NOW);
 #endif
 

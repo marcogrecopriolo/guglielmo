@@ -71,7 +71,7 @@ char    *samplerateString;
 	const char *libraryString = "airspy.dll";
 	Handle		= LoadLibraryA (libraryString);
 #else
-	const char *libraryString = "libairspy.so";
+	const char *libraryString = "libairspy" LIBEXT;
 	Handle		= dlopen (libraryString, RTLD_LAZY);
 #endif
 

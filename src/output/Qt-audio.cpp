@@ -26,6 +26,10 @@
  */
 
 #include	<stdio.h>
+#if QT_VERSION >= 0x060000
+#include	<QAudioDevice>
+#include	<QMediaDevices>
+#endif
 #include	"Qt-audiodevice.h"
 #include	"Qt-audio.h"
 
@@ -64,18 +68,27 @@ void	Qt_Audio::setParams (int outputRate) {
 
 	AudioFormat. setSampleRate	(outputRate);
 	AudioFormat. setChannelCount	(2);
+#if QT_VERSION >= 0x060000
+	AudioFormat. setSampleFormat	(QAudioFormat::Float);
+	QAudioDevice info(QMediaDevices::defaultOutputDevice());
+#else
 	AudioFormat. setSampleSize	(sizeof (float) * 8);
 	AudioFormat. setCodec		("audio/pcm");
 	AudioFormat. setByteOrder	(QAudioFormat::LittleEndian);
 	AudioFormat. setSampleType	(QAudioFormat::Float);
-
 	QAudioDeviceInfo info(QAudioDeviceInfo::defaultOutputDevice());
+#endif
+
 	if (!info. isFormatSupported(AudioFormat)) {
 	   fprintf (stderr, "Audio: Sorry, format cannot be handled\n");
 	   return;
 	}
 
+#if QT_VERSION >= 0x060000
+	theAudioOutput = new QAudioSink(AudioFormat, this);
+#else
 	theAudioOutput = new QAudioOutput(AudioFormat, this);
+#endif
 	connect (theAudioOutput, SIGNAL (stateChanged (QAudio::State)),
 	         this, SLOT (handleStateChanged (QAudio::State)));
 

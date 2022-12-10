@@ -105,7 +105,7 @@ char    *gainsString;
 	const char *libraryString = "rtlsdr.dll";
 	Handle		= LoadLibraryA (libraryString);
 #else
-	const char *libraryString = "librtlsdr.so";
+	const char *libraryString = "librtlsdr" LIBEXT;
 	Handle		= dlopen (libraryString, RTLD_NOW);
 #endif
 

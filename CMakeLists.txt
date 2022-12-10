@@ -13,9 +13,9 @@ add_definitions (-DCURRENT_VERSION=\"${PROJECT_VERSION}\")
 add_definitions (-DORGNAME=\"${orgName}\")
 add_definitions (-DORGDOMAIN=\"${orgDomain}\")
 if (UNIX)
+    add_definitions(-DCHOOSE_CONFIG=Unix)
     execute_process(COMMAND uname OUTPUT_VARIABLE os OUTPUT_STRIP_TRAILING_WHITESPACE)
     if(${os} STREQUAL "Linux")
-	add_definitions(-DCHOOSE_CONFIG=${os})
 	set(MPRIS true)
     endif()
 elseif (NOT MSYS AND NOT MINGW)
@@ -61,7 +61,7 @@ if(MINGW)
     add_definitions ( -municode)
 endif()
 
-# msys2 cmake mishanles prefixes and postfixes
+# msys2 cmake mishandles prefixes and postfixes
 if(MSYS)
     set(CMAKE_FIND_LIBRARY_PREFIXES "")
     set(CMAKE_FIND_LIBRARY_SUFFIXES ".dll")
@@ -134,13 +134,20 @@ endif()
 	find_package (PkgConfig)
 	find_package (LSBId)
 
-	find_package (Qt5Core REQUIRED)
-	find_package (Qt5Widgets REQUIRED)
-#	find_package (Qt5Xml REQUIRED)
+	find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Core)
+	find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Core)
+	if (QT_VERSION VERSION_LESS 5.15)
+	    macro(qt_wrap_cpp)
+	        qt5_wrap_cpp(${ARGV})
+	    endmacro()
+	    macro(qt_wrap_ui)
+	        qt5_wrap_ui(${ARGV})
+	    endmacro()
+	endif ()
+	find_package (Qt${QT_VERSION_MAJOR}Widgets REQUIRED)
 	find_package (Qwt REQUIRED)
 
 	include_directories (
-#	  ${Qt5Xml_INCLUDE_DIRS}
 	  ${QWT_INCLUDE_DIRS}
 	)
 
@@ -171,6 +178,8 @@ endif()
         list(APPEND extraLibs ${LIBSAMPLERATE_LIBRARY})
 
 	if (MPRIS)
+
+		# TODO check
 		pkg_check_modules(MPRIS mpris-qt5)
 		if (MPRIS_FOUND)
 			add_definitions(-DHAVE_MPRIS)
@@ -185,7 +194,7 @@ endif()
 
 	include_directories (
 	           ${CMAKE_SOURCE_DIR} ${CMAKE_CURRENT_BINARY_DIR}
-	           ${QT5Widgets_INCLUDES}
+	           ${QT${QT_VERSION_MAJOR}Widgets_INCLUDES}
 	           ${QT_QTCORE_INCLUDE_DIR}
 	           ${QT_QTGUI_INCLUDE_DIR}
 	           .
@@ -590,11 +599,11 @@ endif()
 	)
         list(APPEND extraLibs ${PORTAUDIO_LIBRARIES})
 
-	find_package (Qt5Multimedia REQUIRED)
+	find_package (Qt${QT_VERSION_MAJOR}Multimedia REQUIRED)
 	include_directories (
-	  ${Qt5Multimedia_INCLUDE_DIRS}
+	  ${Qt${QT_VERSION_MAJOR}Multimedia_INCLUDE_DIRS}
 	)
-        list(APPEND extraLibs ${Qt5Multimedia_LIBRARIES})
+        list(APPEND extraLibs ${Qt${QT_VERSION_MAJOR}Multimedia_LIBRARIES})
 
 	if(WIN32 AND NOT MSYS AND NOT MINGW)
 		set (${PROJECT_NAME}_HDRS
@@ -607,11 +616,11 @@ endif()
 		)
 	endif()
 
-	QT5_WRAP_UI (UIS ${${PROJECT_NAME}_UIS})
+	qt_wrap_ui (UIS ${${PROJECT_NAME}_UIS})
 
 	include_directories (
 	          ${SDRPLAY_INCLUDES}
-	          ${QT5Widgets_INCLUDES}
+	          ${QT${QT_VERSION_MAJOR}Widgets_INCLUDES}
 	          ${QT_QTCORE_INCLUDE_DIR}
 	          ${QT_QTGUI_INCLUDE_DIR}
 	          ${FFTW_INCLUDE_DIRS}
@@ -619,7 +628,7 @@ endif()
 	)
 
 	list(REMOVE_ITEM ${PROJECT_NAME}_HDRS "./devices/device-handler.h")
-	QT5_WRAP_CPP (MOCS ${${PROJECT_NAME}_HDRS})
+	qt_wrap_cpp (MOCS ${${PROJECT_NAME}_HDRS})
 
 	add_executable (${BINARY_TARGET}
 	                ${${PROJECT_NAME}_SRCS}
@@ -631,8 +640,7 @@ endif()
 	)
 
 	target_link_libraries (${BINARY_TARGET}
-	                       Qt5::Widgets
-#	                       Qt5::Xml
+	                       Qt${QT_VERSION_MAJOR}::Widgets
 	                       ${RTLTCP_lib}
 	                       ${FFTW3F_LIBRARIES}
 	                       ${extraLibs}

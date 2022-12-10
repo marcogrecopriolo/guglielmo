@@ -28,7 +28,7 @@
 #include "logger.h"
 #include "radio.h"
 
-#if CHOOSE_CONFIG == Linux
+#if CHOOSE_CONFIG == Unix
 #define DEFAULT_CFG ".config/" TARGET ".conf"
 #elif CHOOSE_CONFIG == Windows
 #define DEFAULT_CFG TARGET ".ini"

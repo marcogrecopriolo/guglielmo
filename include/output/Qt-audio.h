@@ -27,8 +27,13 @@
 #ifndef __QT_AUDIO__
 #define	__QT_AUDIO__
 #include	<stdio.h>
+#include	<QAudioFormat>
+#if QT_VERSION >= 0x060000
+#include	<QAudioSink>
+#else
 #include	<QAudioOutput>
-#include	 <QTimer>
+#endif
+#include	<QTimer>
 #include	"constants.h"
 #include	"ringbuffer.h"
 #include	"audio-base.h"
@@ -46,7 +51,11 @@ public:
 private:
 	void		setParams	(int32_t);
 	QAudioFormat	AudioFormat;
+#if QT_VERSION >= 0x060000
+	QAudioSink	*theAudioSink;
+#else
 	QAudioOutput	*theAudioOutput;
+#endif
 	Qt_AudioDevice	*theAudioDevice;
 	RingBuffer<float> *Buffer;
 	QAudio::State	currentState;

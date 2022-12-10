@@ -15,7 +15,7 @@ RC_ICONS	= icons/guglielmo.ico
 RESOURCES	+= guglielmo.qrc
 
 contains(os, Linux) {
-	DEFINES	+= CHOOSE_CONFIG=Linux
+	CONFIG		+= linux
 }
 contains(os, MINGW32.*)  || contains(os, MSYS.*) {
 	CONFIG 		+= mingw32
@@ -46,19 +46,32 @@ win32 {
 #CONFIG	+= try-epg		# do not use
 CONFIG += 
 
-unix {
+linux {
 	DESTDIR		= ./linux-bin
+	CONFIG		+= mpris
 
-	INCLUDEPATH	+= /usr/local/include
+	# FIXME currently needs to be set by hand
 	INCLUDEPATH	+= /usr/include/qt5/qwt
+	LIBS		+= -lqwt-qt5
+}
+
+macx {
+	DESTDIR		= ./macx-bin
+	INCLUDEPATH	+= /usr/local/opt/qwt/include
+	INCLUDEPATH	+= /usr/local/opt/Cellar/qwt/6.2.0_1/lib/qwt.framework/Version/6/Headers
+	LIBS		+= -L/usr/local/lib
+	LIBS		+= -framework qwt
+}
+
+unix {
+	INCLUDEPATH	+= /usr/local/include
 	LIBS		+= -lfftw3f  -lfftw3 -lusb-1.0 -ldl
 	LIBS		+= -lportaudio
 	LIBS		+= -lz
 	LIBS		+= -lsndfile
 	LIBS		+= -lsamplerate
 
-	# FIXME currently needs to be set by hand
-	LIBS		+= -lqwt-qt5
+	DEFINES		+= CHOOSE_CONFIG=Unix
 
 	# comment or uncomment for the devices you want to have support for
 	# (you obviously have libraries installed for the selected ones)
@@ -73,9 +86,7 @@ unix {
 	CONFIG		+= faad
 #	CONFIG		+= fdk-aac
 
-	CONFIG		+= mpris
-
-	CONFIG		+= NO_SSE
+	CONFIG		+= PC
 #	CONFIG		+= RPI
 }
 

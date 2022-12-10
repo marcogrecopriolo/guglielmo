@@ -924,7 +924,11 @@ void RadioInterface::handlePresetSelector(const QString &preset) {
     if ((preset == "Presets") || (presetSelector->count() <= 1))
 	return;
 
+#if QT_VERSION >= 0x060000
+    QStringList list = preset.split(":", Qt::SkipEmptyParts);
+#else
     QStringList list = preset.split(":", QString::SkipEmptyParts);
+#endif
     if (list.length() != 2 && list.length() != 3) {
 	warning(this, tr(BAD_PRESET));
 	deletePreset(presetSelector, preset);
