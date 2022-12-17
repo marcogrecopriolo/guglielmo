@@ -53,14 +53,19 @@ linux {
 	# FIXME currently needs to be set by hand
 	INCLUDEPATH	+= /usr/include/qt5/qwt
 	LIBS		+= -lqwt-qt5
+	CONFIG		+= PC
 }
 
 macx {
 	DESTDIR		= ./macx-bin
+	ICON		= icons/guglielmo.png
+	VERSION		= $$objectVersion
+	QMAKE_INFO_PLIST = guglielmo.plist
 	INCLUDEPATH	+= /usr/local/opt/qwt/include
 	INCLUDEPATH	+= /usr/local/Cellar/qwt/6.2.0_1/lib/qwt.framework/Versions/6/Headers
 	LIBS		+= -L/usr/local/lib
 	LIBS		+= -framework qwt
+	CONFIG		+= NO_SSE
 }
 
 unix {
@@ -85,9 +90,6 @@ unix {
 
 	CONFIG		+= faad
 #	CONFIG		+= fdk-aac
-
-	CONFIG		+= PC
-#	CONFIG		+= RPI
 }
 
 mingw32 {

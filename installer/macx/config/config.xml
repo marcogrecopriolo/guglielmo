@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Installer>
+    <Name>Guglielmo</Name>
+    <Version>0.5</Version>
+    <Title>Guglielmo</Title>
+    <Publisher>Marco Greco</Publisher>
+    <InstallerApplicationIcon>guglielmo.png</InstallerApplicationIcon>
+    <Logo>guglielmo_small.png</Logo>
+    <WizardStyle>Modern</WizardStyle>
+    <StartMenuDir>Guglielmo</StartMenuDir>
+    <TargetDir>@ApplicationsDir@/guglielmo</TargetDir>
+    <MaintenanceToolName>guglielmo-uninstaller</MaintenanceToolName>
+    <ControlScript>appearence.qs</ControlScript>
+</Installer>

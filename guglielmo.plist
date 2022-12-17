@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CFBundleExecutable</key>
+	<string>guglielmo</string>
+	<key>CFBundleShortVersionString</key>
+	<string>i@SHORT_VERSION@</string>
+	<key>CFBundleIconFile</key>
+	<string>guglielmo.png</string>
+	<key>CFBundleIdentifier</key>
+	<string>org.sqsl.guglielmo</string>
+	<key>CFBundlePackageType</key>
+	<string>APPL</string>
+	<key>CFBundleSignature</key>
+	<string>????</string>
+	<key>LSMinimumSystemVersion</key>
+	<string>11.0</string>
+	<key>NOTE</key>
+	<string>A DAB and FM tuner with an old radio style UI</string>
+	<key>NSHumanReadableCopyright</key>
+	<string>Copyright © 2021 Marco Greco
+This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 2 of the License, or (at your option) any later version.</string>
+	<key>NSPrincipalClass</key>
+	<string>NSApplication</string>
+	<key>NSSupportsAutomaticGraphicsSwitching</key>
+	<true/>
+</dict>
+</plist>
