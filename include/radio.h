@@ -218,10 +218,10 @@ private slots:
     void handleDeleteDABPreset();
     void handleNextChanButton();
     void handlePrevChanButton();
-    void handleSelectChannel(const QString &);
+    void handleSelectChannel(int);
     void handleSelectService(QModelIndex);
     void handleDABButton();
-    void handlePresetSelector(const QString &);
+    void handlePresetSelector(int);
     void handlePlayButton();
     void handlePauseButton();
     void handleRecordButton();

@@ -243,12 +243,12 @@ RadioInterface::RadioInterface (QSettings *Si, QWidget	 *parent):
 		this, SLOT(handleStationsAction()));
     connect(slidesAction, SIGNAL(triggered(bool)),
 		this, SLOT(handleSlidesAction()));
-    connect(presetSelector, SIGNAL(activated(const QString &)),
-		this, SLOT(handlePresetSelector (const QString &)));
+    connect(presetSelector, SIGNAL(activated(int)),
+		this, SLOT(handlePresetSelector(int)));
     connect(ensembleDisplay, SIGNAL(clicked(QModelIndex)),
 		this, SLOT(handleSelectService(QModelIndex)));
-    connect(channelSelector, SIGNAL(activated(const QString &)),
-		this, SLOT(handleSelectChannel(const QString &)));
+    connect(channelSelector, SIGNAL(activated(int)),
+		this, SLOT(handleSelectChannel(int)));
     connect(prevChanButton, SIGNAL(clicked(void)),
 		this, SLOT(handlePrevChanButton(void)));
     connect(nextChanButton, SIGNAL(clicked(void)),
@@ -917,11 +917,17 @@ void deletePreset(QComboBox *presetSelector, QString preset) {
     log(LOG_UI, LOG_MIN, "preset not found %s", qPrintable(preset));
 }
 
-void RadioInterface::handlePresetSelector(const QString &preset) {
+void RadioInterface::handlePresetSelector(int index) {
     int newPreset;
+    QString preset;
 
-    log(LOG_UI, LOG_MIN, "play preset %s", qPrintable(preset));
-    if ((preset == "Presets") || (presetSelector->count() <= 1))
+    log(LOG_UI, LOG_MIN, "play preset %i", index);
+    if (index >= presetSelector->count() || presetSelector->count() <= 1)
+	return;
+    preset =  presetSelector->itemText(index);
+
+    log(LOG_UI, LOG_MIN, "preset is %s", qPrintable(preset));
+    if (preset == "Presets")
 	return;
 
 #if QT_VERSION >= 0x060000
@@ -989,8 +995,8 @@ void RadioInterface::handlePresetSelector(const QString &preset) {
     }
 
     // have to start channel first
-    disconnect (channelSelector, SIGNAL(activated(const QString &)),
-	            this, SLOT(handleSelectChannel(const QString &)));
+    disconnect (channelSelector, SIGNAL(activated(int)),
+	            this, SLOT(handleSelectChannel(int)));
     int k = channelSelector->findText(channel);
 
     if (k != -1)
@@ -999,8 +1005,8 @@ void RadioInterface::handlePresetSelector(const QString &preset) {
 	warning(this, tr(BAD_PRESET));
 	deletePreset(presetSelector, preset);
     }
-    connect(channelSelector, SIGNAL(activated(const QString &)),
-	         this, SLOT(handleSelectChannel(const QString &)));
+    connect(channelSelector, SIGNAL(activated(int)),
+	         this, SLOT(handleSelectChannel(int)));
     if (k == -1)
 	return;
 
@@ -1196,8 +1202,15 @@ void RadioInterface::stopDAB() {
 #endif
 }
 
-void RadioInterface::handleSelectChannel(const QString &channel) {
-    log(LOG_UI, LOG_MIN, "switching to dab channel %s", qPrintable(channel));
+void RadioInterface::handleSelectChannel(int index) {
+    QString channel;
+
+    log(LOG_UI, LOG_MIN, "switching to dab channel %i", index);
+    if (index < 0 || index >=  channelSelector->count())
+	return;
+
+    channel = channelSelector->itemText(index);
+    log(LOG_UI, LOG_MIN, "dab channel is %s", qPrintable(channel));
     stopDAB();
     startDAB(channel);
 }
@@ -1234,11 +1247,11 @@ void RadioInterface::handleNextChanButton() {
     currentChannel++;
     if (currentChannel >= channelSelector->count())
 	currentChannel = 0;
-    disconnect (channelSelector, SIGNAL(activated (const QString &)),
-		this, SLOT(handleSelectChannel(const QString &)));
+    disconnect (channelSelector, SIGNAL(activated (int)),
+		this, SLOT(handleSelectChannel(int)));
     channelSelector->setCurrentIndex(currentChannel);
-    connect (channelSelector, SIGNAL(activated (const QString &)),
-		this, SLOT(handleSelectChannel(const QString &)));
+    connect (channelSelector, SIGNAL(activated (int)),
+		this, SLOT(handleSelectChannel(int)));
     currentService.valid = false;
     nextService.valid = true;
     nextService.fromEnd = false;
@@ -1277,11 +1290,11 @@ void RadioInterface::handlePrevChanButton() {
     currentChannel--;
     if (currentChannel < 0)
 	currentChannel = channelSelector->count()-1;
-    disconnect(channelSelector, SIGNAL (activated(const QString &)),
-		this, SLOT(handleSelectChannel(const QString &)));
+    disconnect(channelSelector, SIGNAL (activated(int)),
+		this, SLOT(handleSelectChannel(int)));
     channelSelector->setCurrentIndex(currentChannel);
-    connect(channelSelector, SIGNAL(activated(const QString &)),
-		this, SLOT(handleSelectChannel(const QString &)));
+    connect(channelSelector, SIGNAL(activated(int)),
+		this, SLOT(handleSelectChannel(int)));
     currentService.valid = false;
     nextService.valid = true;
     nextService.fromEnd = true;
@@ -1614,7 +1627,7 @@ void RadioInterface::changePreset(int d) {
 	lastPreset = 1;
      else if (lastPreset <= 1)
 	lastPreset = presetSelector->count()-1;
-     handlePresetSelector(presetSelector->itemText(lastPreset));
+     handlePresetSelector(lastPreset);
 #endif
 }
 
