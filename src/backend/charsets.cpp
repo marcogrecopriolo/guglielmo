@@ -88,7 +88,7 @@ uint16_t i;
 	   default:
 	      s = QString();
 	      for (i = 0; i < length; i++) {
-	         s [i] = QChar (ebuLatinToUcs2 [((uint8_t*) buffer)[i]]);
+	         s.append(QChar (ebuLatinToUcs2 [((uint8_t*) buffer)[i]]));
 	      }
 	}
 
