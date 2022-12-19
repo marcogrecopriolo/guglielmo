@@ -235,20 +235,20 @@ private slots:
 
 // settings
     void settingsClose(void);
-    void setUiStyle(const QString &);
+    void setUiStyle(int);
 
 #ifdef HAVE_MPRIS
-    void setRemoteMode(const QString &);
+    void setRemoteMode(int);
 #endif
 
-    void setSoundMode(const QString &);
+    void setSoundMode(int);
     void setSoundOutput(int);
     void setLatency(int);
 
     void setDecoder(int);
-    void setDeemphasis(const QString &);
-    void setLowPassFilter(const QString &);
-    void setFMFilter(const QString &);
+    void setDeemphasis(int);
+    void setLowPassFilter(int);
+    void setFMFilter(int);
     void setFMDegree(int);
     void setFMaudioGain(int);
 

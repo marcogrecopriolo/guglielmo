@@ -116,8 +116,8 @@ void RadioInterface::handleSettingsAction() {
 		if (list[i].toLower() == currentStyle)
 			settingsUi.styleComboBox->setCurrentIndex(i);
 	}
-	settingsDialog->connect(settingsUi.styleComboBox, SIGNAL(activated (const QString &)),
-        	this, SLOT (setUiStyle(const QString &)));
+	settingsDialog->connect(settingsUi.styleComboBox, SIGNAL(activated (int)),
+        	this, SLOT (setUiStyle(int)));
 
 	// MPRIS
 #ifndef HAVE_MPRIS
@@ -126,8 +126,8 @@ void RadioInterface::handleSettingsAction() {
 	if (settingsUi.tabWidget->tabText(1) == "Remote control")
 	    settingsUi.tabWidget->removeTab(1);
 #else
-	settingsDialog->connect(settingsUi.remoteComboBox, SIGNAL(activated(const QString &)),
-        	this, SLOT(setRemoteMode(const QString &)));
+	settingsDialog->connect(settingsUi.remoteComboBox, SIGNAL(activated(int)),
+        	this, SLOT(setRemoteMode(int)));
     	if (skipPresetMode)
 	    settingsUi.remoteComboBox->setCurrentIndex(0);
 	else
@@ -135,8 +135,8 @@ void RadioInterface::handleSettingsAction() {
 #endif
 
 	// Sound tab
-	settingsDialog->connect(settingsUi.modeComboBox, SIGNAL(activated(const QString &)),
-        	this, SLOT(setSoundMode(const QString &)));
+	settingsDialog->connect(settingsUi.modeComboBox, SIGNAL(activated(int)),
+        	this, SLOT(setSoundMode(int)));
 	settingsDialog->connect(settingsUi.outputComboBox, SIGNAL(activated(int)),
         	this, SLOT(setSoundOutput(int)));
 	settingsDialog->connect(settingsUi.latencySpinBox, SIGNAL(valueChanged(int)),
@@ -169,14 +169,14 @@ void RadioInterface::handleSettingsAction() {
 	settingsUi.fmAudioGainSpinBox->setValue(FMaudioGain);
 	settingsDialog->connect(settingsUi.decoderComboBox, SIGNAL(activated(int)),
 		this, SLOT(setDecoder(int)));
-	settingsDialog->connect(settingsUi.deemphasisComboBox, SIGNAL(activated(const QString &)),
-		this, SLOT(setDeemphasis(const QString &)));
-	settingsDialog->connect(settingsUi.fmFilterComboBox, SIGNAL(activated(const QString &)),
-		this, SLOT(setFMFilter(const QString &)));
+	settingsDialog->connect(settingsUi.deemphasisComboBox, SIGNAL(activated(int)),
+		this, SLOT(setDeemphasis(int)));
+	settingsDialog->connect(settingsUi.fmFilterComboBox, SIGNAL(activated(int)),
+		this, SLOT(setFMFilter(int)));
 	settingsDialog->connect(settingsUi.fmDegreeFilterSpinBox, SIGNAL(valueChanged(int)),
 		this, SLOT(setFMDegree(int)));
-	settingsDialog->connect(settingsUi.lowPassComboBox, SIGNAL(activated(const QString &)),
-		this, SLOT(setLowPassFilter(const QString &)));
+	settingsDialog->connect(settingsUi.lowPassComboBox, SIGNAL(activated(int)),
+		this, SLOT(setLowPassFilter(int)));
 	settingsDialog->connect(settingsUi.fmAudioGainSpinBox, SIGNAL(valueChanged(int)),
 		this, SLOT(setFMaudioGain(int)));
 
@@ -261,19 +261,24 @@ void RadioInterface::settingsClose(void) {
     settings->endGroup();
 }
 
-void RadioInterface::setUiStyle(const QString &style) {
+void RadioInterface::setUiStyle(int index) {
+    QString style = settingsUi.styleComboBox->itemText(index);
+
     log(LOG_UI, LOG_MIN, "style %s", qPrintable(style));
     QApplication::setStyle(style);
 }
 
 #ifdef HAVE_MPRIS
-void RadioInterface::setRemoteMode(const QString &mode) {
+void RadioInterface::setRemoteMode(int index) {
+    QString mode = settingsUi.remoteComboBox->itemText(index);
+
     log(LOG_UI, LOG_MIN, "mpris mode %s", qPrintable(mode));
     skipPresetMode = (mode == "presets");
 }
 #endif
 
-void RadioInterface::setSoundMode(const QString &mode) {
+void RadioInterface::setSoundMode(int index) {
+    QString mode = settingsUi.modeComboBox->itemText(index);
     bool nextIsQtAudio = (mode == "Qt");
     bool stop = playing;
 
@@ -348,13 +353,17 @@ void RadioInterface::setLatency(int newLatency) {
     }
 }
 
-void RadioInterface::setDecoder(int decoder) {
-    log(LOG_UI, LOG_MIN, "fm decoder %i", decoder);
-    FMprocessor->setFMDecoder(fm_Demodulator::fm_demod(decoder));
-    FMdecoder = decoder;
+void RadioInterface::setDecoder(int index) {
+    QString decoder = settingsUi.decoderComboBox->itemText(index);
+
+    log(LOG_UI, LOG_MIN, "fm decoder %i %s", index, qPrintable(decoder));
+    FMprocessor->setFMDecoder(fm_Demodulator::fm_demod(index));
+    FMdecoder = index;
 }
 
-void RadioInterface::setDeemphasis(const QString &v) {
+void RadioInterface::setDeemphasis(int index) {
+    QString v = settingsUi.deemphasisComboBox->itemText(index);
+
     log(LOG_UI, LOG_MIN, "fm deemphasis %s", qPrintable(v));
     if (v == "None")
 	deemphasis = 1;
@@ -363,7 +372,9 @@ void RadioInterface::setDeemphasis(const QString &v) {
     FMprocessor->setDeemphasis((int32_t) deemphasis);
 }
 
-void RadioInterface::setFMFilter(const QString &v) {
+void RadioInterface::setFMFilter(int index) {
+    QString v = settingsUi.fmFilterComboBox->itemText(index);
+
     log(LOG_UI, LOG_MIN, "fm filter %s", qPrintable(v));
     if (v == "None")
 	FMfilter = 0;
@@ -378,7 +389,9 @@ void RadioInterface::setFMDegree(int degree) {
     FMdegree = degree;
 }
 
-void RadioInterface::setLowPassFilter(const QString &v) {
+void RadioInterface::setLowPassFilter(int index) {
+    QString v = settingsUi.lowPassComboBox->itemText(index);
+
     log(LOG_UI, LOG_MIN, "fm low pass filter %s", qPrintable(v));
     if (v == "None")
 	lowPassFilter = 0;
