@@ -27,7 +27,6 @@
 #include <QFile>
 #include <QTextStream>
 #include <QFileDialog>
-#include <QDebug>
 #include "Qt-audio.h"
 #include "audiosink.h"
 #include "settings.h"

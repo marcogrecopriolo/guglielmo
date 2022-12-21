@@ -33,6 +33,7 @@
 #define LOG_RDS		0x0010
 #define LOG_FM		0x0020
 #define LOG_DEV		0x0040
+#define LOG_AUDIO	0x0080
 
 extern qint64 logMask;
 extern int logVerbosity;

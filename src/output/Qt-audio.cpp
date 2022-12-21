@@ -32,6 +32,7 @@
 #include	<QAudioDevice>
 #include	<QMediaDevices>
 #endif
+#include	"logging.h"
 
 	Qt_Audio::Qt_Audio (void) {
 	Buffer		= new RingBuffer<float> (8 * 32768);
@@ -80,7 +81,7 @@ void	Qt_Audio::setParams (int outputRate) {
 #endif
 
 	if (!info. isFormatSupported(AudioFormat)) {
-	   fprintf (stderr, "Audio: Sorry, format cannot be handled\n");
+	   log (LOG_AUDIO, LOG_MIN, "format cannot be handled");
 	   return;
 	}
 

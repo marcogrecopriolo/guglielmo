@@ -292,7 +292,6 @@ endif()
 	     ./include/support/ringbuffer.h
 	     ./include/support/dab-params.h
 	     ./include/support/band-handler.h
-	     ./include/support/text-mapper.h
 	     ./include/support/dab-tables.h
 	     ./include/support/viterbi-spiral/viterbi-spiral.h
 	     ./include/radio.h
@@ -362,7 +361,6 @@ endif()
 	     ./src/support/fft-handler.cpp
 	     ./src/support/dab-params.cpp
 	     ./src/support/band-handler.cpp
-	     ./src/support/text-mapper.cpp
 	     ./src/support/dab-tables.cpp
 	     ./src/support/viterbi-spiral/viterbi-spiral.cpp
 	     ./src/radio.cpp

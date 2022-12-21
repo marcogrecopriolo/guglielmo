@@ -171,7 +171,6 @@ int32_t	result;
 	      if (dumpFile != nullptr)
 	         sf_writef_float (dumpFile, (float *)buffer, result);
 	      myLocker. unlock();
-//	      fprintf (stderr, "result %d\n", result);
 	      audioOutput (buffer, result);
 	   }
 	}
@@ -210,7 +209,6 @@ void	audioBase::stopDumping() {
 //	The audioOut function is the one that really should be
 //	reimplemented in the offsprings of this class
 void	audioBase::audioOutput	(float *v, int32_t amount) {
-	fprintf (stderr, "xx");
 	(void)v;
 	(void)amount;
 }

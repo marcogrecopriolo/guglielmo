@@ -38,6 +38,7 @@
 #include	<cstring>
 #include	<stdio.h>
 #include	"radio.h"
+#include	"logging.h"
 
 //	The bitmaps
 #define	ALL_NAME_SEGMENTS	((uint32_t) (1 << NUMBER_OF_NAME_SEGMENTS) - 1)
@@ -77,7 +78,7 @@ void	rdsGroupDecoder::reset (void) {
 }
 
 bool rdsGroupDecoder::decode (RDSGroup *grp) {
-//	fprintf (stderr, "Got group %d\n", grp -> getGroupType ());
+	log (LOG_RDS, LOG_VERBOSE, "Got group %d", grp -> getGroupType ());
 	setGroup	(grp -> getGroupType ());
 	setPTYCode	(grp -> getProgrammeType ());
 	setPiCode	(grp -> getPiCode ());
@@ -268,7 +269,7 @@ bool	rdsGroupDecoder::alphabetSwitcher (uint8_t c1, uint8_t c2) {
 //	called with alphabetSwitcher == true, we only have to
 //	look at the first character
 uint16_t *rdsGroupDecoder::setAlphabetTo (uint8_t c1, uint8_t c2) {
-	fprintf (stderr, "setting alphabet to %x %x\n", c1, c2);
+	log (LOG_RDS, LOG_MIN, "setting alphabet to %x %x", c1, c2);
 	switch (c1) {
 	   default:		// should not happen
 	   case 0x0F:

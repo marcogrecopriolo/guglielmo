@@ -288,7 +288,6 @@ HEADERS += ./include/radio.h \
 	   ./include/support/ringbuffer.h \
 	   ./include/support/dab-params.h \
 	   ./include/support/band-handler.h \
-	   ./include/support/text-mapper.h \
 	   ./include/support/dab-tables.h \
 	   ./devices/device-handler.h
 
@@ -360,7 +359,6 @@ SOURCES += ./src/main.cpp \
            ./src/support/fft-handler.cpp \
 	   ./src/support/dab-params.cpp \
 	   ./src/support/band-handler.cpp \
-	   ./src/support/text-mapper.cpp \
 	   ./src/support/dab-tables.cpp \
 	   ./devices/device-handler.cpp
 

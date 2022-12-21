@@ -25,6 +25,7 @@
 #include	"constants.h"
 #include	"uep-protection.h"
 #include	"protTables.h"
+#include	"logging.h"
 
 struct protectionProfile {
 	int16_t	bitRate;
@@ -156,11 +157,11 @@ int8_t          *PI3;
 int8_t          *PI4;
 int8_t          *PI_X;
 
-	fprintf (stderr, "protLevel %d, bitRate %d outSize = %d\n",
+	log (LOG_DAB, LOG_MIN, "uep protLevel %d, bitRate %d outSize = %d",
 	                       protLevel, bitRate, outSize);
 	index	= findIndex (bitRate, protLevel);
 	if (index == -1) {
-	   fprintf (stderr, "%d (%d) has a problem\n", bitRate, protLevel);
+	   log (LOG_DAB, LOG_MIN, "bit rate (level) not found%d (%d)", bitRate, protLevel);
 	   index = 1;
 	}
 

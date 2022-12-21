@@ -24,6 +24,7 @@
 #include	"constants.h"
 #include	"radio.h"
 #include	"backend.h"
+#include	"logging.h"
 //
 //	Interleaving is - for reasons of simplicity - done
 //	inline rather than through a special class-object
@@ -58,7 +59,7 @@ int32_t i, j;
 	this	-> protLevel		= d -> protLevel;
 	this	-> subChId		= d -> subchId;
 
-	fprintf (stderr, "starting a backend for %s (%X)\n",
+	log (LOG_DAB, LOG_MIN, "starting a backend for %s (%X)",
 	                  serviceName. toLatin1 (). data (), serviceId);
 	interleaveData. resize (16);
 	for (i = 0; i < 16; i ++) {
@@ -94,6 +95,8 @@ int32_t i, j;
 }
 
 	Backend::~Backend() {
+	log (LOG_DAB, LOG_MIN, "stopping backend for %s (%X)",
+	                  serviceName. toLatin1 (). data (), serviceId);
 #ifdef	__THREADED_BACKEND
 	running. store (false);
 	while (this -> isRunning())
@@ -167,6 +170,3 @@ void	Backend::stopRunning() {
 //	myAudioSink	-> stop();
 #endif
 }
-
-
-

@@ -179,7 +179,6 @@ int32_t k_prime, i, j, n = 0;
 	      return M_PI / 2 * (h_table (i, k - k_prime) + n);
 	   }
 	}
-	fprintf (stderr, "Help with %d\n", k);
 	return 0;
 }
 

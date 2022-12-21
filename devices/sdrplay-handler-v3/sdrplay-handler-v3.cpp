@@ -186,7 +186,7 @@ void	StreamBCallback (short *xi, short *xq,
                          void *cbContext) {
 	(void)xi; (void)xq; (void)params; (void)cbContext;
         if (reset)
-           printf ("sdrplay_api_StreamBCallback: numSamples=%d", numSamples);
+           log (DEV_PLAYV3, LOG_MIN, "sdrplay_api_StreamBCallback: numSamples=%d", numSamples);
 }
 
 static

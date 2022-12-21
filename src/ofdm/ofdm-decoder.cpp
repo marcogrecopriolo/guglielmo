@@ -33,6 +33,7 @@
 #include	"msc-handler.h"
 #include	"freq-interleaver.h"
 #include	"dab-params.h"
+#include	"logging.h"
 
 /**
   *	\brief ofdmDecoder
@@ -220,7 +221,7 @@ std::complex<float> sum	= std::complex<float> (0, 0);
 	   sum += conj (leftTerm) * rightTerm;
 	}
 
-	fprintf (stderr, "timeOffset = %f\n", arg (sum));
+	log (LOG_DAB, LOG_VERBOSE, "timeOffset  %f", arg (sum));
 }
 
 void	ofdmDecoder::compute_frequencyOffset (std::complex<float> *r,
@@ -236,7 +237,7 @@ std::complex<float> theta = std::complex<float> (0, 0);
 	   theta	+= val * std::complex<float> (1, -1);
 	}
 
-	fprintf (stderr, "frequency offset %f Hz \n",
+	log (LOG_DAB, LOG_DETAILED, "frequency offset %f Hz",
 	                    arg (theta) / (2 * M_PI) * 2048000 / T_u);
 }
 
@@ -262,7 +263,7 @@ int	offsb	= 0;
 	float sampleClockOffset = 
 	           offsa / (2 * M_PI * (float)T_s/ T_u * offsb);
 
-	fprintf (stderr, "clockOffset = %f\n", sampleClockOffset);
+	log (LOG_DAB, LOG_DETAILED, "clockOffset %f", sampleClockOffset);
 }
 
 

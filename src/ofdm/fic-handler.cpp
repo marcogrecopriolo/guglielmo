@@ -25,6 +25,7 @@
 #include	"radio.h"
 #include	"protTables.h"
 #include	"dab-params.h"
+#include	"logging.h"
 //
 //	The 3072 bits of the serial motherword shall be split into
 //	24 blocks of 128 bits each.
@@ -146,7 +147,7 @@ int32_t	i;
 	   }
 	}
 	else
-	   fprintf (stderr, "You should not call ficBlock here\n");
+	   log (LOG_DAB, LOG_MIN, "debug: invalid process_ficBlock call");
 //	we are pretty sure now that after block 4, we end up
 //	with index = 0
 }

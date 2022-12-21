@@ -25,7 +25,6 @@
  */
 
 #include	<QThread>
-#include	<QDebug>
 #include	"pluto-handler.h"
 #include	"ad9361.h"
 #include	"logging.h"
@@ -34,7 +33,6 @@
 
 #define MAX_GAIN	59
 
-static	bool	debugFlag	= true;
 // #define USE_NETWORK
 #define HOST "127.0.0.1"
 
@@ -117,21 +115,18 @@ struct iio_channel *chn		= nullptr;
 
 	ctx	= iio_create_default_context ();
 	if (ctx == nullptr) {
-	   if (debugFlag)
-	      log (DEV_PLUTO, LOG_MIN, "default context failed");
+	   log (DEV_PLUTO, LOG_MIN, "default context failed");
 	   ctx = iio_create_local_context ();
 	}
 
 #ifdef USE_NETWORK
 	if (ctx == nullptr) {
-	   if (debugFlag)
-	      log (DEV_PLUTO, LOG_MIN, "creating local context failed");
+	   log (DEV_PLUTO, LOG_MIN, "creating local context failed");
 	   ctx = iio_create_network_context ("pluto.local");
 	}
 
 	if (ctx == nullptr) {
-	   if (debugFlag)
-	      log (DEV_PLUTO, LOG_MIN, "creating network context with pluto.local failed");
+	   log (DEV_PLUTO, LOG_MIN, "creating network context with pluto.local failed");
 	   ctx = iio_create_network_context (HOST);
 	}
 #endif
@@ -141,8 +136,7 @@ struct iio_channel *chn		= nullptr;
 	   throw (24);
 	}
 
-	if (debugFlag)
-	   log (DEV_PLUTO, LOG_MIN, "context name found %s",
+	log (DEV_PLUTO, LOG_MIN, "context name found %s",
 	                            iio_context_get_name (ctx));
 
 	if (iio_context_get_devices_count (ctx) <= 0) {
@@ -157,12 +151,10 @@ struct iio_channel *chn		= nullptr;
 	}
 
 // Configure phy and lo channels
-	if (debugFlag)
-	   log (DEV_PLUTO, LOG_MIN, "Acquiring AD9361 phy channel %d", 0);
+	log (DEV_PLUTO, LOG_MIN, "Acquiring AD9361 phy channel %d", 0);
 	phys_dev = iio_context_find_device (ctx, "ad9361-phy");
 	if (phys_dev == nullptr) {
-	   if (debugFlag) 
-	      log (DEV_PLUTO, LOG_MIN, "no ad9361 found");
+	   log (DEV_PLUTO, LOG_MIN, "no ad9361 found");
 	   iio_context_destroy (ctx);
 	   throw (27);
 	}
@@ -172,8 +164,7 @@ struct iio_channel *chn		= nullptr;
 	                                                  toLatin1 (). data (),
                                        false);
 	if (chn == nullptr) {
-	   if (debugFlag)
-	      log (DEV_PLUTO, LOG_MIN, "cannot acquire phy channel %d", 0);
+	   log (DEV_PLUTO, LOG_MIN, "cannot acquire phy channel %d", 0);
 	   iio_context_destroy (ctx);
 	   throw (27);
 	}
@@ -181,11 +172,9 @@ struct iio_channel *chn		= nullptr;
 	int res = iio_channel_attr_write (chn, "rf_port_select",
 	                                               this -> rfport);
 	if (res < 0) {
-	   if (debugFlag) {
-	      char error [255];
-	      iio_strerror (res, error, 255); 
-	      log (DEV_PLUTO, LOG_MIN, "error in port selection %s", error);
-	   }
+	   char error [255];
+	   iio_strerror (res, error, 255); 
+	   log (DEV_PLUTO, LOG_MIN, "error in port selection %s", error);
 	   iio_context_destroy (ctx);
 	   throw (28);
 	}
@@ -194,11 +183,9 @@ struct iio_channel *chn		= nullptr;
 	                                       "rf_bandwidth",
 	                                       this -> bw_hz);
 	if (res < 0) {
-	   if (debugFlag) {
-	      char errorText [255];
-	      iio_strerror (res, errorText, 255); 
-	      log (DEV_PLUTO, LOG_MIN, "cannot select bandwidth %s", errorText);
-	   }
+	   char errorText [255];
+	   iio_strerror (res, errorText, 255); 
+	   log (DEV_PLUTO, LOG_MIN, "cannot select bandwidth %s", errorText);
 	   iio_context_destroy (ctx);
 	   throw (29);
 	}
@@ -206,11 +193,9 @@ struct iio_channel *chn		= nullptr;
 	res = iio_channel_attr_write_longlong (chn, "sampling_frequency",
 	                                              this -> fs_hz);
 	if (res < 0) {
-	   if (debugFlag) {
-	      char errorText [255];
-	      iio_strerror (res, errorText, 255); 
-	      log (DEV_PLUTO, LOG_MIN, "cannot set sampling frequency %s", errorText);
-	   }
+	   char errorText [255];
+	   iio_strerror (res, errorText, 255); 
+	   log (DEV_PLUTO, LOG_MIN, "cannot set sampling frequency %s", errorText);
 	   iio_context_destroy (ctx);
 	   throw (30);
 	}
@@ -218,8 +203,7 @@ struct iio_channel *chn		= nullptr;
 	this	-> gain_channel = chn;
 
 // Configure LO channel
-	if (debugFlag)
-	   log (DEV_PLUTO, LOG_MIN, "Acquiring AD9361 %s lo channel", "RX");
+	log (DEV_PLUTO, LOG_MIN, "Acquiring AD9361 %s lo channel", "RX");
 	phys_dev = iio_context_find_device (ctx, "ad9361-phy");
 //
 	this -> lo_channel =
@@ -227,8 +211,7 @@ struct iio_channel *chn		= nullptr;
                                               get_ch_name ("altvoltage", 0),
                                               true);
 	if (this -> lo_channel == nullptr) {
-	   if (debugFlag)
-	      log (DEV_PLUTO, LOG_MIN, "cannot find lo for channel");
+	   log (DEV_PLUTO, LOG_MIN, "cannot find lo for channel");
 	   iio_context_destroy (ctx);
 	   throw (31);
 	}
@@ -237,26 +220,22 @@ struct iio_channel *chn		= nullptr;
 	                                               "frequency",
 	                                               this -> lo_hz);
 	if (res < 0 ) {
-	   if (debugFlag) {
-	      char error [255];
-	      iio_strerror (res, error, 255); 
-	      log (DEV_PLUTO, LOG_MIN, "cannot set local oscillator frequency %s",
+	   char error [255];
+	   iio_strerror (res, error, 255); 
+	   log (DEV_PLUTO, LOG_MIN, "cannot set local oscillator frequency %s",
 	                                                           error);
-	   }
 	   iio_context_destroy (ctx);
 	   throw (32);
 	}
 
         if (!get_ad9361_stream_ch (ctx, rx, 0, &rx0_i)) {
-	   if (debugFlag)
-	      log (DEV_PLUTO, LOG_MIN, "Rx chan i not found");
+	   log (DEV_PLUTO, LOG_MIN, "Rx chan i not found");
 	   iio_context_destroy (ctx);
 	   throw (33);
 	}
 
         if (!get_ad9361_stream_ch (ctx, rx, 1, &rx0_q)) {
-	   if (debugFlag)
-              log (DEV_PLUTO, LOG_MIN, "Rx chan i not found");
+           log (DEV_PLUTO, LOG_MIN, "Rx chan i not found");
            iio_context_destroy (ctx);
            throw (34);
 	}
@@ -266,8 +245,7 @@ struct iio_channel *chn		= nullptr;
 
         rxbuf	= iio_device_create_buffer (rx, 1024*1024, false);
 	if (rxbuf == nullptr) {
-	   if (debugFlag) 
-	      log (DEV_PLUTO, LOG_MIN, "could not create RX buffer, fatal");
+	   log (DEV_PLUTO, LOG_MIN, "could not create RX buffer, fatal");
 	   iio_context_destroy (ctx);
 	   throw (35);
 	}
@@ -337,9 +315,7 @@ int ret;
 	                                       "hardwaregain",
 	                                       newGain * MAX_GAIN / 100);
 	if (ret < 0) {
-	   if (debugFlag) 
-	      log (DEV_PLUTO, LOG_MIN, 
-	               "could not set hardware gain to %d", newGain);
+	   log (DEV_PLUTO, LOG_MIN, "could not set hardware gain to %d", newGain);
 	}
 }
 
@@ -352,8 +328,7 @@ int ret;
 	                                         "gain_control_mode",
 	                                         "slow_attack");
 	   if (ret < 0) {
-	      if (debugFlag)
-	         log (DEV_PLUTO, LOG_MIN, "error in setting agc");
+	      log (DEV_PLUTO, LOG_MIN, "error in setting agc");
 	      return;
 	   }
 
@@ -363,8 +338,7 @@ int ret;
 	                                         "gain_control_mode",
 	                                         "manual");
 	   if (ret < 0) {
-	      if (debugFlag)
-	         log (DEV_PLUTO, LOG_MIN, "error in gain setting");
+	      log (DEV_PLUTO, LOG_MIN, "error in gain setting");
 	      return;
 	   }
 
@@ -372,18 +346,14 @@ int ret;
 	                                          "hardwaregain", 
 	                                          gainControl * MAX_GAIN / 100);
 	   if (ret < 0) {
-	      if (debugFlag)
-	         log (DEV_PLUTO, LOG_MIN, 
-	                  "could not set hardware gain to %d",
-	                                          gainControl);
+	      log (DEV_PLUTO, LOG_MIN, "could not set hardware gain to %d", gainControl);
 	   }
 	}
 }
 
 bool	plutoHandler::restartReader	(int32_t freq) {
 int ret;
-	if (debugFlag)
-	   log (DEV_PLUTO, LOG_MIN, "restart called with %d", freq);
+	log (DEV_PLUTO, LOG_MIN, "restart called with %d", freq);
 	if (!connected)		// should not happen
 	   return false;
 	if (running. load())
@@ -393,8 +363,7 @@ int ret;
 	                              agcMode ?
 	                                       "slow_attack" : "manual");
 	if (ret < 0) {
-	   if (debugFlag)
-	      log (DEV_PLUTO, LOG_MIN, "error in setting agc");
+	   log (DEV_PLUTO, LOG_MIN, "error in setting agc");
 	}
 
 	if (!agcMode) {
@@ -402,10 +371,7 @@ int ret;
 	                                          "hardwaregain",
 	                                          gainControl * MAX_GAIN / 100);
 	   if (ret < 0) {
-	      if (debugFlag) 
-	         log (DEV_PLUTO, LOG_MIN, 
-	                  "could not set hardware gain to %d", 
-	                                         gainControl);
+	      log (DEV_PLUTO, LOG_MIN, "could not set hardware gain to %d", gainControl);
 	   }
 	}
 
@@ -414,8 +380,7 @@ int ret;
 	                                       "frequency",
 	                                       this -> lo_hz);
 	if (ret < 0) {
-	   if (debugFlag)
-	      log (DEV_PLUTO, LOG_MIN, "cannot set local oscillator frequency");
+	   log (DEV_PLUTO, LOG_MIN, "cannot set local oscillator frequency");
 	   return false;
 	}
 	else

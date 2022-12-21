@@ -23,6 +23,7 @@
 
 #include	"constants.h"
 #include	"fir-filters.h"
+#include	"logging.h"
 
 //===================================================================
 //=====================================================================
@@ -143,7 +144,7 @@ DSPFLOAT	*tmp1	= (DSPFLOAT *)alloca (fsize * sizeof (DSPFLOAT));
 DSPFLOAT	*tmp2	= (DSPFLOAT *)alloca (fsize * sizeof (DSPFLOAT));
 
 	if ((Fcl > 0.5) || (Fch <= Fcl) || (Fch > 0.5)) {
-            fprintf (stderr, "bandpasskernel ??? (%f, %f) %d\n",
+            log (LOG_FM, LOG_MIN, "bandpasskernel invalid parameters (%f, %f) %d",
 	                  (float)Fcl, (float)Fch, fsize);
 	   Fcl	= 0.2;
 	   Fch	= 0.4;

@@ -26,6 +26,7 @@
 #include	"msc-handler.h"
 #include	"backend.h"
 #include	"dab-params.h"
+#include	"logging.h"
 //
 //	Interface program for processing the MSC.
 //	The dabProcessor assumes the existence of an msc-handler, whether
@@ -120,9 +121,10 @@ void    mscHandler::run () {
 int	currentBlock	= 0;
 
 	if (running. load ()) {
-	   fprintf (stderr, "already running\n");
+	   log (LOG_DAB, LOG_MIN, "msc backend handler already running");
 	   return;
 	}
+	log (LOG_DAB, LOG_MIN, "msc backend handler thread starting");
 
 	running. store (true);
         while (running. load()) {
@@ -163,6 +165,7 @@ int	currentBlock	= 0;
               helper. unlock();
            }
         }
+	log (LOG_DAB, LOG_MIN, "msc backend handler thread stopped");
 }
 #else
 void	mscHandler::process_Msc	(std::complex<float> *b, int blkno) {
@@ -214,7 +217,7 @@ void	mscHandler::reset_Buffers	() {
 
 void	mscHandler::reset_Channel () {
 //	work_to_be_done. store (false);
-	fprintf (stderr, "channel reset: all services will be stopped\n");
+	log (LOG_DAB, LOG_MIN, "msc backend hander channel reset: all services will be stopped");
 	locker. lock ();
 	for (auto const &b : theBackends) {
 	   b -> stopRunning();
@@ -229,7 +232,7 @@ void	mscHandler::stopService	(descriptorType *d) {
 	for (int i = 0; i < theBackends. size (); i ++) {
 	   Backend *b = theBackends. at (i);
 	   if (b -> subChId == d -> subchId) {
-	      fprintf (stderr, "stopping (sub)service at subchannel %d\n",
+	      log (LOG_DAB, LOG_MIN, "msc backend handler stopping (sub)service at subchannel %d",
 	                                    d -> subchId);
 	      b -> stopRunning ();
 	      delete b;
@@ -247,7 +250,7 @@ bool	mscHandler::set_Channel (descriptorType *d,
 	locker. lock();
 	for (int i = 0; i < theBackends. size (); i ++) {
 	   if (d -> SId == theBackends. at (i) -> serviceId) {
-	      fprintf (stderr, "The service is already running\n");
+	      log (LOG_DAB, LOG_MIN, "msc backend handler already running");
 	      locker. unlock ();
 	      return false;
 	   }

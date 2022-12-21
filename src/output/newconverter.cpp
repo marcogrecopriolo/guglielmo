@@ -23,6 +23,7 @@
 
 #include	"newconverter.h"
 #include	<cstdio>
+#include	"logging.h"
 
 	newConverter::newConverter (int32_t inRate, int32_t outRate, 
 	                            int32_t inSize) {
@@ -31,7 +32,6 @@ int	err;
 	this	-> outRate	= outRate;
 	inputLimit		= inSize;
 	ratio			= double(outRate) / inRate;
-//	fprintf (stderr, "ratio = %f\n", ratio);
 	outputLimit		= inSize * ratio;
 //	converter		= src_new (SRC_SINC_BEST_QUALITY, 2, &err);
 	converter		= src_new (SRC_LINEAR, 2, &err);
@@ -43,9 +43,11 @@ int	err;
 	src_data.  src_ratio	= ratio;
 	src_data.  end_of_input	= 0;
 	inp			= 0;
+	log (LOG_AUDIO, LOG_MIN, "converted created in %i out %i size %i", inRate, outRate, inSize);
 }
 
 	newConverter::~newConverter() {
+	log (LOG_AUDIO, LOG_MIN, "converted destroyed in %i out %i size %i", inRate, outRate, inputLimit);
 	src_delete	(converter);
 }
 
@@ -65,7 +67,7 @@ int	res;
 	src_data.	output_frames	= outputLimit + 10;
 	res		= src_process (converter, &src_data);
 	if (res != 0) {
-	   fprintf (stderr, "error %s\n", src_strerror (res));
+	   log (LOG_AUDIO, LOG_MIN, "converter error %s", src_strerror (res));
 	   return false;
 	}
 	inp		= 0;

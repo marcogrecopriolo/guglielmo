@@ -23,9 +23,8 @@
 
 #include	"audiosink.h"
 #include	<cstdio>
-#include	<QDebug>
-#include	<QMessageBox>
 #include	<QComboBox>
+#include	"logging.h"
 
 	audioSink::audioSink	(int16_t latency):
 	                           _O_Buffer (8 * 32768) {
@@ -39,7 +38,7 @@ int32_t	i;
 	portAudio		= false;
 	writerRunning		= false;
 	if (Pa_Initialize() != paNoError) {
-	   fprintf (stderr, "Initializing Pa for output failed\n");
+	   log (LOG_AUDIO, LOG_MIN, "Initializing Pa for output failed");
 	   return;
 	}
 
@@ -93,7 +92,7 @@ int16_t	outputDevice;
 
 	outputDevice	= outTable [idx];
 	if (!isValidDevice (outputDevice)) {
-	   fprintf (stderr, "invalid device (%d) selected\n", outputDevice);
+	   log (LOG_AUDIO, LOG_MIN, "invalid device (%d) selected", outputDevice);
 	   return false;
 	}
 
@@ -124,7 +123,7 @@ int16_t	outputDevice;
 
 	outputParameters. hostApiSpecificStreamInfo = nullptr;
 //
-	fprintf (stderr, "Suggested size for outputbuffer = %d\n", bufSize);
+	log (LOG_AUDIO, LOG_MIN, "Suggested size for outputbuffer = %d", bufSize);
 	err = Pa_OpenStream (&ostream,
 	                     nullptr,
 	                     &outputParameters,
@@ -139,14 +138,14 @@ int16_t	outputDevice;
 	   qDebug ("Open ostream error\n");
 	   return false;
 	}
-	fprintf (stderr, "stream opened\n");
+	log (LOG_AUDIO, LOG_MIN, "stream opened");
 	paCallbackReturn = paContinue;
 	err = Pa_StartStream (ostream);
 	if (err != paNoError) {
-	   qDebug ("Open startstream error\n");
+	   log (LOG_AUDIO, LOG_MIN, "Open startstream error");
 	   return false;
 	}
-	fprintf (stderr, "stream started\n");
+	log (LOG_AUDIO, LOG_MIN, "stream started");
 	writerRunning	= true;
 	return true;
 }
@@ -285,7 +284,7 @@ uint16_t	i;
 	   }
 	}
 
-	qDebug() << "added items to combobox";
+	log (LOG_AUDIO, LOG_MIN, "added %i channels", ocnt);
 	return ocnt > 1;
 }
 

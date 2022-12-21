@@ -29,6 +29,7 @@
 #include	"process-params.h"
 #include	"dab-params.h"
 #include	"timesyncer.h"
+#include	"logging.h"
 //
 /**
   *	\brief dabProcessor
@@ -106,6 +107,7 @@ void	dabProcessor::start (int frequency) {
 	transmitters. clear ();
 	if (!scanMode)
 	   my_mscHandler. reset_Channel ();
+	log (LOG_DAB, LOG_MIN, "dab processor starting");
 	QThread::start ();
 }
 
@@ -114,6 +116,7 @@ void	dabProcessor::stop	() {
 	while (isRunning ())
 	   wait ();
 	usleep (10000);
+	log (LOG_DAB, LOG_MIN, "dab processor stopped");
 }
 /***
    *	\brief run
@@ -379,7 +382,7 @@ SyncOnPhase:
 	   goto Check_endofNULL;
 	}
 	catch (int e) {
-//	   fprintf (stderr, "dabProcessor is stopping\n");
+	   log (LOG_DAB, LOG_DETAILED, "dabProcessor caugth %i", e);
 	   ;
 	}
 //	inputDevice	-> stopReader ();

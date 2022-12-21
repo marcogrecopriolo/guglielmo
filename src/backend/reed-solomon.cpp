@@ -8,6 +8,7 @@
 #include	"constants.h"
 #include	"reed-solomon.h"
 #include	<cstring>
+#include	"logging.h"
 
 /*
  *	Reed-Solomon decoder
@@ -203,7 +204,7 @@ int16_t	i;
 	   }
 
 	   if (den == 0) {
-//	      fprintf (stderr, "den = 0, (count was %d)\n", den);
+	      log (LOG_DAB, LOG_DETAILED, "reed solomon, den = 0, (count was %d)", den);
 	      return -1;
 	   }
 /*	Apply error to data */

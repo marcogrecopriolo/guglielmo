@@ -34,6 +34,7 @@
 #include	"charsets.h"
 #include	"dab-config.h"
 #include	"fib-table.h"
+#include	"logging.h"
 //
 //
 	fibDecoder::fibDecoder (RadioInterface *mr) {
@@ -236,7 +237,6 @@ static	uint8_t prevChangeFlag	= 0;
 	alarmFlag		= getBits_1 (d, 16 + 16 + 2);
 	highpart                = getBits_5 (d, 16 + 19);
 	lowpart                 = getBits_8 (d, 16 + 24);
-	(void)alarmFlag;
 	occurrenceChange        = getBits_8 (d, 16 + 32);
 	(void)occurrenceChange;
 	CIFcount 		= highpart * 250 + lowpart;
@@ -251,8 +251,8 @@ static	uint8_t prevChangeFlag	= 0;
 	}
 
 	prevChangeFlag	= changeFlag;
-//	if (alarmFlag)
-//	   fprintf (stderr, "serious problem\n");
+	if (alarmFlag)
+	   log (LOG_DAB, LOG_MIN, "alarm flag raised");
 }
 //
 //	Subchannel organization 6.2.1
@@ -551,11 +551,8 @@ int     counter         = getBits   (d, used * 8 + 6, 10);
 
 	(void)Length;
 	(void)CN_bit; (void)OE_bit; (void)PD_bit;
-#if 0
-        fprintf (stderr, "nrServices %d, count %d\n",
+        log (LOG_DAB, LOG_VERBOSE, "nrServices %d, count %d\n",
                           nrServices, counter);
-#endif
-	(void)nrServices; (void)counter;
 }
 
 // FIG0/8:  Service Component Global Definition (6.3.5)
@@ -789,7 +786,7 @@ dabConfig *localBase	= CN_bit == 0 ? currentConfig : nextConfig;
 	      return;
 	   Cluster *myCluster = getCluster (localBase, clusterId);
 	   if (myCluster == NULL) {	// should not happen
-//	      fprintf (stderr, "cluster fout\n");
+	      log (LOG_DAB, LOG_MIN, "null cluster!");
 	      return;
 	   }
 	      
@@ -922,7 +919,7 @@ char		label [17];
 	   for (int i = 0; i < 16; i ++) {
 	      label [i] = getBits_8 (d, offset + 8 * i);
 	   }
-//         fprintf (stderr, "Ensemblename: %16s\n", label);
+           log (LOG_DAB, LOG_VERBOSE, "Ensemble name: %16s", label);
 	   const QString name = toQStringUsingCharset (
 	                                        (const char *) label,
 	                                        (CharacterSet) charSet);
@@ -1346,8 +1343,8 @@ void	fibDecoder::setCluster (dabConfig *localBase, int clusterId,
 	if (myCluster == NULL)
 	   return;
 	if (myCluster -> flags != asuFlags) {
-//	   fprintf (stderr, "for cluster %d, the flags change from %x to %x\n",
-//	                       clusterId, myCluster -> flags, asuFlags);
+	   log (LOG_DAB, LOG_VERBOSE, "for cluster %d, the flags change from %x to %x",
+	                       clusterId, myCluster -> flags, asuFlags);
 	   myCluster -> flags = asuFlags;
 	}
 
