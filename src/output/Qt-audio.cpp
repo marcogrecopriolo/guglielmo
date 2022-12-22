@@ -81,7 +81,7 @@ void	Qt_Audio::setParams (int outputRate) {
 #endif
 
 	if (!info. isFormatSupported(AudioFormat)) {
-	   log (LOG_AUDIO, LOG_MIN, "format cannot be handled");
+	   log (LOG_SOUND, LOG_MIN, "format cannot be handled");
 	   return;
 	}
 

@@ -713,7 +713,7 @@ void RadioInterface::addToEnsemble(const QString &serviceName, uint32_t SId) {
 }
 
 void RadioInterface::nameOfEnsemble(int id, const QString &v) {
-    log(LOG_EVENT, LOG_DETAILED, "station name %s %i", qPrintable(v), id);
+    log(LOG_EVENT, LOG_CHATTY, "station name %s %i", qPrintable(v), id);
     ensembleId->setAlignment(Qt::AlignLeft);
     ensembleId->setText(v + " (" + QString::number(id, 16) + ")");
 }
@@ -764,7 +764,7 @@ void RadioInterface::showQuality(bool b) {
 }
 
 void RadioInterface::showText(QString s) {
-    log(LOG_EVENT, LOG_DETAILED, "radio text %s", qPrintable(s));
+    log(LOG_EVENT, LOG_CHATTY, "radio text %s", qPrintable(s));
     dynamicLabel->setText(s);
 #ifdef HAVE_MPRIS
 
@@ -785,7 +785,7 @@ void RadioInterface::showSoundMode(bool s) {
 }
 
 void RadioInterface::showLabel(const QString s) {
-    log(LOG_EVENT, LOG_DETAILED, "radio label %s", qPrintable(s));
+    log(LOG_EVENT, LOG_CHATTY, "radio label %s", qPrintable(s));
     serviceLabel->setAlignment(Qt::AlignLeft);
     serviceLabel->setText(s);
 #ifdef HAVE_MPRIS

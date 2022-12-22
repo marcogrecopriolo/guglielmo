@@ -252,7 +252,7 @@ static	uint8_t prevChangeFlag	= 0;
 
 	prevChangeFlag	= changeFlag;
 	if (alarmFlag)
-	   log (LOG_DAB, LOG_MIN, "alarm flag raised");
+	   log (LOG_DAB, LOG_VERBOSE, "alarm flag raised");
 }
 //
 //	Subchannel organization 6.2.1

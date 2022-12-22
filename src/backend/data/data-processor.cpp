@@ -27,6 +27,7 @@
 #include	"mot-handler.h"
 #include	"journaline-datahandler.h"
 #include	"tdc-datahandler.h"
+#include	"logging.h"
 
 //	\class dataProcessor
 //	The main function of this class is to assemble the 
@@ -47,7 +48,7 @@
 	this	-> expectedIndex	= 0;
 	switch (DSCTy) {
 	   default:
-	      fprintf (stderr, "DSCTy %d not supported\n", DSCTy);
+	      log (LOG_DATA, LOG_MIN, "DSCTy %d not supported", DSCTy);
 	      my_dataHandler	= new virtual_dataHandler();
 	      break;
 
@@ -114,9 +115,9 @@ int16_t	firstLast	= getBits_2 (data, 4);
 int16_t	address		= getBits   (data, 6, 10);
 uint16_t command	= getBits_1 (data, 16);
 int32_t	usefulLength	= getBits_7 (data, 17);
-//	if (usefulLength > 0)
-//	      fprintf (stderr, "CI = %d, address = %d, usefulLength = %d\n",
-//	                       continuityIndex, address, usefulLength);
+	if (usefulLength > 0)
+	      log (LOG_DATA, LOG_VERBOSE, "CI = %d, address = %d, usefulLength = %d",
+	                       continuityIndex, address, usefulLength);
 
 	if (continuityIndex != expectedIndex) {
 	   expectedIndex = 0;

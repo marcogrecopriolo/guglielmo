@@ -28,6 +28,7 @@
 #include	<cstring>
 #include	"charsets.h"
 #include	"fdk-aac.h"
+#include	"logging.h"
 
 //
 /**
@@ -112,7 +113,7 @@ int		output_size	= 8 * 2048;
               newAudio (info -> frameSize, info -> sampleRate);
         }
         else
-           fprintf (stderr, "Cannot handle these channels\n");
+           log (LOG_AUDIO, LOG_MIN, "Cannot handle %d channels", info -> numChannels);
 
         return info -> numChannels; 
 }

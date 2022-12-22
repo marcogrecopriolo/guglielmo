@@ -23,6 +23,7 @@
 #include        "faad-decoder.h"
 #include        "neaacdec.h"
 #include        "radio.h"
+#include	"logging.h"
 
         faadDecoder::faadDecoder        (RadioInterface *mr,
                                          RingBuffer<int16_t> *buffer) {
@@ -82,7 +83,7 @@ uint8_t channels;
 	           get_aac_channel_configuration (sp -> mpegSurround,
                                                   sp ->aacChannelMode);
         if (core_ch_config == -1) {
-           printf ("Unrecognized mpeg surround config (ignored): %d\n",
+           log (LOG_AUDIO, LOG_MIN, "Unrecognized mpeg surround config (ignored): %d",
                                                sp -> mpegSurround);
            return false;
         }
@@ -97,7 +98,7 @@ uint8_t channels;
                                               &channels);
         if (init_result != 0) {
 /*      If some error initializing occured, skip the file */
-           printf ("Error initializing decoder library: %s\n",
+           log (LOG_AUDIO, LOG_MIN, "Error initializing decoder library: %s",
                                  NeAACDecGetErrorMessage (-init_result));
            NeAACDecClose (aacHandle);
            return false;
@@ -131,16 +132,12 @@ uint8_t channels;
             (sampleRate !=  (long unsigned)baudRate))
               baudRate = sampleRate;
 
-//      fprintf (stderr, "bytes consumed %d\n", (int)(hInfo. bytesconsumed));
-//      fprintf (stderr, "samplerate = %d, samples = %d, channels = %d, error = %d, sbr = %d\n", sampleRate, samples,
-//               hInfo. channels,
-//               hInfo. error,
-//               hInfo. sbr);
-//      fprintf (stderr, "header = %d\n", hInfo. header_type);
+	log (LOG_AUDIO, LOG_VERBOSE, "header %d bytes consumed %d samplerate %ld, samples %d, channels %d, error %d, sbr %d",
+		hInfo. header_type, (int)(hInfo. bytesconsumed), sampleRate, samples,
+               hInfo. channels, hInfo. error, hInfo. sbr);
         channels        = hInfo. channels;
         if (hInfo. error != 0) {
-           fprintf (stderr, "Warning: %s\n",
-                       faacDecGetErrorMessage (hInfo. error));
+           log (LOG_AUDIO, LOG_MIN, "Warning: %s", faacDecGetErrorMessage (hInfo. error));
            return -1;
 	}
 
@@ -162,7 +159,7 @@ uint8_t channels;
               newAudio (samples, sampleRate);
         }
         else
-           fprintf (stderr, "Cannot handle these channels\n");
+           log (LOG_AUDIO, LOG_MIN, "Cannot handle %i channels", channels);
 
         return channels; 
 }

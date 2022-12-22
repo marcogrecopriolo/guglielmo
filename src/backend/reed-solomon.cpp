@@ -204,7 +204,7 @@ int16_t	i;
 	   }
 
 	   if (den == 0) {
-	      log (LOG_DAB, LOG_DETAILED, "reed solomon, den = 0, (count was %d)", den);
+	      log (LOG_DAB, LOG_CHATTY, "reed solomon, den = 0, (count was %d)", den);
 	      return -1;
 	   }
 /*	Apply error to data */

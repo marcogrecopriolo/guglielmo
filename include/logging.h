@@ -23,25 +23,28 @@
 #define __LOGGING_H__
 
 #define LOG_MIN		0
-#define LOG_DETAILED	1
+#define LOG_CHATTY	1
 #define LOG_VERBOSE	2
 
 #define LOG_UI		0x0001
-#define LOG_EVENT	0x0040
+#define LOG_EVENT	0x0002
 #define LOG_MPRIS	0x0004
 #define LOG_DAB		0x0008
-#define LOG_RDS		0x0010
-#define LOG_FM		0x0020
+#define LOG_FM		0x0010
+#define LOG_RDS		0x0020
 #define LOG_DEV		0x0040
 #define LOG_AUDIO	0x0080
+#define LOG_DATA	0x0100
+#define LOG_VITDEC	0x0200
+#define LOG_SOUND	0x0400
 
 extern qint64 logMask;
 extern int logVerbosity;
 
 #ifdef __GNUC__
-#define log(comp, level, fmt, ...) if (logVerbosity >= (level) && (logMask & (comp)) != 0) fprintf(stderr, "%-7s " fmt "\n", (#comp ":")+4, ##__VA_ARGS__)
+#define log(comp, level, fmt, ...) if ((logVerbosity >= (level)) && (logMask & (comp)) != 0) fprintf(stderr, "%-7s " fmt "\n", (#comp ":")+4, ##__VA_ARGS__)
 #else
-#define log(comp, level, fmt, ...) if (logVerbosity >= (level) && (logMask & (comp)) != 0) fprintf(stderr, "%-7s " fmt "\n", (#comp ":")+4, __VA_ARGS__)
+#define log(comp, level, fmt, ...) if ((logVerbosity >= (level)) && (logMask & (comp)) != 0) fprintf(stderr, "%-7s " fmt "\n", (#comp ":")+4, __VA_ARGS__)
 #endif
 
 #endif	// __LOGGING_H__

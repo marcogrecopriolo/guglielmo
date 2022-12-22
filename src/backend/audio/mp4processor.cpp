@@ -37,6 +37,7 @@
 #include	"charsets.h"
 #include	"pad-handler.h"
 #include	"bitWriter.h"
+#include	"logging.h"
 
 //
 /**
@@ -174,7 +175,7 @@ stream_parms    streamParameters;
 	   ler = my_rsDecoder. dec (rsIn, rsOut, 135);
 	   if (ler < 0) {
 	      rsErrors ++;
-//	      fprintf (stderr, "RS failure\n");
+	      log (LOG_AUDIO, LOG_MIN, "processSuperframe RS failure ler %i", ler);
 	      return false;
 	   }
 	   totalCorrections += ler;
@@ -259,7 +260,7 @@ stream_parms    streamParameters;
 
 ///	sanity check 1
 	   if (au_start [i + 1] < au_start [i]) {
-//	      fprintf (stderr, "%d %d (%d)\n", au_start [i], au_start [i + 1], i);
+	      log (LOG_AUDIO, LOG_MIN, "processSuperframe %d %d (%d)", au_start [i], au_start [i + 1], i);
 //	should not happen, all errors were corrected
 	      return false;
 	   }
@@ -267,7 +268,7 @@ stream_parms    streamParameters;
 	   aac_frame_length = au_start [i + 1] - au_start [i] - 2;
 //	just a sanity check
 	   if ((aac_frame_length >=  960) || (aac_frame_length < 0)) {
-//	      fprintf (stderr, "aac_frame_length = %d\n", aac_frame_length);
+	      log (LOG_AUDIO, LOG_MIN, "processSuperframe aac_frame_length %d", aac_frame_length);
 //	      return false;
 	   }
 
@@ -333,7 +334,7 @@ stream_parms    streamParameters;
 	      }
 	   }
 	   else {
-	      fprintf (stderr, "CRC failure with dab+ frame %d (%d)\n",
+	      log (LOG_AUDIO, LOG_MIN, "processSuperframe CRC failure with dab+ frame %d (%d)",
 	                                          i, num_aus);
 //
 //	what would happen if the errors were in the 10 parity bytes

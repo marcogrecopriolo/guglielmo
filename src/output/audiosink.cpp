@@ -38,7 +38,7 @@ int32_t	i;
 	portAudio		= false;
 	writerRunning		= false;
 	if (Pa_Initialize() != paNoError) {
-	   log (LOG_AUDIO, LOG_MIN, "Initializing Pa for output failed");
+	   log (LOG_SOUND, LOG_MIN, "Initializing Pa for output failed");
 	   return;
 	}
 
@@ -92,7 +92,7 @@ int16_t	outputDevice;
 
 	outputDevice	= outTable [idx];
 	if (!isValidDevice (outputDevice)) {
-	   log (LOG_AUDIO, LOG_MIN, "invalid device (%d) selected", outputDevice);
+	   log (LOG_SOUND, LOG_MIN, "invalid device (%d) selected", outputDevice);
 	   return false;
 	}
 
@@ -123,7 +123,7 @@ int16_t	outputDevice;
 
 	outputParameters. hostApiSpecificStreamInfo = nullptr;
 //
-	log (LOG_AUDIO, LOG_MIN, "Suggested size for outputbuffer = %d", bufSize);
+	log (LOG_SOUND, LOG_MIN, "Suggested size for outputbuffer = %d", bufSize);
 	err = Pa_OpenStream (&ostream,
 	                     nullptr,
 	                     &outputParameters,
@@ -138,14 +138,14 @@ int16_t	outputDevice;
 	   qDebug ("Open ostream error\n");
 	   return false;
 	}
-	log (LOG_AUDIO, LOG_MIN, "stream opened");
+	log (LOG_SOUND, LOG_MIN, "stream opened");
 	paCallbackReturn = paContinue;
 	err = Pa_StartStream (ostream);
 	if (err != paNoError) {
-	   log (LOG_AUDIO, LOG_MIN, "Open startstream error");
+	   log (LOG_SOUND, LOG_MIN, "Open startstream error");
 	   return false;
 	}
-	log (LOG_AUDIO, LOG_MIN, "stream started");
+	log (LOG_SOUND, LOG_MIN, "stream started");
 	writerRunning	= true;
 	return true;
 }
@@ -284,7 +284,7 @@ uint16_t	i;
 	   }
 	}
 
-	log (LOG_AUDIO, LOG_MIN, "added %i channels", ocnt);
+	log (LOG_SOUND, LOG_MIN, "added %i channels", ocnt);
 	return ocnt > 1;
 }
 

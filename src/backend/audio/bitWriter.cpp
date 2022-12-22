@@ -19,6 +19,7 @@
 
 #include	"bitWriter.h"
 #include	<stdio.h>
+#include	"logging.h"
 
 
 // --- BitWriter -------------------------------------------------------------
@@ -38,7 +39,7 @@ void BitWriter::AddBits(int data_new, size_t count) {
 	       (data_new >> (count - copy_bits)) & (0xFF >> (8 - copy_bits));
 	   data.back() |= copy_data << (8 - byte_bits - copy_bits);
 
-//		fprintf(stderr, "data_new: 0x%04X, count: %zu / byte_bits: %zu, copy_bits: %zu, copy_data: 0x%02X\n", data_new, count, byte_bits, copy_bits, copy_data);
+	   log(LOG_AUDIO, LOG_VERBOSE, "data_new: 0x%04X, count: %zu / byte_bits: %zu, copy_bits: %zu, copy_data: 0x%02X", data_new, count, byte_bits, copy_bits, copy_data);
 
 	   byte_bits = (byte_bits + copy_bits) % 8;
 	   count -= copy_bits;
@@ -54,9 +55,7 @@ void BitWriter::WriteAudioMuxLengthBytes() {
 	size_t len = data.size () - 3;
 	data [1] |= (len >> 8) & 0x1F;
 	data [2] = len & 0xFF;
-#if 0
-	fprintf (stderr, "%x %x  %x  %d(lengte)zijn de eerste bytes\n",
-	                 data [0], data [1] >> 5, data [2], len);
-#endif
+	log (LOG_AUDIO, LOG_VERBOSE, "len %ld bytes %x %x %x",
+	                 len, data [0], data [1] >> 5, data [2]);
 }
 

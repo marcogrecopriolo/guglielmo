@@ -23,6 +23,7 @@
 #include	"constants.h"
 #include	"tdc-datahandler.h"
 #include	"radio.h"
+#include	"logging.h"
 
 	tdc_dataHandler::tdc_dataHandler (RadioInterface *mr,
 	                                  RingBuffer<uint8_t> *dataBuffer,
@@ -98,7 +99,7 @@ int16_t	i;
 	   checkVector [5 + size]	= getBits (data, offset + 4 * 8, 8);
 	   checkVector [5 + size + 1]	= getBits (data, offset + 5 * 8, 8);
 	   if (!check_crc_bytes (checkVector, 5 + size)) {
-	      fprintf (stderr, "crc failed\n");
+	      log (LOG_DATA, LOG_MIN, "crc failed");
 	      return;
 	   }
 
@@ -121,11 +122,9 @@ _VLA(uint8_t, buffer, length);
 	for (i = 0; i < length; i ++)
 	   buffer [i] = getBits (data, offset + i * 8, 8);
 	if (!check_crc_bytes (buffer, length - 2))
-	   fprintf (stderr, "crc ook hier fout\n");
-#if 0
-	fprintf (stderr, "nrServices %d, SID-A %d SID-B %d SID-C %d\n",
+	   log (LOG_DATA, LOG_MIN, "type 0 frame crc error");
+	log (LOG_DATA, LOG_VERBOSE, "nrServices %d, SID-A %d SID-B %d SID-C %d",
 	                  buffer [0], buffer [1], buffer [2], buffer [3]);
-#endif
 	dataBuffer -> putDataIntoBuffer (buffer, length);
 	bytesOut (0, length);
 	return offset + length * 8;
@@ -138,29 +137,22 @@ int16_t i;
 _VLA(uint8_t, buffer, length);
 int	lOffset;
 int	llengths = length - 4;
-#if 0
-	fprintf (stderr, " frametype 1  (length %d) met %d %d %d\n", length,
+	log (LOG_DATA, LOG_VERBOSE, " frametype 1  (length %d) met %d %d %d encryption %d", length,
 	                             getBits (data, offset,      8),
 	                             getBits (data, offset + 8,  8),
-	                             getBits (data, offset + 16, 8));
-	fprintf (stderr, "encryption %d\n", getBits (data, offset + 24, 8));
-#endif
+	                             getBits (data, offset + 16, 8),
+				     getBits (data, offset + 24, 8));
 	for (i = 0; i < length; i ++)
 	   buffer [i] = getBits (data, offset + i * 8, 8);
 	dataBuffer	-> putDataIntoBuffer (buffer, length);
 	if (getBits (data, offset + 24, 8) == 0) {	// no encryption
 	   lOffset	= offset + 4 * 8;
 	   do {
-//	      int compInd	= getBits (data, lOffset, 8);	
 	      int flength	= getBits (data, lOffset + 8, 16);
 //	      int crc		= getBits (data, lOffset + 3 * 8, 8);
-#if 0
-	      fprintf (stderr, "segment %d, length %d\n",
-	                                 compInd, flength);
-	      for (i = 5; i < flength; i ++)
-	         fprintf (stderr, "%c", buffer [i]);
-	      fprintf (stderr, "\n");
-#endif
+	      log (LOG_DATA, LOG_VERBOSE, "segment %d, length %d (%c %c %c %c %c)",
+	                                 getBits (data, lOffset, 8), flength,
+					 buffer[0], buffer[1], buffer[2], buffer[3], buffer[4]);
 	      lOffset	+= (flength + 5) * 8;
 	      llengths -= flength + 5;
 	   } while (llengths > 10);

@@ -30,6 +30,7 @@
 #include	"constants.h"
 #include	"radio.h"
 #include	"pad-handler.h"
+#include	"logging.h"
 
 #ifdef _MSC_VER
     #define FASTCALL __fastcall
@@ -586,9 +587,8 @@ int16_t	amount	= MP2framesize;
 _VLA(uint8_t, help, 24 * bitRate / 8);
 int16_t	vLength	= 24 * bitRate / 8;
 
-//fprintf (stderr, "baudrate = %d, inputsize = %d\n",
-//	          baudRate, v. size ());
-//	fprintf (stderr, "\n");
+	log (LOG_AUDIO, LOG_VERBOSE, "baudrate  %d, inputsize %ld",
+	          baudRate, v. size ());
 	for (i = 0; i < 24 * bitRate / 8; i ++) {
 	   help [i] = 0;
 	   for (j = 0; j < 8; j ++) {

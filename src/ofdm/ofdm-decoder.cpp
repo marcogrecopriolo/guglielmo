@@ -237,7 +237,7 @@ std::complex<float> theta = std::complex<float> (0, 0);
 	   theta	+= val * std::complex<float> (1, -1);
 	}
 
-	log (LOG_DAB, LOG_DETAILED, "frequency offset %f Hz",
+	log (LOG_DAB, LOG_CHATTY, "frequency offset %f Hz",
 	                    arg (theta) / (2 * M_PI) * 2048000 / T_u);
 }
 
@@ -263,7 +263,7 @@ int	offsb	= 0;
 	float sampleClockOffset = 
 	           offsa / (2 * M_PI * (float)T_s/ T_u * offsb);
 
-	log (LOG_DAB, LOG_DETAILED, "clockOffset %f", sampleClockOffset);
+	log (LOG_DAB, LOG_CHATTY, "clockOffset %f", sampleClockOffset);
 }
 
 

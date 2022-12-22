@@ -24,6 +24,8 @@
 #include	"radio.h"
 #include	"charsets.h"
 #include	"mot-object.h"
+#include	"logging.h"
+
 /**
   *	\class padHandler
   *	Handles the pad segments passed on from mp2- and mp4Processor
@@ -215,7 +217,7 @@ std::vector<uint8_t> data;		// for the local addition
 	   for (i = 0; i < CI_Index; i ++)
 	      xpadLength += lengthTable [CI_table [i] >> 5];
 	   xpadLength += CI_Index == 4 ? 4 : CI_Index + 1;
-//	   fprintf (stderr, "xpadLength set to %d\n", xpadLength);
+	   log (LOG_DATA, LOG_VERBOSE, "xpadLength set to %d", xpadLength);
 	}
 
 //	Handle the contents
@@ -257,7 +259,7 @@ std::vector<uint8_t> data;		// for the local addition
 	   last_appType = appType;
 	   base -= length;
 	   if (base < 0 && i < CI_Index - 1) {
-	      fprintf (stderr, "Hier gaat het fout, base = %d\n", base);
+	      log (LOG_DATA, LOG_MIN, "invalid base %d or index %d", base, CI_Index);
 	      return;
 	   }
 	}
@@ -353,23 +355,23 @@ int16_t  dataLength                = 0;
 //	the msc_length was given by the preceding appType "1"
 void	padHandler::new_MSC_element (std::vector<uint8_t> data) {
 
-//	if (mscGroupElement) { 
-////	   if (msc_dataGroupBuffer. size() < dataGroupLength)
-////	      fprintf (stderr, "short ? %d %d\n",
-////	                              msc_dataGroupBuffer. size(),
-////	                              dataGroupLength);
+	if (mscGroupElement) {
+	   if (msc_dataGroupBuffer. size() < dataGroupLength)
+	      log (LOG_DATA, LOG_VERBOSE, "short ? %ld %d",
+	                              msc_dataGroupBuffer. size(),
+	                              dataGroupLength);
 //	   msc_dataGroupBuffer. clear();
 //	   build_MSC_segment (data);
 //	   mscGroupElement	= true;
 //	   show_motHandling (true);
-//	}
+	}
 
 	if (data. size() >= (uint16_t)dataGroupLength) { // msc element is single item
 	   msc_dataGroupBuffer. clear();
 	   build_MSC_segment (data);
 	   mscGroupElement = false;
 	   show_motHandling (true);
-//	   fprintf (stderr, "msc element is single\n");
+	   log (LOG_DATA, LOG_VERBOSE, "msc element is single");
 	   return;
 	}
 
@@ -417,11 +419,11 @@ uint16_t	index;
 	if ((data [0] & 0x40) != 0) {
 	   bool res	= check_crc_bytes (data. data(), size - 2);
 	   if (!res) {
-//	      fprintf (stderr, "build_MSC_segment fails on crc check\n");
+	      log (LOG_DATA, LOG_VERBOSE, "build_MSC_segment fails on crc check");
 	      return;
 	   }
-//	   else
-//	      fprintf (stderr, "crc success ");
+	   else
+	      log (LOG_DATA, LOG_VERBOSE, "crc success");
 	}
 
 	if ((groupType != 3) && (groupType != 4)) {
@@ -450,7 +452,7 @@ uint16_t	index;
 	      index += 3;
 	   }
 	   else {
-//	      fprintf (stderr, "sorry no transportId\n");
+	      log (LOG_DATA, LOG_VERBOSE, "sorry no transportId");
 	      return;
 	   }
 	   index += (lengthIndicator - 2);
@@ -461,14 +463,14 @@ uint16_t	index;
 
 	uint32_t segmentSize	= ((data [index + 0] & 0x1F) << 8) |
 	                            data [index + 1];
-//	fprintf (stderr, "segmentSize = %d (transportId = %d)\n",
-//	                      segmentSize, transportId);
+	log (LOG_DATA, LOG_VERBOSE, "segmentSize = %d (transportId = %d)",
+	                      segmentSize, transportId);
 //
 //	handling MOT in the PAD, we only deal here with type 3/4
 	switch (groupType) {
 	   case 3:
 	      if (currentSlide == nullptr) {
-//	         fprintf (stderr, "creating %d\n", transportId);
+	         log (LOG_DATA, LOG_VERBOSE, "creating %d", transportId);
 	         currentSlide	= new motObject (myRadioInterface,
 	                                         false,
 	   	                                 transportId,
@@ -479,9 +481,9 @@ uint16_t	index;
 	      else {
 	         if (currentSlide -> get_transportId() == transportId)
 	            break;
-//	         fprintf (stderr, "out goes %d, in comes %d\n",
-//	                          currentSlide -> get_transportId(),
-//	                                           transportId);
+	         log (LOG_DATA, LOG_VERBOSE, "out goes %d, in comes %d",
+	                          currentSlide -> get_transportId(),
+	                                           transportId);
 	         delete currentSlide;
 	         currentSlide	= new motObject (myRadioInterface,
 	                                         false,
@@ -496,8 +498,8 @@ uint16_t	index;
 	      if (currentSlide == nullptr)
 	         return;
 	      if (currentSlide -> get_transportId() == transportId) {
-//	         fprintf (stderr, "add segment %d of  %d\n",
-//	                           segmentNumber, transportId);
+	         log (LOG_DATA, LOG_VERBOSE, "add segment %d of  %d",
+	                           segmentNumber, transportId);
 	         currentSlide -> addBodySegment (&data [index + 2],
 	                                         segmentNumber,
 	                                         segmentSize,

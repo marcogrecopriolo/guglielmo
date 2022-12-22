@@ -29,6 +29,7 @@
 #include	<intrin.h>
 #include	<malloc.h>
 #endif
+#include	"logging.h"
 
 //
 //	It took a while to discover that the polynomes we used
@@ -148,16 +149,16 @@ uint32_t	size;
 #else
 	if (posix_memalign ((void**)&data, 16,
 	                        (wordlength + (K - 1))/ 8 + 1)){
-	   printf("Allocation of data array failed\n");
+	   log(LOG_VITDEC, LOG_MIN, "Allocation of data array failed");
 	}
 	if (posix_memalign ((void**)&symbols, 16,
 	                     RATE * (wordlength + (K - 1)) * sizeof(COMPUTETYPE))){
-	   printf("Allocation of symbols array failed\n");
+	   log(LOG_VITDEC, LOG_MIN, "Allocation of symbols array failed");
 	}
 	if (posix_memalign ((void**)&(vp. decisions),
 	                    16,
 	                    2 * (wordlength + (K - 1)) * sizeof (decision_t))){
-	   printf ("Allocation of vp decisions failed\n");
+	   log(LOG_VITDEC, LOG_MIN, "Allocation of vp decisions failed");
 	}
 #endif
 

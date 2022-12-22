@@ -382,7 +382,7 @@ SyncOnPhase:
 	   goto Check_endofNULL;
 	}
 	catch (int e) {
-	   log (LOG_DAB, LOG_DETAILED, "dabProcessor caugth %i", e);
+	   log (LOG_DAB, LOG_CHATTY, "dabProcessor caugth %i", e);
 	   ;
 	}
 //	inputDevice	-> stopReader ();
