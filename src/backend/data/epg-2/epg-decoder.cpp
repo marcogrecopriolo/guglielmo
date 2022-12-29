@@ -24,6 +24,7 @@
 #include	<stdint.h>
 #include	<stdlib.h>
 #include	"epg-decoder.h"
+#include	"logging.h"
 
 #define	EPG_TAG			0X02
 
@@ -110,9 +111,7 @@ int length	= v [index + 1];
 	   case 0x05:		// obsolete
 	      return endPoint;
 
-	   case 0x06:		// default language
-//	      for (int i = 0; i < length; i ++)
-//	         fprintf (stderr, "%c", v [index + i]);
+	   case 0x06:		// obsolete default language
 	      return endPoint;
 
 	   case 0x20:		// programmeGroups
@@ -127,7 +126,7 @@ int length	= v [index + 1];
 	      return endPoint;
 
 	   default:
-//	      fprintf (stderr, "Missed tag %d in epg\n", tag);
+	      log (LOG_EPG, LOG_CHATTY, "Missed tag %d in epg", tag);
 	      return endPoint;
 	}
 }
@@ -151,7 +150,7 @@ progDesc	theElement;
 
 	int endPoint	= index + length;
 
-//	fprintf (stderr, "schedule element %x (length %d)\n", tag, length);
+	log (LOG_EPG, LOG_CHATTY, "schedule element %x (length %d)", tag, length);
 	switch (tag) {
 	   case 0x1C:		// programme
 	      theElement. clean ();
@@ -162,7 +161,7 @@ progDesc	theElement;
 	      return endPoint;
 
 	   case 0x24:		// scope
-//	      fprintf (stderr, "we have a service scope\n");
+	      log (LOG_EPG, LOG_CHATTY, "we have a service scope");
 	      return endPoint;
 
 //	the attributes
@@ -171,9 +170,9 @@ progDesc	theElement;
 	      return endPoint;
 
 	   case 0x81: {		// creation time
-//	      int time = process_474 (v, index, length);
-//	      fprintf (stderr, "schedule created  at %.2d:%.2d\n",
-//	                             time / 60, time % 60);
+	      int time = process_474 (v, index, length);
+	      log (LOG_EPG, LOG_CHATTY, "schedule created  at %.2d:%.2d",
+	                             time / 60, time % 60);
 	      return endPoint;
 	   }
 	
@@ -181,7 +180,7 @@ progDesc	theElement;
 	      return endPoint;
 
 	   default:
-	      fprintf (stderr, "missed tag $d in schedule\n", tag);
+	      log (LOG_EPG, LOG_CHATTY, "missed tag $d in schedule", tag);
 	      return index + length;
 	}
 }
@@ -203,7 +202,7 @@ int length	= v [index + 1];
 	   index += 2;
 
 	int endPoint	= index + length;
-//	fprintf (stderr, "programmeElement, tag %x, length %d\n", tag, length);
+	log (LOG_EPG, LOG_CHATTY , "programmeElement, tag %x, length %d", tag, length);
 	switch (tag) {
 	   case 0x80:			// Id
 	      p -> ident = process_471 (v, index, length);
@@ -249,7 +248,7 @@ int length	= v [index + 1];
 	      return endPoint;
 
 	   default:
-//	      fprintf (stderr, "missed tag with programme %x\n", tag);
+	      log (LOG_EPG, LOG_CHATTY, "missed tag with programme %x", tag);
 	      return endPoint;
 	}
 }
@@ -270,7 +269,7 @@ int length	= v [index + 1];
 	else
 	   index += 2;
 
-//	fprintf (stderr, "mediaDescription, tag %x (%d)\n", tag, length);
+	log (LOG_EPG, LOG_CHATTY, "mediaDescription, tag %x (%d)", tag, length);
 	int endPoint	= index + length;
 	while (index < endPoint) 
 	   index = multimedia (v, index);
@@ -391,9 +390,10 @@ int length	= v [index + 1];
 	      return index + length;
 
 	   case 0x82:		// actual time
-	     { int xx = process_474	(v, index, length);
-//	       fprintf (stderr, "actual time %d %d\n",
-//	                                   xx / 60, xx % 60);
+	      {
+		int xx = process_474	(v, index, length);
+	        log (LOG_EPG, LOG_CHATTY, "actual time %d %d\n",
+	                                   xx / 60, xx % 60);
 	      }
 	      return index + length;
 
@@ -484,7 +484,7 @@ QString result = "";
 void	epgDecoder::process_472 (uint8_t *v, int index, int length) {
 uint32_t shortCRID = (((v [index] << 8) | v [index + 1]) << 8) | v [index + 2];
 
-	fprintf (stderr, "short CRID %X\n", shortCRID);
+	log (LOG_EPG, LOG_MIN, "short CRID %X", shortCRID);
 }
 
 void	epgDecoder::process_473 (uint8_t *v, int index, int length) {
@@ -497,12 +497,12 @@ int	hours;
 int	minutes;
 int	ltoBase;
 
-//	fprintf (stderr, "Handling time, utcFlag %d, ltoFlag %d\n",
-//	                                             utcFlag, ltoFlag);
+	log (LOG_EPG, LOG_CHATTY, "Handling time, utcFlag %d, ltoFlag %d",
+	                                             utcFlag, ltoFlag);
 	hours	= getBits (v, 8 * index + 21, 5);
 	minutes	= getBits (v, 8 * index + 26, 6);
 
-//	fprintf (stderr, "hours = %d, minutes = %d\n", hours, minutes);
+	log (LOG_EPG, LOG_CHATTY, "hours = %d, minutes = %d", hours, minutes);
 	if (utcFlag)
 	   ltoBase = 48;
 	else
@@ -510,7 +510,7 @@ int	ltoBase;
 
 	if (ltoFlag) {
 	   uint16_t halfHours = getBits (v, 8 * index + ltoBase, 8);
-//	   fprintf (stderr, "half hpurs sign %d, value %d\n",
+	   log (LOG_EPG, LOG_CHATTY, "half hpurs sign %d, value %d",
 //	                               halfHours & 0x20, halfHours & 0x1F);
 	   if (halfHours & 0x20)
 	      halfHours = - halfHours & 0x1F;
@@ -526,8 +526,8 @@ void	epgDecoder::process_475 (uint8_t *v, int index, int length) {
 uint16_t duration	= (v [index] << 8) | v [index + 1];
 
 	duration /= 60;
-//	fprintf (stderr, "duration is %d uur en %d minuten\n",
-//	                       duration / 60, duration % 60);
+	log (LOG_EPG, LOG_CHATTY, "duration is %d hours %d minutes",
+	                       duration / 60, duration % 60);
 }
 
 void	epgDecoder::process_476 (uint8_t *v, int index, int length) {
@@ -536,11 +536,11 @@ uint8_t sidFlag	= getBit (v, 8 * index + 3);
 	
 	if (ensFlag == 1)
 	   if (sidFlag == 0)
-	      fprintf (stderr, "SId = %X\n", getBits (v, 8 * index + 32, 16));
+	      log (LOG_EPG, LOG_MIN, "SId = %X", getBits (v, 8 * index + 32, 16));
 
 	if (ensFlag == 0)
 	   if (sidFlag == 0)
-	      fprintf (stderr, "SId = %X\n", getBits (v, 8 * index + 8, 16));
+	      log (LOG_EPG, LOG_MIN, "SId = %X", getBits (v, 8 * index + 8, 16));
 }
 
 QString	epgDecoder::process_481	(uint8_t *v, int index, int elength) {
@@ -579,7 +579,7 @@ QString result = "";
 }
 
 void	epgDecoder::process_483	(uint8_t *v, int index, int elength) {
-	fprintf (stderr, "Version %d\n",
+	log (LOG_EPG, LOG_MIN, "Version %d",
 	                    (v [index + 0] << 8) | v [index + 1]);
 }
 

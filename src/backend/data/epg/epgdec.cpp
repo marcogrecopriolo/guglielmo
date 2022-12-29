@@ -30,10 +30,11 @@
 #include <string>
 #include <cstring>
 #include <map>
-#include	<cstdio>
+#include <cstdio>
 #include <iostream>
 #include <sstream>
 #include "epgdec.h"
+#include "logging.h"
 
 static QDomElement element (QDomDocument &doc, const tag_length_value &tlv);
 
@@ -42,18 +43,18 @@ void	CEPGDecoder::decode (const vector<_BYTE>& vecData,
 //	clear the doc, allowing re-use 
 	doc. setContent (QString (""));
 	tag_length_value tlv (&vecData [0]);
-//	fprintf (stderr, "de tag is %d\n", tlv. tag);
+	log (LOG_EPG, LOGCHATTY, "tag is %d", tlv. tag);
 	if (tlv. is_epg ()) {
 	   doc. appendChild (element (doc, tlv));
 	   QString test = doc. toString();
 	   FILE *epgFile = fopen (name. toUtf8(). data (), "w");
 	   if (epgFile != nullptr) {
-	      fprintf (stderr, "filename = %s\n", name. toUtf8(). data());
+	      log (LOG_EPG, LOG_CHATTY, "filename %s", name. toUtf8(). data());
 	      fprintf (epgFile, test. toLatin1(). data());
 	      fclose (epgFile);
 	   }
 	   else
-	      fprintf (stderr, "cannot open %s\n", name. toUtf8(). data());
+	      log (LOG_EPG, LOG_MIN, "cannot open %s", name. toUtf8(). data());
 	}
 }
 
