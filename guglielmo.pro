@@ -7,10 +7,10 @@ orgDomain	= sqsl.org
 TARGET		= $$objectName
 DEFINES		+= TARGET=\\\"$$objectName\\\" CURRENT_VERSION=\\\"$$objectVersion\\\" ORGNAME=\\\"$$orgName\\\" ORGDOMAIN=\\\"$$orgDomain\\\"
 QT		+= widgets multimedia
-QMAKE_CXXFLAGS	+= -std=c++11
-QMAKE_CFLAGS	+= -flto -ffast-math
+QMAKE_CXXFLAGS	+= -std=c++11 -g -O0
+QMAKE_CFLAGS	+= -flto -ffast-math -g -O0
 MAKE_CXXFLAGS	+= -flto -ffast-math
-QMAKE_CXXFLAGS  += -isystem $$[QT_INSTALL_HEADERS]
+QMAKE_CXXFLAGS  += -isystem $$[QT_INSTALL_HEADERS] -g -O0
 RC_ICONS	= icons/guglielmo.ico
 RESOURCES	+= guglielmo.qrc
 
@@ -57,14 +57,12 @@ linux {
 }
 
 macx {
+	include (/usr/local/qwt/features/qwt.prf)
 	DESTDIR		= ./macx-bin
 	ICON		= icons/guglielmo.png
 	VERSION		= $$objectVersion
 	QMAKE_INFO_PLIST = guglielmo.plist
-	INCLUDEPATH	+= /usr/local/opt/qwt/include
-	INCLUDEPATH	+= /usr/local/Cellar/qwt/6.2.0_1/lib/qwt.framework/Versions/6/Headers
 	LIBS		+= -L/usr/local/lib
-	LIBS		+= -framework qwt
 	CONFIG		+= NO_SSE
 }
 
