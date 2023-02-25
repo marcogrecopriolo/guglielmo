@@ -235,6 +235,11 @@ private slots:
 
 // settings
     void settingsClose(void);
+
+    void dropPreset();
+    void lowerPreset();
+    void liftPreset();
+
     void setUiStyle(int);
 
 #ifdef HAVE_MPRIS

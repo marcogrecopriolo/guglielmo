@@ -107,6 +107,18 @@ void RadioInterface::handleSettingsAction() {
 	settingsDialog->connect(settingsDialog, SIGNAL(rejected()),
 		this, SLOT(settingsClose(void)));
 
+	// Presets tab
+	settingsUi.presetList->setDragDropMode(QAbstractItemView::InternalMove);
+	settingsUi.scanList->setVisible(false);
+	settingsUi.copyButton->setVisible(false);
+	settingsUi.scanComboBox->setVisible(false);
+	settingsDialog->connect(settingsUi.minusButton, SIGNAL(clicked()),
+		this, SLOT (dropPreset()));
+	settingsDialog->connect(settingsUi.downButton, SIGNAL(clicked()),
+		this, SLOT (lowerPreset()));
+	settingsDialog->connect(settingsUi.upButton, SIGNAL(clicked()),
+		this, SLOT (liftPreset()));
+
 	// UI tab
 	QStringList list = QStyleFactory::keys();
 	QString currentStyle = QApplication::style()->objectName().toLower();
@@ -122,8 +134,8 @@ void RadioInterface::handleSettingsAction() {
 #ifndef HAVE_MPRIS
 
 	// setTabVisible only exists in 5.15
-	if (settingsUi.tabWidget->tabText(1) == "Remote control")
-	    settingsUi.tabWidget->removeTab(1);
+	if (settingsUi.tabWidget->tabText(2) == "Remote control")
+	    settingsUi.tabWidget->removeTab(2);
 #else
 	settingsDialog->connect(settingsUi.remoteComboBox, SIGNAL(activated(int)),
         	this, SLOT(setRemoteMode(int)));
@@ -213,6 +225,9 @@ void RadioInterface::handleSettingsAction() {
 	}
     }
     settingsDialog->setWindowTitle(windowTitle());
+    settingsUi.presetList->clear();
+    for (int i = 1; i < presetSelector->count(); i ++)
+	settingsUi.presetList->addItem(presetSelector->itemText(i));
     settingsUi.decoderComboBox->setEnabled(FMprocessor != nullptr);
     settingsUi.deemphasisComboBox->setEnabled(FMprocessor != nullptr);
     settingsUi.lowPassComboBox->setEnabled(FMprocessor != nullptr);
@@ -226,6 +241,14 @@ void RadioInterface::handleSettingsAction() {
 
 void RadioInterface::settingsClose(void) {
     log(LOG_UI, LOG_MIN, "close settings");
+
+    // Presets tab
+    QString p = presetSelector->itemText(0);
+
+    presetSelector->clear();
+    presetSelector->addItem(p);
+    for (int i = 0; i < settingsUi.presetList->count(); i ++)
+	presetSelector->addItem(settingsUi.presetList->item(i)->text());
 
     // Ui tab
     settings->beginGroup(GROUP_UI);
@@ -258,6 +281,49 @@ void RadioInterface::settingsClose(void) {
     if (settingsUi.lnaSpinBox->isEnabled())
 	settings->setValue(DEV_LNA_GAIN, settingsUi.lnaSpinBox->value());
     settings->endGroup();
+}
+
+void RadioInterface::dropPreset() {
+    int row = settingsUi.presetList->currentRow();
+
+    if (row < 0) {
+	log(LOG_UI, LOG_MIN, "drop preset: no row selected");
+    } else {
+	log(LOG_UI, LOG_MIN, "drop preset %s", qPrintable(settingsUi.presetList->currentItem()->text()));
+	settingsUi.presetList->takeItem(row);
+    }
+}
+
+void RadioInterface::lowerPreset() {
+    int row = settingsUi.presetList->currentRow();
+
+    if (row < 0) {
+	log(LOG_UI, LOG_MIN, "move preset down: no row selected");
+    } else if (row == settingsUi.presetList->count()-1) {
+	log(LOG_UI, LOG_MIN, "move preset down: item is last");
+    } else {
+	QListWidgetItem *item = settingsUi.presetList->takeItem(row);
+
+	log(LOG_UI, LOG_MIN, "move preset down %s", qPrintable(item->text()));
+	settingsUi.presetList->insertItem(row+1, item);
+	settingsUi.presetList->setCurrentRow(row+1);
+    }
+}
+
+void RadioInterface::liftPreset() {
+    int row = settingsUi.presetList->currentRow();
+
+    if (row < 0) {
+	log(LOG_UI, LOG_MIN, "move preset up: item is first");
+    } else if (row == 0) {
+	log(LOG_UI, LOG_MIN, "move preset up: item is last");
+    } else {
+	QListWidgetItem *item = settingsUi.presetList->takeItem(row);
+
+	log(LOG_UI, LOG_MIN, "move preset up %s", qPrintable(item->text()));
+	settingsUi.presetList->insertItem(row-1, item);
+	settingsUi.presetList->setCurrentRow(row-1);
+    }
 }
 
 void RadioInterface::setUiStyle(int index) {

@@ -9,7 +9,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>500</width>
+    <width>565</width>
     <height>420</height>
    </rect>
   </property>
@@ -26,13 +26,162 @@
     <rect>
      <x>10</x>
      <y>10</y>
-     <width>480</width>
+     <width>545</width>
      <height>350</height>
     </rect>
    </property>
    <property name="currentIndex">
     <number>0</number>
    </property>
+   <widget class="QWidget" name="presetTab">
+    <attribute name="title">
+     <string>Presets</string>
+    </attribute>
+    <widget class="QListWidget" name="presetList">
+     <property name="geometry">
+      <rect>
+       <x>10</x>
+       <y>10</y>
+       <width>200</width>
+       <height>280</height>
+      </rect>
+     </property>
+    </widget>
+    <widget class="QToolButton" name="upButton">
+     <property name="geometry">
+      <rect>
+       <x>10</x>
+       <y>290</y>
+       <width>20</width>
+       <height>20</height>
+      </rect>
+     </property>
+     <property name="toolTip">
+      <string extracomment="move preset down"/>
+     </property>
+     <property name="text">
+      <string/>
+     </property>
+     <property name="popupMode">
+      <enum>QToolButton::DelayedPopup</enum>
+     </property>
+     <property name="autoRaise">
+      <bool>true</bool>
+     </property>
+     <property name="arrowType">
+      <enum>Qt::UpArrow</enum>
+     </property>
+    </widget>
+    <widget class="QToolButton" name="downButton">
+     <property name="geometry">
+      <rect>
+       <x>50</x>
+       <y>290</y>
+       <width>20</width>
+       <height>20</height>
+      </rect>
+     </property>
+     <property name="toolTip">
+      <string extracomment="move preset up"/>
+     </property>
+     <property name="text">
+      <string/>
+     </property>
+     <property name="autoRaise">
+      <bool>true</bool>
+     </property>
+     <property name="arrowType">
+      <enum>Qt::DownArrow</enum>
+     </property>
+    </widget>
+    <widget class="QToolButton" name="minusButton">
+     <property name="geometry">
+      <rect>
+       <x>30</x>
+       <y>290</y>
+       <width>20</width>
+       <height>20</height>
+      </rect>
+     </property>
+     <property name="toolTip">
+      <string extracomment="delete current preset"/>
+     </property>
+     <property name="text">
+      <string>-</string>
+     </property>
+     <property name="autoRaise">
+      <bool>true</bool>
+     </property>
+    </widget>
+    <widget class="QListWidget" name="scanList">
+     <property name="enabled">
+      <bool>true</bool>
+     </property>
+     <property name="geometry">
+      <rect>
+       <x>330</x>
+       <y>10</y>
+       <width>200</width>
+       <height>280</height>
+      </rect>
+     </property>
+    </widget>
+    <widget class="QComboBox" name="scanComboBox">
+     <property name="enabled">
+      <bool>true</bool>
+     </property>
+     <property name="geometry">
+      <rect>
+       <x>220</x>
+       <y>20</y>
+       <width>100</width>
+       <height>40</height>
+      </rect>
+     </property>
+     <property name="font">
+      <font>
+       <pointsize>11</pointsize>
+      </font>
+     </property>
+     <property name="currentText">
+      <string>scan</string>
+     </property>
+     <item>
+      <property name="text">
+       <string>scan</string>
+      </property>
+     </item>
+     <item>
+      <property name="text">
+       <string>FM</string>
+      </property>
+     </item>
+     <item>
+      <property name="text">
+       <string>DAB</string>
+      </property>
+     </item>
+    </widget>
+    <widget class="QToolButton" name="copyButton">
+     <property name="enabled">
+      <bool>true</bool>
+     </property>
+     <property name="geometry">
+      <rect>
+       <x>220</x>
+       <y>70</y>
+       <width>100</width>
+       <height>40</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>PushButton</string>
+     </property>
+     <property name="arrowType">
+      <enum>Qt::LeftArrow</enum>
+     </property>
+    </widget>
+   </widget>
    <widget class="QWidget" name="uiTab">
     <attribute name="title">
      <string>Ui</string>
@@ -735,7 +884,7 @@
   <widget class="QPushButton" name="closeButton">
    <property name="geometry">
     <rect>
-     <x>390</x>
+     <x>465</x>
      <y>370</y>
      <width>90</width>
      <height>40</height>
