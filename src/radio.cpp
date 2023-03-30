@@ -934,7 +934,7 @@ void RadioInterface::handlePresetSelector(int index) {
     if (preset == "Presets")
 	return;
 
-#if QT_VERSION >= 0x060000
+#if QT_VERSION >= 0x050e00
     QStringList list = preset.split(":", Qt::SkipEmptyParts);
 #else
     QStringList list = preset.split(":", QString::SkipEmptyParts);
@@ -1322,7 +1322,7 @@ void RadioInterface::startFM(int32_t freq) {
     setRecording();
 #ifdef HAVE_MPRIS
     mprisEmptyArt(false);
-    mprisLabelAndText("FM", QString().sprintf("%3.3f", FMfreq));
+    mprisLabelAndText("FM", QString().asprintf("%3.3f", FMfreq));
     player.setPlaybackStatus(Mpris::Playing);
 #endif
 }
@@ -1346,7 +1346,7 @@ void RadioInterface::stopFM() {
     cleanScreen();
 #ifdef HAVE_MPRIS
     mprisEmptyArt(true);
-    mprisLabelAndText("FM", QString().sprintf("%3.3f", FMfreq));
+    mprisLabelAndText("FM", QString().asprintf("%3.3f", FMfreq));
     player.setPlaybackStatus(Mpris::Stopped);
 #endif
 }
@@ -1598,7 +1598,7 @@ void RadioInterface::toFM() {
     stationsAction->setVisible(false);
 #ifdef HAVE_MPRIS
     mprisEmptyArt(true);
-    mprisLabelAndText("FM", QString().sprintf("%3.3f", FMfreq));
+    mprisLabelAndText("FM", QString().asprintf("%3.3f", FMfreq));
     player.setPlaybackStatus(Mpris::Stopped);
 #endif
 }
