@@ -81,8 +81,9 @@ The burger menu button at the top right activates the about and settings windows
 
 ![settings screen](/images/settings.png)
 
-Currently there are 5 tabs, controlling
+Currently there are 6 tabs, controlling
 
+- presets
 - the UI interface 
 - remote control settings
 - the sound output
@@ -90,6 +91,16 @@ Currently there are 5 tabs, controlling
 - device settings
 
 There's no tweakable DAB settings on offer.
+
+#### Presets
+
+The presets tab sports a presets editor (rearrange, delete or sort presets) and a station scan facility.
+
+Once a DAB or FM scan has been completed, even partially, stations can be dragged directly to the preset list, or moved there by selecting them and using the move (<) button.
+
+Scan lists can be added to with a new scan, are preserved across settings usages, and can be cleared.
+
+They are not preserved across runs.
 
 #### UI
 
