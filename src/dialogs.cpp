@@ -98,26 +98,40 @@ void RadioInterface::handleSettingsAction() {
     log(LOG_UI, LOG_MIN, "settings window");
     if (settingsDialog == nullptr) {
 	settingsDialog = new QDialog;
+
 	settingsUi.setupUi(settingsDialog);
 //	settingsDialog->move(window()->frameGeometry().topLeft() +
 //		window()->rect().center() - settingsDialog->rect().center());
-	settingsUi.closeButton->setIcon(settingsDialog->style()->standardIcon(QStyle::SP_DialogCloseButton));
+	settingsUi.closeButton->setIcon(style()->standardIcon(QStyle::SP_DialogCloseButton));
 	settingsDialog->connect(settingsUi.closeButton, SIGNAL(clicked(void)),
 		settingsDialog, SLOT(close()));
 	settingsDialog->connect(settingsDialog, SIGNAL(rejected()),
 		this, SLOT(settingsClose(void)));
 
 	// Presets tab
-	settingsUi.presetList->setDragDropMode(QAbstractItemView::InternalMove);
-	settingsUi.scanList->setVisible(false);
-	settingsUi.copyButton->setVisible(false);
-	settingsUi.scanComboBox->setVisible(false);
+	settingsUi.presetList->setDragDropMode(QAbstractItemView::DragDrop);
+	settingsUi.presetList->setAcceptDrops(true);
+	settingsUi.presetList->setDefaultDropAction(Qt::MoveAction);
+	settingsUi.scanList->setDragEnabled(true);
+	settingsUi.stopScanButton->setIcon(style()->standardIcon(QStyle::SP_MediaStop));
+	settingsUi.sortButton->setIcon(QIcon(":/sort.png"));
+	descendingOrder = false;
+	settingsDialog->connect(settingsUi.scanComboBox, SIGNAL(activated(int)),
+		this, SLOT (startFullScan()));
+	settingsDialog->connect(settingsUi.stopScanButton, SIGNAL(clicked()),
+		this, SLOT (stopFullScan()));
+	settingsDialog->connect(settingsUi.copyButton, SIGNAL(clicked()),
+		this, SLOT (copyStation()));
+	settingsDialog->connect(settingsUi.sortButton, SIGNAL(clicked()),
+		this, SLOT (sortPresets()));
 	settingsDialog->connect(settingsUi.minusButton, SIGNAL(clicked()),
 		this, SLOT (dropPreset()));
 	settingsDialog->connect(settingsUi.downButton, SIGNAL(clicked()),
 		this, SLOT (lowerPreset()));
 	settingsDialog->connect(settingsUi.upButton, SIGNAL(clicked()),
 		this, SLOT (liftPreset()));
+	settingsDialog->connect(settingsUi.clearButton, SIGNAL(clicked()),
+		this, SLOT (clearScanList()));
 
 	// UI tab
 	QStringList list = QStyleFactory::keys();
@@ -128,7 +142,7 @@ void RadioInterface::handleSettingsAction() {
 			settingsUi.styleComboBox->setCurrentIndex(i);
 	}
 	settingsDialog->connect(settingsUi.styleComboBox, SIGNAL(activated (int)),
-        	this, SLOT (setUiStyle(int)));
+		this, SLOT (setUiStyle(int)));
 
 	// MPRIS
 #ifndef HAVE_MPRIS
@@ -138,7 +152,7 @@ void RadioInterface::handleSettingsAction() {
 	    settingsUi.tabWidget->removeTab(2);
 #else
 	settingsDialog->connect(settingsUi.remoteComboBox, SIGNAL(activated(int)),
-        	this, SLOT(setRemoteMode(int)));
+		this, SLOT(setRemoteMode(int)));
     	if (skipPresetMode)
 	    settingsUi.remoteComboBox->setCurrentIndex(0);
 	else
@@ -147,11 +161,11 @@ void RadioInterface::handleSettingsAction() {
 
 	// Sound tab
 	settingsDialog->connect(settingsUi.modeComboBox, SIGNAL(activated(int)),
-        	this, SLOT(setSoundMode(int)));
+		this, SLOT(setSoundMode(int)));
 	settingsDialog->connect(settingsUi.outputComboBox, SIGNAL(activated(int)),
-        	this, SLOT(setSoundOutput(int)));
+		this, SLOT(setSoundOutput(int)));
 	settingsDialog->connect(settingsUi.latencySpinBox, SIGNAL(valueChanged(int)),
-        	this, SLOT(setLatency(int)));
+		this, SLOT(setLatency(int)));
 	settingsUi.latencySpinBox->setValue(latency);
 	settingsUi.modeComboBox->setCurrentIndex(1);
     	if (isQtAudio) {
@@ -198,7 +212,7 @@ void RadioInterface::handleSettingsAction() {
 		    settingsUi.deviceComboBox->setCurrentIndex(settingsUi.deviceComboBox->count()-1);
 	}
 	settingsDialog->connect(settingsUi.deviceComboBox, SIGNAL(activated(int)),
-        	this, SLOT(setDevice(int)));
+		this, SLOT(setDevice(int)));
 	settingsDialog->connect(settingsUi.agcCheckBox, SIGNAL(stateChanged(int)),
        		this, SLOT(setAgcControl(int)));
 	settingsDialog->connect(settingsUi.gainSpinBox, SIGNAL(valueChanged(int)),
@@ -241,6 +255,8 @@ void RadioInterface::handleSettingsAction() {
 
 void RadioInterface::settingsClose(void) {
     log(LOG_UI, LOG_MIN, "close settings");
+    if (scanning)
+	stopFullScan();
 
     // Presets tab
     QString p = presetSelector->itemText(0);
@@ -281,6 +297,206 @@ void RadioInterface::settingsClose(void) {
     if (settingsUi.lnaSpinBox->isEnabled())
 	settings->setValue(DEV_LNA_GAIN, settingsUi.lnaSpinBox->value());
     settings->endGroup();
+}
+
+void RadioInterface::startFullScan() {
+    QString scanType = settingsUi.scanComboBox->currentText();
+
+    log(LOG_UI, LOG_MIN, "start full %s scan", qPrintable(scanType));
+    if (settingsUi.scanComboBox->currentIndex() == 0)
+	return;
+    settingsUi.scanComboBox->setVisible(false);
+    settingsUi.scanComboBox->setCurrentIndex(0);
+    saveIsFM = isFM;
+    saveFMfreq = FMfreq;
+    saveChannel = channelSelector->currentIndex();
+    saveService = currentService;
+    if (playing) {
+	if (isFM)
+	    stopFM();
+	else
+	    stopDAB();
+	usleep(1000);
+    }
+    if (scanType == "FM" && FMprocessor != NULL) {
+	handleFMButton();
+	scanIncrement = 1;
+	FMfreq = MIN_FM;
+	stopFM();
+	if (scanTimer == nullptr) {
+	    scanTimer = new QTimer();
+	    scanTimer->setInterval(scanInterval);
+	}
+	connect(scanTimer, SIGNAL(timeout()),
+	    this, SLOT(nextFullScanFrequency()));
+	playing = false;
+	scanning = true;
+	cleanScreen();
+	setPlaying();
+	setRecording();
+	setScanning();
+#ifdef HAVE_MPRIS
+	mprisLabelAndText("FM", "Scanning");
+	player.setPlaybackStatus(Mpris::Stopped);
+#endif
+	frequencyKnob->setValue(double(FMfreq));
+	frequencyLCD->display(int(FMfreq*1000));
+	inputDevice->restartReader(int(FMfreq*1000000));
+	FMprocessor->start();
+	FMprocessor->startFullScan();
+	scanTimer->start();
+    } else if (scanType == "DAB") {
+	handleDABButton();
+	stopDAB();
+	if (scanTimer == nullptr) {
+	    scanTimer = new QTimer();
+	    scanTimer->setInterval(scanInterval);
+	}
+	connect(scanTimer, SIGNAL(timeout()),
+	    this, SLOT(nextFullDABScan()));
+	playing = false;
+	scanning = true;
+	cleanScreen();
+	setPlaying();
+	setRecording();
+	setScanning();
+#ifdef HAVE_MPRIS
+	mprisLabelAndText("DAB", "Scanning");
+	player.setPlaybackStatus(Mpris::Stopped);
+#endif
+	scanIndex = 0;
+	channelSelector->setCurrentIndex(scanIndex);
+	startDAB(channelSelector->itemText(scanIndex));
+	scanTimer->start();
+    }
+}
+
+void RadioInterface::stopFullScan() {
+    if (scanTimer != nullptr && scanTimer->isActive())
+	scanTimer->stop();
+    scanning = false;
+    if (isFM) {
+	log(LOG_UI, LOG_MIN, "stop full FM scan");
+	disconnect(scanTimer, SIGNAL(timeout()),
+	    this, SLOT(nextFullScanFrequency()));
+	FMprocessor->stopFullScan();
+	stopFM();
+    } else {
+	log(LOG_UI, LOG_MIN, "stop full DAB scan");
+	stopDAB();
+	disconnect(scanTimer, SIGNAL(timeout()),
+	    this, SLOT(nextFullDABScan()));
+    }
+    isFM = saveIsFM;
+    FMfreq = saveFMfreq;
+    channelSelector->setCurrentIndex(saveChannel);
+    currentService = saveService;
+    if (isFM) {
+	toFM();
+	frequencyLCD->display(int(FMfreq*1000));
+    } else {
+	toDAB();
+	currentService.valid = (currentService.serviceName != "");
+	startDAB(channelSelector->currentText());
+    }
+    setPlaying();
+    setRecording();
+    setScanning();
+    settingsUi.scanComboBox->setVisible(true);
+}
+
+void RadioInterface::nextFullScanFrequency(void) {
+    log(LOG_EVENT, LOG_MIN, "fm full scan timer signal");
+    if (FMfreq >= MAX_FM) {
+	stopFullScan();
+    } else {
+	FMprocessor->stopFullScan();
+	FMprocessor->stop();
+	inputDevice->stopReader();
+	FMfreq = (FMfreq*10+scanIncrement)/10;
+	frequencyKnob->setValue(double(FMfreq));
+	frequencyLCD->display(int(FMfreq*1000));
+	inputDevice->restartReader(int(FMfreq*1000000));
+	FMprocessor->start();
+	FMprocessor->startFullScan();
+	scanTimer->start();
+    }
+}
+
+void RadioInterface::scanFound(void) {
+    QString station = "FM:" + QString::number(FMfreq);
+
+    if (settingsUi.scanList->findItems(station, Qt::MatchStartsWith).size() > 0) {
+	log(LOG_EVENT, LOG_MIN, "station %s already present", qPrintable(station));
+    } else {
+	log(LOG_EVENT, LOG_MIN, "station found %s", qPrintable(station));
+	settingsUi.scanList->addItem(station);
+    }
+}
+
+void RadioInterface::nextFullDABScan(void) {
+    log(LOG_EVENT, LOG_MIN, "dab full scan timer signal");
+
+    // nothing, either we stop, or move on
+    if (serviceList.size() == 0) {
+	if (scanIndex ==  channelSelector->count() - 1) {
+		stopFullScan();
+		return;
+	} else {
+	    scanIndex++;
+	    stopDAB();
+	    channelSelector->setCurrentIndex(scanIndex);
+	    startDAB(channelSelector->itemText(scanIndex));
+	}
+    }
+
+    // if still loading, we wait a bit more
+    scanTimer->start();
+}
+
+void RadioInterface::scanEnsembleLoaded(int count) {
+    log(LOG_EVENT, LOG_MIN, "dab full scan ensemble loaded with %i services", count);
+    for (const auto serv: serviceList) {
+	QString station = channelSelector->itemText(scanIndex) + ":" +serv.name;
+
+	if (settingsUi.scanList->findItems(station, Qt::MatchStartsWith).size() > 0) {
+	    log(LOG_EVENT, LOG_MIN, "dab station %s already present", qPrintable(station));
+	} else {
+	    log(LOG_EVENT, LOG_MIN, "dab station found %s", qPrintable(station));
+	    settingsUi.scanList->addItem(station);
+	}
+    }
+    if (scanIndex ==  channelSelector->count() - 1) {
+	stopFullScan();
+    } else {
+	scanIndex++;
+	stopDAB();
+	channelSelector->setCurrentIndex(scanIndex);
+	startDAB(channelSelector->itemText(scanIndex));
+	scanTimer->start();
+    }
+}
+
+void RadioInterface::clearScanList() {
+    log(LOG_UI, LOG_MIN, "clear scan list");
+    settingsUi.scanList->clear();
+}
+
+void RadioInterface::copyStation() {
+    int row = settingsUi.scanList->currentRow();
+
+    if (row < 0) {
+	log(LOG_UI, LOG_MIN, "add station: no row selected");
+    } else {
+	QString station = settingsUi.scanList->currentItem()->text();
+
+	if (settingsUi.presetList->findItems(station, Qt::MatchStartsWith).size() > 0) {
+	    log(LOG_UI, LOG_MIN, "station %s already present", qPrintable(station));
+	} else {
+	    log(LOG_UI, LOG_MIN, "add station %s", qPrintable(station));
+	    settingsUi.presetList->addItem(settingsUi.scanList->currentItem()->text());
+	}
+    }
 }
 
 void RadioInterface::dropPreset() {
@@ -326,6 +542,15 @@ void RadioInterface::liftPreset() {
     }
 }
 
+void RadioInterface::sortPresets() {
+    log(LOG_UI, LOG_MIN, "sort entries %i", descendingOrder);
+    if (descendingOrder)
+	settingsUi.presetList->sortItems(Qt::DescendingOrder);
+    else
+	settingsUi.presetList->sortItems(Qt::AscendingOrder);
+    descendingOrder = !descendingOrder;
+}
+
 void RadioInterface::setUiStyle(int index) {
     QString style = settingsUi.styleComboBox->itemText(index);
 
@@ -354,9 +579,9 @@ void RadioInterface::setSoundMode(int index) {
 
     if (stop) {
 	if (isFM)
-            stopFM();
+	    stopFM();
 	else
-            stopDABService();
+	    stopDABService();
     }
     soundOut->stop();
     delete soundOut;
@@ -380,9 +605,9 @@ void RadioInterface::setSoundMode(int index) {
     soundOut->setVolume(volumeKnob->value()/100);
     if (stop) {
 	if (isFM)
-            startFM(int(FMfreq*1000000));
+	    startFM(int(FMfreq*1000000));
 	else
-            startDABService(&currentService);
+	    startDABService(&currentService);
     }
 }
 
@@ -400,9 +625,9 @@ void RadioInterface::setLatency(int newLatency) {
 	return;
     if (stop) {
 	if (isFM)
-            stopFM();
+	    stopFM();
 	else
-            stopDABService();
+	    stopDABService();
     }
     soundOut->stop();
     delete soundOut;
@@ -412,9 +637,9 @@ void RadioInterface::setLatency(int newLatency) {
     ((audioSink *) soundOut)->selectDevice(soundChannel);
     if (stop) {
 	if (isFM)
-            startFM(int(FMfreq*1000000));
+	    startFM(int(FMfreq*1000000));
 	else
-            startDABService(&currentService);
+	    startDABService(&currentService);
     }
 }
 
@@ -493,9 +718,9 @@ void RadioInterface::setDevice(int d) {
 
     if (playing) {
 	if (isFM)
-            stopFM();
+	    stopFM();
 	else
-            stopDAB();
+	    stopDAB();
     }
 
     delete DABprocessor;

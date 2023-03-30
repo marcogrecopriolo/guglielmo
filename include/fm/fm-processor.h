@@ -81,8 +81,10 @@ public:
     void setFMRDSDemod(rdsDemodMode);
     void resetRDS(void);
     void setSink(audioBase *);
-    void startScanning(void);
-    void stopScanning(void);
+    void startScan(void);
+    void stopScan(void);
+    void startFullScan(void);
+    void stopFullScan(void);
 
 private:
     virtual void run(void);

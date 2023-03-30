@@ -138,8 +138,6 @@ fmProcessor::fmProcessor(deviceHandler *device, RadioInterface *radioInterface, 
 	    radioInterface, SLOT(showStrength(float)));
     connect(this, SIGNAL(showSoundMode(bool)),
 	    radioInterface, SLOT(showSoundMode(bool)));
-    connect(this, SIGNAL(scanresult(void)),
-	    radioInterface, SLOT(scanDone(void)));
 }
 
 fmProcessor::~fmProcessor(void) {
@@ -148,8 +146,6 @@ fmProcessor::~fmProcessor(void) {
 	    radioInterface, SLOT(showStrength(float)));
     disconnect(this, SIGNAL(showSoundMode(bool)),
 	    radioInterface, SLOT(showSoundMode(bool)));
-    disconnect(this, SIGNAL(scanresult(void)),
-	    radioInterface, SLOT(scanDone(void)));
     delete fmBandFilter;
     delete signalFft;
     delete fmDemodulator;
@@ -237,12 +233,28 @@ void fmProcessor::setSignalGain(int16_t l, int16_t r) {
     Rgain = r;
 }
 
-void fmProcessor::startScanning(void) {
+void fmProcessor::startScan(void) {
     initScan = true;
+    connect(this, SIGNAL(scanresult(void)),
+	    radioInterface, SLOT(scanDone(void)));
 }
 
-void fmProcessor::stopScanning(void) {
+void fmProcessor::startFullScan(void) {
+    initScan = true;
+    connect(this, SIGNAL(scanresult(void)),
+	    radioInterface, SLOT(scanFound(void)));
+}
+
+void fmProcessor::stopScan(void) {
     scanning = false;
+    disconnect(this, SIGNAL(scanresult(void)),
+	    radioInterface, SLOT(scanDone(void)));
+}
+
+void fmProcessor::stopFullScan(void) {
+    scanning = false;
+    disconnect(this, SIGNAL(scanresult(void)),
+	    radioInterface, SLOT(scanFound(void)));
 }
 
 void fmProcessor::setFMRDSSelector(rdsDecoder::RdsMode m) {

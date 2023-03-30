@@ -572,13 +572,13 @@ void RadioInterface::startFMscan(bool down) {
 	    return;
 	scanIncrement = 1;
     }
+    stopFM();
     if (scanTimer == nullptr) {
 	scanTimer = new QTimer();
 	scanTimer->setInterval(scanInterval);
-	connect(scanTimer, SIGNAL(timeout()),
-		this, SLOT(nextFrequency()));
     }
-    stopFM();
+    connect(scanTimer, SIGNAL(timeout()),
+	this, SLOT(nextFrequency()));
     playing = false;
     scanning = true;
     cleanScreen();
@@ -594,7 +594,7 @@ void RadioInterface::startFMscan(bool down) {
     frequencyLCD->display(int(FMfreq*1000));
     inputDevice->restartReader(int(FMfreq*1000000));
     FMprocessor->start();
-    FMprocessor->startScanning();
+    FMprocessor->startScan();
     scanTimer->start();
 }
 
@@ -602,8 +602,10 @@ void RadioInterface::startFMscan(bool down) {
 void RadioInterface::stopFMscan() {
     if (scanTimer != nullptr && scanTimer->isActive())
 	scanTimer->stop();
+    disconnect(scanTimer, SIGNAL(timeout()),
+	this, SLOT(nextFrequency()));
     scanning = false;
-    FMprocessor->stopScanning();
+    FMprocessor->stopScan();
     stopFM();
     setPlaying();
     setRecording();
@@ -614,10 +616,10 @@ void RadioInterface::stopFMscan() {
 
 void RadioInterface::nextFrequency(void) {
     log(LOG_EVENT, LOG_MIN, "fm scan timer signal");
-    if (FMfreq <= MIN_FM || FMfreq >= MAX_FM) {
+    if ((scanIncrement < 0 && FMfreq <= MIN_FM) || (scanIncrement > 0 && FMfreq >= MAX_FM)) {
 	stopFMscan();
     } else {
-	FMprocessor->stopScanning();
+	FMprocessor->stopScan();
 	FMprocessor->stop();
 	inputDevice->stopReader();
 	FMfreq = (FMfreq*10+scanIncrement)/10;
@@ -625,17 +627,14 @@ void RadioInterface::nextFrequency(void) {
 	frequencyLCD->display(int(FMfreq*1000));
 	inputDevice->restartReader(int(FMfreq*1000000));
 	FMprocessor->start();
-	FMprocessor->startScanning();
+	FMprocessor->startScan();
 	scanTimer->start();
     }
 }
 
 void RadioInterface::scanDone(void) {
     log(LOG_EVENT, LOG_MIN, "fm station found");
-    scanTimer->stop();
-    FMprocessor->stopScanning();
-    scanning = false;
-    stopFM();
+    stopFMscan();
     playing = true;
     startFM(int(FMfreq*1000000));
     setPlaying();
@@ -722,6 +721,11 @@ void RadioInterface::ensembleLoaded(int count) {
     dabService s;
     int i = 0;
 
+    // we are loading a scan list, no need to start a service
+    if (scanning) {
+	scanEnsembleLoaded(count);
+	return;
+    }
     log(LOG_EVENT, LOG_MIN, "ensemble complete with %i services", count);
     if (nextService.valid && nextService.serviceName == "" && count > 0) {
 	if (nextService.fromEnd)

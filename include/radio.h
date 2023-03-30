@@ -94,6 +94,7 @@ private:
     bandHandler DABband;
     processParams DABglobals;
     int serviceOrder;
+    int scanIndex;
 
 // FM
     double FMfreq;
@@ -158,6 +159,13 @@ private:
     int latency;
     int soundChannel;
 
+// settings;
+    bool descendingOrder;
+    bool saveIsFM;
+    double saveFMfreq;
+    int saveChannel;
+    dabService saveService;
+
 // operation
     void findDevices();
     void makeDABprocessor();
@@ -202,6 +210,8 @@ public slots:
     void changeInConfiguration();
     void newAudio(int, int);
     void scanDone();
+    void scanFound();
+    void scanEnsembleLoaded(int);
     void closeEvent(QCloseEvent *event);
 
 private slots:
@@ -236,9 +246,14 @@ private slots:
 // settings
     void settingsClose(void);
 
+    void startFullScan();
+    void stopFullScan();
     void dropPreset();
     void lowerPreset();
     void liftPreset();
+    void sortPresets();
+    void clearScanList();
+    void copyStation();
 
     void setUiStyle(int);
 
@@ -264,6 +279,8 @@ private slots:
 
 // scan
     void nextFrequency();
+    void nextFullScanFrequency();
+    void nextFullDABScan();
 
 #ifdef HAVE_MPRIS
 // MPRIS

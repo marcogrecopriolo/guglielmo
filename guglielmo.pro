@@ -51,8 +51,8 @@ linux {
 	CONFIG		+= mpris
 
 	# FIXME currently needs to be set by hand
-	INCLUDEPATH	+= /usr/include/qt5/qwt
-	LIBS		+= -lqwt-qt5
+	INCLUDEPATH	+= /usr/include/qt5/qwt6
+	LIBS		+= -lqwt
 	CONFIG		+= PC
 }
 
