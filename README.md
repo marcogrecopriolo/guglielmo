@@ -213,7 +213,6 @@ amount of manual intervention.
 - make loading settings more resilient to duff values
 - selecting devices when multiple devices of the same type are available
 - improve on IF and LNA gain settings
-- macOS builds
 
 ## Acknowledgements, copyright, etc...
 
