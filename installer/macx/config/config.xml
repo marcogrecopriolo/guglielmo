@@ -4,7 +4,7 @@
     <Version>0.5</Version>
     <Title>Guglielmo</Title>
     <Publisher>Marco Greco</Publisher>
-    <InstallerApplicationIcon>guglielmo.png</InstallerApplicationIcon>
+    <InstallerApplicationIcon>guglielmo-installer</InstallerApplicationIcon>
     <Logo>guglielmo_small.png</Logo>
     <WizardStyle>Modern</WizardStyle>
     <StartMenuDir>Guglielmo</StartMenuDir>
