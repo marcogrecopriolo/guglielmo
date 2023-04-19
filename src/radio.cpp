@@ -926,7 +926,7 @@ void RadioInterface::handlePresetSelector(int index) {
     QString preset;
 
     log(LOG_UI, LOG_MIN, "play preset %i", index);
-    if (index >= presetSelector->count() || presetSelector->count() <= 1)
+    if (inputDevice == NULL || index >= presetSelector->count() || presetSelector->count() <= 1)
 	return;
     preset =  presetSelector->itemText(index);
 
