@@ -223,6 +223,8 @@ endif()
 	     ./include/logger.h
 	     ./include/logging.h
 	     ./include/settings.h
+	     ./include/combobox.h
+	     ./include/listwidget.h
 	     ./include/dab/dab-processor.h
              ./include/fm/fm-demodulator.h
              ./include/fm/fm-processor.h

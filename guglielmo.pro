@@ -215,6 +215,8 @@ HEADERS += ./include/radio.h \
 	   ./include/logger.h \
 	   ./include/logging.h \
 	   ./include/settings.h \
+	   ./include/combobox.h \
+	   ./include/listwidget.h \
 	   ./include/country-codes.h \
 	   ./include/dab/dab-processor.h \
 	   ./include/fm/fm-demodulator.h \

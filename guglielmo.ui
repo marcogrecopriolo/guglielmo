@@ -343,7 +343,7 @@
     <bool>true</bool>
    </property>
   </widget>
-  <widget class="QComboBox" name="presetSelector">
+  <widget class="ComboBox" name="presetSelector">
    <property name="geometry">
     <rect>
      <x>340</x>

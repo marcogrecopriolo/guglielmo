@@ -27,12 +27,16 @@
 #include <QFile>
 #include <QTextStream>
 #include <QFileDialog>
+#include <QDropEvent>
+#include <QMimeData>
+#include <QString>
 #include "Qt-audio.h"
 #include "audiosink.h"
 #include "settings.h"
 #include "radio.h"
 #include "fm-demodulator.h"
 #include "ui_about.h"
+#include "listwidget.h"
 #include "logging.h"
 
 // yes / no confirmation
@@ -251,6 +255,30 @@ void RadioInterface::handleSettingsAction() {
     settingsUi.fmAudioGainSpinBox->setEnabled(FMprocessor != nullptr);
 
     settingsDialog->show();
+}
+
+// list widgets with duplicate check on drop
+// used by the presets tab
+void ListWidget::dropEvent(QDropEvent *event) {
+    if (event->proposedAction() == Qt::CopyAction) {
+	QByteArray encoded = event->mimeData()->data("application/x-qabstractitemmodeldatalist");
+	QDataStream stream(&encoded, QIODevice::ReadOnly);
+	QStringList items;
+
+	while (!stream.atEnd()) {
+		int row, col;
+		QMap<int,  QVariant> roleDataMap;
+		stream >> row >> col >> roleDataMap;
+		items << roleDataMap[Qt::DisplayRole].toString();
+	}
+	log(LOG_UI, LOG_MIN, "searching %s", qPrintable(items.join(",")));
+	for (const auto &item: items)
+	    if (findItems(item, Qt::MatchStartsWith).size() > 0) {
+		log(LOG_UI, LOG_MIN, "entry %s already present", qPrintable(item));
+		return;
+	    }
+    }
+    QListWidget::dropEvent(event);
 }
 
 void RadioInterface::settingsClose(void) {

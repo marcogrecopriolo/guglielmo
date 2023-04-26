@@ -204,6 +204,8 @@ RadioInterface::RadioInterface (QSettings *Si, QWidget	 *parent):
     frequencyLCD->display(int(FMfreq*1000));
 
     // presets
+    presetSelector->view()->setMinimumWidth(ensembleDisplay->width());
+    presetSelector->addItem("Presets");
     int size = settings->beginReadArray(GROUP_PRESETS);
     for (int i = 0; i < size; ++i) {
 	settings->setArrayIndex(i);

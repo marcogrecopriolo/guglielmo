@@ -37,7 +37,7 @@
     <attribute name="title">
      <string>Presets</string>
     </attribute>
-    <widget class="QListWidget" name="presetList">
+    <widget class="ListWidget" name="presetList">
      <property name="geometry">
       <rect>
        <x>10</x>
