@@ -97,10 +97,14 @@ RadioInterface::RadioInterface (QSettings *Si, QWidget	 *parent):
     signalStrength->setRangeFlags(QwtInterval::ExcludeMinimum);
     menuButton->setIcon(QIcon(":/menubutton.png"));
     QMenu *menu = new QMenu();
-    stationsAction = new QAction(QIcon(":/stations.png"), "stations");
-    slidesAction = new QAction(QIcon(":/slides.png"), "slides");
-    aboutAction = new QAction(QIcon(":/copyright.png"), "about");
-    settingsAction = new QAction(QIcon(":/settings.png"), "settings");
+    stationsAction = new QAction(QIcon(":/stations.png"), "sTations");
+    stationsAction->setShortcut(QKeySequence(KEY_MODIFIER + Qt::Key_T));
+    slidesAction = new QAction(QIcon(":/slides.png"), "sLides");
+    slidesAction->setShortcut(QKeySequence(KEY_MODIFIER + Qt::Key_L));
+    aboutAction = new QAction(QIcon(":/copyright.png"), "About");
+    aboutAction->setShortcut(QKeySequence(KEY_MODIFIER + Qt::Key_A));
+    settingsAction = new QAction(QIcon(":/settings.png"), "Settings");
+    settingsAction->setShortcut(QKeySequence(KEY_MODIFIER + Qt::Key_S));
     menu->addAction(stationsAction);
     menu->addAction(slidesAction);
     menu->addAction(settingsAction);
@@ -112,6 +116,10 @@ RadioInterface::RadioInterface (QSettings *Si, QWidget	 *parent):
     scanBackButton->setIcon(style()->standardIcon(QStyle::SP_MediaSeekBackward));
     stopScanButton->setIcon(style()->standardIcon(QStyle::SP_MediaStop));
     scanForwardButton->setIcon(style()->standardIcon(QStyle::SP_MediaSeekForward));
+    DABButton->setShortcut(QKeySequence(KEY_MODIFIER + Qt::Key_D));
+    FMButton->setShortcut(QKeySequence(KEY_MODIFIER + Qt::Key_F));
+    playButton->setShortcut(QKeySequence(KEY_MODIFIER + Qt::Key_P));
+    recordButton->setShortcut(QKeySequence(KEY_MODIFIER + Qt::Key_R));
 
     // setting the background to transparent hides the label, so we 
     // store the initial style instead
@@ -1432,7 +1440,7 @@ void RadioInterface::setPlaying() {
 	    connect(playButton, SIGNAL(clicked (void)),
 			this, SLOT(handlePauseButton(void)));
 	    playButton->setIcon(style()->standardIcon(QStyle::SP_MediaStop));
-	    playButton->setToolTip("Stop playback");
+	    playButton->setToolTip("Pause playback");
 	} else {
 	    connect(playButton, SIGNAL(clicked (void)),
 			this, SLOT(handlePlayButton(void)));

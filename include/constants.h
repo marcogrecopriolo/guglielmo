@@ -65,7 +65,9 @@
 #if IS_WINDOWS
 //#include	"iostream.h"
 #include	"windows.h"
+#define		KEY_MODIFIER Qt::ALT
 #else
+#define		KEY_MODIFIER Qt::CTRL
 #if !defined(__FREEBSD__) && !defined(__APPLE_CC__)
 #include	<malloc.h>
 #endif
