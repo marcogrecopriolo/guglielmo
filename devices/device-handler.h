@@ -35,6 +35,9 @@ class	deviceHandler: public QThread {
 public:
 			deviceHandler 	(void);
 virtual			~deviceHandler 	(void);
+virtual		int32_t	deviceCount	(void);
+virtual		QString	deviceName	(int32_t);
+virtual		bool	setDevice	(int32_t);
 virtual		bool	restartReader	(int32_t);
 virtual		void	stopReader	(void);
 virtual		int32_t	getSamples	(std::complex<float> *, int32_t);

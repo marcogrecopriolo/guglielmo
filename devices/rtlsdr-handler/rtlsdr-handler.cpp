@@ -183,6 +183,7 @@ char    *gainsString;
 	   rtlsdr_set_agc_mode (device, 1);
 	else
 	   rtlsdr_set_agc_mode (device, 0);
+	rtlsdr_set_tuner_gain_mode(device, 1);
 	rtlsdr_set_tuner_gain	(device, gains [(int)(ifGain * gainsCount / 100)]);
 }
 
@@ -213,6 +214,43 @@ char    *gainsString;
 	   delete[] gains;
 
 }
+
+int32_t rtlsdrHandler::deviceCount      () {
+
+	// Refresh the count just in case a new device has been added, or a device has been removed
+	int32_t d = this -> rtlsdr_get_device_count ();
+	if (d < 0)
+	    return 0;
+	return d;
+}
+
+QString rtlsdrHandler::deviceName       (int32_t devNo) {
+	if (devNo < 0 || devNo > (int32_t) this -> rtlsdr_get_device_count ())
+	    return "";
+	return this -> rtlsdr_get_device_name(devNo);
+}
+
+bool    rtlsdrHandler::setDevice        (int32_t devNo) {
+	if (open) {
+	    log (DEV_RTLSDR, LOG_MIN, "stopping old device");
+            stopReader ();
+            this -> rtlsdr_close (device);
+	    open = false;
+        }
+	log (DEV_RTLSDR, LOG_MIN, "switching to device %d", devNo);
+	if (this -> rtlsdr_open (&device, devNo) < 0)
+	    return false;
+	if (agcControl)
+	   rtlsdr_set_agc_mode (device, 1);
+	else
+	   rtlsdr_set_agc_mode (device, 0);
+	rtlsdr_set_tuner_gain_mode(device, 1);
+	rtlsdr_set_tuner_gain   (device, gains [(int)(ifGain * gainsCount / 100)]);
+	log (DEV_RTLSDR, LOG_MIN, "switched to device %d", devNo);
+	open  = true;
+	return true;
+}
+
 //
 //
 bool	rtlsdrHandler::restartReader	(int32_t frequency) {

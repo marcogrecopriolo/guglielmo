@@ -32,6 +32,18 @@
 	deviceHandler::~deviceHandler	(void) {
 }
 
+int32_t	deviceHandler::deviceCount	() {
+	return 0;
+}
+
+QString	deviceHandler::deviceName	(int32_t) {
+	return "";
+}
+
+bool	deviceHandler::setDevice	(int32_t) {
+	return true;
+}
+
 bool	deviceHandler::restartReader	(int32_t) {
 	return true;
 }

@@ -67,6 +67,9 @@ public:
 			rtlsdrHandler	(void);
 			~rtlsdrHandler	(void);
 //	interface to the reader
+	int32_t		deviceCount	(void);
+	QString		deviceName	(int32_t devNo);
+	bool		setDevice	(int32_t devNo);
 	bool		restartReader	(int32_t frequency);
 	void		stopReader	(void);
 	int32_t		getSamples	(std::complex<float> *, int32_t);

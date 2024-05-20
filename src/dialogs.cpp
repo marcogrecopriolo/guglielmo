@@ -211,12 +211,26 @@ void RadioInterface::handleSettingsAction() {
 
 	// Device tab
 	for (const auto dev: deviceList) {
-		settingsUi.deviceComboBox->addItem(dev.deviceName);
+		settingsUi.deviceComboBox->addItem(dev.deviceType);
 		if (inputDevice == dev.device)
 		    settingsUi.deviceComboBox->setCurrentIndex(settingsUi.deviceComboBox->count()-1);
 	}
+
+	// show the end of the device name
+	settingsUi.deviceNameComboBox->view()->setTextElideMode(Qt::ElideLeft);
+	int dc = inputDevice->deviceCount();
+	if (dc == 0) 
+	     settingsUi.deviceNameComboBox->setEnabled(false);
+	else 
+	    for (int i = 0; i < dc; i++) {
+	        settingsUi.deviceNameComboBox->addItem(inputDevice->deviceName(i));
+		if (i == deviceNumber)
+		    settingsUi.deviceNameComboBox->setCurrentIndex(i);
+	    }
 	settingsDialog->connect(settingsUi.deviceComboBox, SIGNAL(activated(int)),
 		this, SLOT(setDevice(int)));
+	settingsDialog->connect(settingsUi.deviceNameComboBox, SIGNAL(activated(int)),
+		this, SLOT(setDeviceName(int)));
 	settingsDialog->connect(settingsUi.agcCheckBox, SIGNAL(stateChanged(int)),
        		this, SLOT(setAgcControl(int)));
 	settingsDialog->connect(settingsUi.gainSpinBox, SIGNAL(valueChanged(int)),
@@ -317,13 +331,14 @@ void RadioInterface::settingsClose(void) {
     settings->endGroup();
 
     // Device tab
-    settings->beginGroup(deviceName);
+    settings->beginGroup(deviceType);
     if (settingsUi.agcCheckBox->isEnabled())
 	settings->setValue(DEV_AGC, settingsUi.agcCheckBox->isChecked()? "1": "0");
     if (settingsUi.gainSpinBox->isEnabled())
 	settings->setValue(DEV_IF_GAIN, settingsUi.gainSpinBox->value());
     if (settingsUi.lnaSpinBox->isEnabled())
 	settings->setValue(DEV_LNA_GAIN, settingsUi.lnaSpinBox->value());
+    settings->setValue(DEV_NUMBER, deviceNumber);
     settings->endGroup();
 }
 
@@ -729,7 +744,7 @@ void RadioInterface::setDevice(int d) {
     if (deviceList[d].device == inputDevice)
 	return;
 
-    settings->beginGroup(deviceName);
+    settings->beginGroup(deviceType);
     if (settingsUi.agcCheckBox->isEnabled()) {
 	settings->setValue(DEV_AGC, settingsUi.agcCheckBox->isChecked()? "1": "0");
     } else
@@ -742,6 +757,7 @@ void RadioInterface::setDevice(int d) {
 	settings->setValue(DEV_LNA_GAIN, settingsUi.lnaSpinBox->value());
     } else
 	settingsUi.lnaSpinBox->setEnabled(true);
+    settings->setValue(DEV_NUMBER, deviceNumber);
     settings->endGroup();
 
     if (playing) {
@@ -755,13 +771,13 @@ void RadioInterface::setDevice(int d) {
     delete FMprocessor;
 
     inputDevice = deviceList[d].device;
-    deviceName = deviceList[d].deviceName;
+    deviceType = deviceList[d].deviceType;
     deviceUiControls = deviceList[d].controls;
     makeDABprocessor();
     makeFMprocessor();
 
     // do it all again for the new device
-    settings->beginGroup(deviceName);
+    settings->beginGroup(deviceType);
     if (deviceUiControls & AGC) {
 	agc = (settings->value(DEV_AGC, DEV_DEF_AGC).toInt() > 0);
 	inputDevice->setAgcControl(agc);
@@ -780,7 +796,47 @@ void RadioInterface::setDevice(int d) {
 	settingsUi.lnaSpinBox->setValue(lnaGain);
     } else
 	settingsUi.lnaSpinBox->setEnabled(false);
+    deviceNumber = settings->value(DEV_NUMBER, 0).toInt();
     settings->endGroup();
+
+    int dc = inputDevice->deviceCount();
+    settingsUi.deviceNameComboBox->clear();
+    if (dc <= 0) {
+        settingsUi.deviceNameComboBox->setEnabled(false);
+	deviceNumber = 0;
+    } else {
+	if (deviceNumber >= dc)
+	    deviceNumber = 0;
+        settingsUi.deviceNameComboBox->setEnabled(true);
+        for (int i = 0; i < dc; i++) {
+            settingsUi.deviceNameComboBox->addItem(inputDevice->deviceName(i));
+            if (i == deviceNumber)
+                settingsUi.deviceNameComboBox->setCurrentIndex(i);
+        }
+    }
+}
+
+void RadioInterface::setDeviceName(int d) {
+    log(LOG_UI, LOG_MIN, "device name %i", d);
+    if (d == deviceNumber)
+	return;
+
+    if (playing) {
+	if (isFM)
+	    stopFM();
+	else
+	    stopDAB();
+    }
+
+    delete DABprocessor;
+    delete FMprocessor;
+
+    deviceNumber = d;
+    inputDevice->setDevice(d);
+    makeDABprocessor();
+    makeFMprocessor();
+    if (!isFM)
+	startDAB(channelSelector->currentText());
 }
 
 void RadioInterface::setAgcControl(int gain) {

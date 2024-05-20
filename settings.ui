@@ -37,7 +37,7 @@
     <attribute name="title">
      <string>Presets</string>
     </attribute>
-    <widget class="ListWidget" name="presetList">
+    <widget class="ListWidget" name="presetList" native="true">
      <property name="geometry">
       <rect>
        <x>10</x>
@@ -958,6 +958,40 @@
       <string>AGC</string>
      </property>
     </widget>
+    <widget class="QLabel" name="deviceNameLabel">
+     <property name="geometry">
+      <rect>
+       <x>250</x>
+       <y>10</y>
+       <width>100</width>
+       <height>40</height>
+      </rect>
+     </property>
+     <property name="font">
+      <font>
+       <pointsize>11</pointsize>
+      </font>
+     </property>
+     <property name="layoutDirection">
+      <enum>Qt::LeftToRight</enum>
+     </property>
+     <property name="text">
+      <string>Device Name</string>
+     </property>
+    </widget>
+    <widget class="QComboBox" name="deviceNameComboBox">
+     <property name="geometry">
+      <rect>
+       <x>370</x>
+       <y>10</y>
+       <width>150</width>
+       <height>40</height>
+      </rect>
+     </property>
+     <property name="layoutDirection">
+      <enum>Qt::LeftToRight</enum>
+     </property>
+    </widget>
    </widget>
   </widget>
   <widget class="QPushButton" name="closeButton">
@@ -974,6 +1008,13 @@
    </property>
   </widget>
  </widget>
+ <customwidgets>
+  <customwidget>
+   <class>ListWidget</class>
+   <extends>QWidget</extends>
+   <header>listwidget.h</header>
+  </customwidget>
+ </customwidgets>
  <resources/>
  <connections/>
 </ui>

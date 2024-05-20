@@ -197,6 +197,7 @@ RadioInterface::RadioInterface (QSettings *Si, QWidget	 *parent):
     lastPreset = settings->value(GEN_LAST_PRESET, 1).toInt();
     skipPresetMode = settings->value(GEN_SKIP_PRESET_MODE, true).toBool();
 #endif
+    deviceType = settings->value(GEN_DEVICE_TYPE, "").toString();
 
     findDevices();
     DABband.setupChannels(channelSelector, BAND_III);
@@ -387,6 +388,7 @@ void RadioInterface::terminateProcess() {
     settings->setValue(GEN_DAB_MODE, isSlides? GEN_DAB_SLIDES: GEN_DAB_STATIONS);
     settings->setValue(GEN_VOLUME, int(volumeKnob->value()));
     settings->setValue(GEN_SQUELCH, int(squelchKnob->value()));
+    settings->setValue(GEN_DEVICE_TYPE, deviceType);
 #ifdef HAVE_MPRIS
     settings->setValue(GEN_LAST_PRESET, int(lastPreset));
     settings->setValue(GEN_SKIP_PRESET_MODE, bool(skipPresetMode));
@@ -423,7 +425,7 @@ void RadioInterface::findDevices() {
     bool foundV3 = false;
     try {
 	    discoveredDevice.device = new sdrplayHandler_v3();
-	    discoveredDevice.deviceName = "Sdrplay V3";
+	    discoveredDevice.deviceType = "Sdrplay V3";
 	    discoveredDevice.controls = AGC|IF_GAIN|LNA_GAIN;
 	    deviceList.push_back(discoveredDevice);
 	    foundV3 = true;
@@ -437,7 +439,7 @@ void RadioInterface::findDevices() {
 #endif
 	try {
 	        discoveredDevice.device = new sdrplayHandler();
-	        discoveredDevice.deviceName = "Sdrplay";
+	        discoveredDevice.deviceType = "Sdrplay";
 	        discoveredDevice.controls = AGC|IF_GAIN|LNA_GAIN;
 	        deviceList.push_back(discoveredDevice);
 	} catch (int e) {}
@@ -446,7 +448,7 @@ void RadioInterface::findDevices() {
 // no LNA
     try {
 	    discoveredDevice.device = new rtlsdrHandler();
-	    discoveredDevice.deviceName = "RtlSdr";
+	    discoveredDevice.deviceType = "RtlSdr";
 	    discoveredDevice.controls = AGC|IF_GAIN;
 	    deviceList.push_back(discoveredDevice);
     } catch (int e) {}
@@ -455,7 +457,7 @@ void RadioInterface::findDevices() {
 // no LNA
     try {
 	    discoveredDevice.device = new airspyHandler();
-	    discoveredDevice.deviceName = "AirSpy";
+	    discoveredDevice.deviceType = "AirSpy";
 	    discoveredDevice.controls = AGC|IF_GAIN;
 	    deviceList.push_back(discoveredDevice);
     } catch (int e) {}
@@ -463,7 +465,7 @@ void RadioInterface::findDevices() {
 #ifdef HAVE_LIME
     try {
 	    discoveredDevice.device = new limeHandler();
-	    discoveredDevice.deviceName = "Lime";
+	    discoveredDevice.deviceType = "Lime";
 	    discoveredDevice.controls = AGC|IF_GAIN|LNA_GAIN;
 	    deviceList.push_back(discoveredDevice);
     } catch (int e) {}
@@ -472,7 +474,7 @@ void RadioInterface::findDevices() {
 // no LNA
     try {
 	    discoveredDevice.device = new plutoHandler();
-	    discoveredDevice.deviceName = "Pluto";
+	    discoveredDevice.deviceType = "Pluto";
 	    discoveredDevice.controls = AGC|IF_GAIN;
 	    deviceList.push_back(discoveredDevice);
     } catch (int e) {}
@@ -481,18 +483,30 @@ void RadioInterface::findDevices() {
 // no AGC
     try {
 	    discoveredDevice.device = new hackrfHandler();
-	    discoveredDevice.deviceName = "HackRF";
+	    discoveredDevice.deviceType = "HackRF";
 	    discoveredDevice.controls =IF_GAIN|LNA_GAIN;
 	    deviceList.push_back(discoveredDevice);
     } catch (int e) {}
 #endif
-    if (deviceList.size() == 0)
+    if (deviceList.size() == 0) {
 	inputDevice = nullptr;
-    else {
+        deviceType = "";
+    } else {
+	QString saveType = deviceType;
+
 	inputDevice = deviceList[0].device;
-	deviceName = deviceList[0].deviceName;
 	deviceUiControls = deviceList[0].controls;
-	settings->beginGroup(deviceName);
+	deviceType = deviceList[0].deviceType;
+	if (QString::compare(saveType, ""))
+	    for (uint i = 0; i < deviceList.size(); ++i)
+		if (!QString::compare(deviceList[i].deviceType, saveType)) {
+		    inputDevice = deviceList[i].device;
+	            deviceUiControls = deviceList[i].controls;
+	            deviceType = deviceList[i].deviceType;
+		    break;
+		}
+	
+	settings->beginGroup(deviceType);
 	if (deviceUiControls & AGC) {
 		agc = (settings->value(DEV_AGC, DEV_DEF_AGC).toInt() > 0);
 		inputDevice->setAgcControl(agc);
@@ -505,7 +519,12 @@ void RadioInterface::findDevices() {
 		lnaGain = settings->value(DEV_LNA_GAIN, DEV_DEF_LNA_GAIN).toInt();
 		inputDevice->setLnaGain(lnaGain);
 	}
+	deviceNumber = settings->value(DEV_NUMBER, 0).toInt();
 	settings->endGroup();
+	int dc = inputDevice->deviceCount();
+	if (dc <= 0 || deviceNumber >= dc)
+	    deviceNumber = 0;
+	inputDevice->setDevice(deviceNumber);
     }
 }
 

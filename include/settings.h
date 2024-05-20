@@ -44,6 +44,7 @@
 #define GEN_SERVICE_NAME	"serviceName"
 #define GEN_FM_FREQUENCY	"FMfrequency"
 #define GEN_LAST_PRESET		"lastPreset"
+#define GEN_DEVICE_TYPE		"deviceType"
 #define GEN_SKIP_PRESET_MODE	"skipPresetMode"
 
 #define GEN_DEF_VOLUME		"0"
@@ -118,6 +119,7 @@
 #define PRESETS_NAME		"preset"
 
 // devices
+#define DEV_NUMBER		"deviceNumber"
 #define DEV_AGC			"agc"
 #define DEV_IF_GAIN		"ifGain"
 #define DEV_LNA_GAIN		"lnaGain"

@@ -69,7 +69,7 @@ enum deviceControls {
 
 class deviceDescriptor {
 public:
-    QString deviceName;
+    QString deviceType;
     deviceHandler *device;
     int controls;
 };
@@ -139,7 +139,8 @@ private:
     deviceHandler *inputDevice;
     SNDFILE *recordingFile;
     int deviceUiControls;
-    QString deviceName;
+    QString deviceType;
+    int deviceNumber;
     int ifGain;
     int lnaGain;
     bool agc;
@@ -273,6 +274,7 @@ private slots:
     void setFMaudioGain(int);
 
     void setDevice(int);
+    void setDeviceName(int);
     void setAgcControl(int);
     void setIfGain(int);
     void setLnaGain(int);
