@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.12)
 cmake_policy(SET CMP0048 NEW)
-project(guglielmo VERSION 0.5)
+project(guglielmo VERSION 0.6)
 set (BINARY_TARGET ${PROJECT_NAME})
 set (orgName SQSL)
 set (orgDomain sqsl.org)
