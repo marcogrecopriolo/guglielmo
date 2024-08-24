@@ -216,10 +216,11 @@ void RadioInterface::handleSettingsAction() {
 		    settingsUi.deviceComboBox->setCurrentIndex(settingsUi.deviceComboBox->count()-1);
 	}
 
+	int dc;
+
 	// show the end of the device name
 	settingsUi.deviceNameComboBox->view()->setTextElideMode(Qt::ElideLeft);
-	int dc = inputDevice->deviceCount();
-	if (dc == 0) 
+	if (inputDevice == NULL || (dc = inputDevice->deviceCount()) == 0) 
 	     settingsUi.deviceNameComboBox->setEnabled(false);
 	else 
 	    for (int i = 0; i < dc; i++) {
