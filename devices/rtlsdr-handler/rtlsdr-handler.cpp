@@ -300,6 +300,7 @@ void	rtlsdrHandler::setIfGain (int gain) {
 //
 void	rtlsdrHandler::setAgcControl	(int v) {
 	agcControl = (v != 0);
+	log (DEV_RTLSDR, LOG_MIN, "agc will be set to %d", v);
 	rtlsdr_set_agc_mode (device, v);
 	rtlsdr_set_tuner_gain (device,
 	             gains [(int)(ifGain * gainsCount / 100)]);

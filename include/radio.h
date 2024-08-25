@@ -143,7 +143,7 @@ private:
     int deviceNumber;
     int ifGain;
     int lnaGain;
-    bool agc;
+    int agc;
     bool isFM;
     bool isSlides;
     bool playing;

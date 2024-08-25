@@ -41,7 +41,7 @@ lms_info_str_t limedevices [10];
         const char *libraryString = "LimeSuite.dll";
         Handle          = LoadLibraryA (libraryString);
 #else
-        const char *libraryString = "libLimeSuite" "LIBEXT";
+        const char *libraryString = "libLimeSuite" LIBEXT;
         Handle          = dlopen (libraryString, RTLD_NOW);
 #endif
 

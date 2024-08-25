@@ -508,16 +508,16 @@ void RadioInterface::findDevices() {
 	
 	settings->beginGroup(deviceType);
 	if (deviceUiControls & AGC) {
-		agc = (settings->value(DEV_AGC, DEV_DEF_AGC).toInt() > 0);
-		inputDevice->setAgcControl(agc);
+	    agc = (settings->value(DEV_AGC, DEV_DEF_AGC).toInt() == 1);
+	    inputDevice->setAgcControl(agc);
 	}
 	if (deviceUiControls & IF_GAIN) {
-		ifGain = settings->value(DEV_IF_GAIN, DEV_DEF_IF_GAIN).toInt();
-		inputDevice->setIfGain(ifGain);
+	    ifGain = settings->value(DEV_IF_GAIN, DEV_DEF_IF_GAIN).toInt();
+	    inputDevice->setIfGain(ifGain);
 	}
 	if (deviceUiControls & LNA_GAIN) {
-		lnaGain = settings->value(DEV_LNA_GAIN, DEV_DEF_LNA_GAIN).toInt();
-		inputDevice->setLnaGain(lnaGain);
+	    lnaGain = settings->value(DEV_LNA_GAIN, DEV_DEF_LNA_GAIN).toInt();
+	    inputDevice->setLnaGain(lnaGain);
 	}
 	deviceNumber = settings->value(DEV_NUMBER, 0).toInt();
 	settings->endGroup();

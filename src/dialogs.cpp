@@ -211,9 +211,9 @@ void RadioInterface::handleSettingsAction() {
 
 	// Device tab
 	for (const auto dev: deviceList) {
-		settingsUi.deviceComboBox->addItem(dev.deviceType);
-		if (inputDevice == dev.device)
-		    settingsUi.deviceComboBox->setCurrentIndex(settingsUi.deviceComboBox->count()-1);
+	    settingsUi.deviceComboBox->addItem(dev.deviceType);
+	    if (inputDevice == dev.device)
+		settingsUi.deviceComboBox->setCurrentIndex(settingsUi.deviceComboBox->count()-1);
 	}
 
 	int dc;
@@ -232,7 +232,7 @@ void RadioInterface::handleSettingsAction() {
 		this, SLOT(setDevice(int)));
 	settingsDialog->connect(settingsUi.deviceNameComboBox, SIGNAL(activated(int)),
 		this, SLOT(setDeviceName(int)));
-	settingsDialog->connect(settingsUi.agcCheckBox, SIGNAL(stateChanged(int)),
+	settingsDialog->connect(settingsUi.agcComboBox, SIGNAL(activated(int)),
        		this, SLOT(setAgcControl(int)));
 	settingsDialog->connect(settingsUi.gainSpinBox, SIGNAL(valueChanged(int)),
        		this, SLOT(setIfGain(int)));
@@ -240,9 +240,11 @@ void RadioInterface::handleSettingsAction() {
 		this, SLOT(setLnaGain(int)));
 	if (inputDevice != nullptr) {
 	    if (deviceUiControls & AGC) {
-		settingsUi.agcCheckBox->setChecked(agc);
-	    } else
-		settingsUi.agcCheckBox->setEnabled(false);
+		settingsUi.agcComboBox->setCurrentIndex(agc);
+	    } else {
+		settingsUi.agcComboBox->setCurrentIndex(0);
+		settingsUi.agcComboBox->setEnabled(false);
+            }
 	    if (deviceUiControls & IF_GAIN) {
 		settingsUi.gainSpinBox->setValue(ifGain);
 	    } else
@@ -252,7 +254,8 @@ void RadioInterface::handleSettingsAction() {
 	    } else
 		settingsUi.lnaSpinBox->setEnabled(false);
 	} else {
-	    settingsUi.agcCheckBox->setEnabled(false);
+	    settingsUi.agcComboBox->setCurrentIndex(0);
+	    settingsUi.agcComboBox->setEnabled(false);
 	    settingsUi.gainSpinBox->setEnabled(false);
 	    settingsUi.lnaSpinBox->setEnabled(false);
 	}
@@ -333,8 +336,8 @@ void RadioInterface::settingsClose(void) {
 
     // Device tab
     settings->beginGroup(deviceType);
-    if (settingsUi.agcCheckBox->isEnabled())
-	settings->setValue(DEV_AGC, settingsUi.agcCheckBox->isChecked()? "1": "0");
+    if (settingsUi.agcComboBox->isEnabled())
+	settings->setValue(DEV_AGC, agc);
     if (settingsUi.gainSpinBox->isEnabled())
 	settings->setValue(DEV_IF_GAIN, settingsUi.gainSpinBox->value());
     if (settingsUi.lnaSpinBox->isEnabled())
@@ -746,10 +749,10 @@ void RadioInterface::setDevice(int d) {
 	return;
 
     settings->beginGroup(deviceType);
-    if (settingsUi.agcCheckBox->isEnabled()) {
-	settings->setValue(DEV_AGC, settingsUi.agcCheckBox->isChecked()? "1": "0");
+    if (settingsUi.agcComboBox->isEnabled()) {
+	settings->setValue(DEV_AGC, agc);
     } else
-	settingsUi.agcCheckBox->setEnabled(true);
+	settingsUi.agcComboBox->setEnabled(true);
     if (settingsUi.gainSpinBox->isEnabled()) {
 	settings->setValue(DEV_IF_GAIN, settingsUi.gainSpinBox->value());
     } else
@@ -780,11 +783,13 @@ void RadioInterface::setDevice(int d) {
     // do it all again for the new device
     settings->beginGroup(deviceType);
     if (deviceUiControls & AGC) {
-	agc = (settings->value(DEV_AGC, DEV_DEF_AGC).toInt() > 0);
-	inputDevice->setAgcControl(agc);
-	settingsUi.agcCheckBox->setChecked(agc);
-    } else
-	settingsUi.agcCheckBox->setEnabled(false);
+	agc = settings->value(DEV_AGC, DEV_DEF_AGC).toInt();
+	inputDevice->setAgcControl(agc == 1);
+	settingsUi.agcComboBox->setCurrentIndex(agc);
+    } else {
+	settingsUi.agcComboBox->setCurrentIndex(0);
+	settingsUi.agcComboBox->setEnabled(false);
+    }
     if (deviceUiControls & IF_GAIN) {
 	ifGain = settings->value(DEV_IF_GAIN, DEV_DEF_IF_GAIN).toInt();
 	inputDevice->setIfGain(ifGain);
@@ -843,7 +848,7 @@ void RadioInterface::setDeviceName(int d) {
 void RadioInterface::setAgcControl(int gain) {
     log(LOG_UI, LOG_MIN, "AGC %i", gain);
     if (inputDevice != NULL)
-	inputDevice->setAgcControl(gain);
+	inputDevice->setAgcControl(gain==1);
 }
 
 void RadioInterface::setIfGain(int gain) {
