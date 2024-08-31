@@ -34,6 +34,7 @@
 #include	"rtl-sdr.h"
 #include	"logging.h"
 
+#define STRBUFLEN 256
 #define DEV_RTLSDR LOG_DEV
 #if IS_WINDOWS
 #define	GETPROCADDRESS	GetProcAddress
@@ -230,6 +231,21 @@ QString rtlsdrHandler::deviceName       (int32_t devNo) {
 	return this -> rtlsdr_get_device_name(devNo);
 }
 
+void rtlsdrHandler::deviceModel       (int32_t devNo, char *buf, int32_t len) {
+	char manu[STRBUFLEN], prod[STRBUFLEN];
+
+	*buf = 0;
+	memset(&manu, 0, STRBUFLEN);
+	memset(&prod, 0, STRBUFLEN);
+	if (devNo < 0 || devNo > (int32_t) this -> rtlsdr_get_device_count ())
+	    return;
+	if (rtlsdr_get_device_usb_strings(devNo, manu, prod, NULL) == 0) {
+	    strncat(buf, manu, len);
+	    strncat(buf, " ", len - strlen(buf));
+	    strncat(buf, prod, len - strlen(buf));
+	}
+}
+
 bool    rtlsdrHandler::setDevice        (int32_t devNo) {
 	if (open) {
 	    log (DEV_RTLSDR, LOG_MIN, "stopping old device");
@@ -332,7 +348,7 @@ float convTable [] = {
 //	The brave old getSamples. For the dab stick, we get
 //	size samples: still in I/Q pairs, but we have to convert the data from
 //	uint8_t to DSPCOMPLEX *
-int32_t	rtlsdrHandler::getSamples (std::complex<float> *V, int32_t size) { 
+int32_t	rtlsdrHandler::getSamples (std::complex<float> *V, int32_t size, int32_t *gainChange) { 
 int32_t	amount, i;
 uint8_t	*tempBuffer = (uint8_t *)alloca (2 * size * sizeof (uint8_t));
 //
@@ -341,6 +357,7 @@ uint8_t	*tempBuffer = (uint8_t *)alloca (2 * size * sizeof (uint8_t));
 	    V [i] = std::complex<float>
 	                    (convTable [tempBuffer [2 * i]],
 	                     convTable [tempBuffer [2 * i + 1]]);;
+	*gainChange = 0;
 	return amount / 2;
 }
 
@@ -473,6 +490,13 @@ bool	rtlsdrHandler::load_rtlFunctions (void) {
 	                  GETPROCADDRESS (Handle, "rtlsdr_get_device_name");
 	if (rtlsdr_get_device_name == NULL) {
 	   log (DEV_RTLSDR, LOG_MIN, "Could not find rtlsdr_get_device_name");
+	   return false;
+	}
+
+	rtlsdr_get_device_usb_strings = (pfnrtlsdr_get_device_usb_strings)
+	                  GETPROCADDRESS (Handle, "rtlsdr_get_device_usb_strings");
+	if (rtlsdr_get_device_name == NULL) {
+	   log (DEV_RTLSDR, LOG_MIN, "Could not find rtlsdr_get_device_usb_strings");
 	   return false;
 	}
 

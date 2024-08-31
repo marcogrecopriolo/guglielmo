@@ -192,13 +192,14 @@ void	limeHandler::stopReader() {
 	(void)LMS_DestroyStream	(theDevice, &stream);
 }
 
-int	limeHandler::getSamples	(std::complex<float> *V, int32_t size) {
+int	limeHandler::getSamples	(std::complex<float> *V, int32_t size, int32_t *gainChange) {
 std::complex<int16_t> temp [size];
 int i;
         int amount      = _I_Buffer. getDataFromBuffer (temp, size);
         for (i = 0; i < amount; i ++)
            V [i] = std::complex<float> (real (temp [i]) / 2048.0,
                                         imag (temp [i]) / 2048.0);
+	*gainChange = 0;
         return amount;
 }
 

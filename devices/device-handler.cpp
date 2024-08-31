@@ -40,6 +40,9 @@ QString	deviceHandler::deviceName	(int32_t) {
 	return "";
 }
 
+void	deviceHandler::deviceModel	(int32_t, char *, int32_t) {
+}
+
 bool	deviceHandler::setDevice	(int32_t) {
 	return true;
 }
@@ -52,9 +55,10 @@ void	deviceHandler::stopReader	(void) {
 }
 
 int32_t	deviceHandler::getSamples	(std::complex<float> *v,
-	                                         int32_t amount) {
+	                                         int32_t amount,
+						 int32_t *gainChange) {
 	(void)v; 
-	(void)amount; 
+        *gainChange = 0;
 	return amount;
 }
 

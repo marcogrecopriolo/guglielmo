@@ -64,7 +64,14 @@ public:
 enum deviceControls {
     AGC =	0x01,
     IF_GAIN =	0x02,
-    LNA_GAIN =	0x04
+    LNA_GAIN =	0x04,
+    SW_AGC =	0x08
+};
+
+enum agcMode {
+    AGC_OFF =	0,
+    AGC_ON =	1,
+    AGC_SW =	2
 };
 
 class deviceDescriptor {
@@ -79,6 +86,7 @@ Q_OBJECT
 public:
     RadioInterface(QSettings *, QWidget	*parent = nullptr);
     ~RadioInterface();
+    void processGain(int32_t gainChange);
 
 private:
 

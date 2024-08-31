@@ -81,7 +81,8 @@ public:
 	bool		restartReader		(int32_t);
 	void		stopReader		(void);
 	int32_t		getSamples		(std::complex<float> *v,
-	                                                 int32_t size);
+	                                                 int32_t size,
+							 int32_t *gainChange);
 	int32_t		Samples			(void);
 	void		resetBuffer		(void);
 	int16_t		bitDepth		(void);

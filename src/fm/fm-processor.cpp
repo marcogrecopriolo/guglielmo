@@ -80,8 +80,6 @@ fmProcessor::fmProcessor(deviceHandler *device, RadioInterface *radioInterface, 
     this->threshold = threshold;
     rdsMode = rdsDecoder::NO_RDS;
     rdsDemod = FM_RDS_AUTO;
-    Lgain = DEF_SIGNAL_GAIN;
-    Rgain = DEF_SIGNAL_GAIN;
 
     fastTrigTabs = new trigTabs(fmRate);
     signalFft = new common_fft(SIGNAL_SIZE);
@@ -123,6 +121,7 @@ fmProcessor::fmProcessor(deviceHandler *device, RadioInterface *radioInterface, 
     fmMode = FM_STEREO;
     leftChannel = 0.5;
     rightChannel = 0.5;
+    signalGain = DEF_SIGNAL_GAIN;
     baseAudioGain = DEF_AUDIO_GAIN;
     squelchValue = 100;
     audioDecimator = new newConverter(fmRate, workingRate, workingRate/200);
@@ -228,9 +227,8 @@ void fmProcessor::setDeemphasis(int16_t v) {
     }
 }
 
-void fmProcessor::setSignalGain(int16_t l, int16_t r) {
-    Lgain = l;
-    Rgain = r;
+void fmProcessor::setSignalGain(int16_t g) {
+    signalGain = g;
 }
 
 void fmProcessor::startScan(void) {
@@ -380,10 +378,10 @@ void fmProcessor::run(void) {
 	}
 
 	// collect samples and process
-	int32_t amount = device -> getSamples (dataBuffer, BUFFER_SIZE);
+	int32_t gainChange, amount = device -> getSamples(dataBuffer, BUFFER_SIZE, &gainChange);
+	radioInterface -> processGain(gainChange);
 	for (int i = 0; i < amount; i ++) {
-	    DSPCOMPLEX v = DSPCOMPLEX(real(dataBuffer[i])*Lgain,
-	                      imag(dataBuffer[i])*Rgain);
+	    DSPCOMPLEX v = cmul(dataBuffer[i], signalGain);
 
 	    // decimate if necessary
 	    if ((decimatingScale > 1) && !fmBandFilter->Pass(v, &v))
@@ -434,7 +432,7 @@ void fmProcessor::run(void) {
 		audioGain = (audioGainAverage+tmpGain)/audioGainCount;
 		audioGainAverage = audioGain;
 		peakLevelCount = 0;
-		peakLevel = -100;
+		peakLevel = -DEF_SIGNAL_GAIN;
 	    }
 
 	    // check pilot for rds phase
@@ -455,7 +453,7 @@ void fmProcessor::run(void) {
 		    } else if (snrCount == 0) {
 			DSPFLOAT avgPilotSnr = totPilotSnr / PILOT_SAMPLES;
 			noPilot = (avgPilotSnr < PILOT_MIN_THRESHOLD);
-			log(LOG_FM, LOG_MIN, "pilot %f usePilot %i", avgPilotSnr, !noPilot);
+			log(LOG_FM, LOG_MIN, "pilot %f snr  %f usePilot %i", pilotDb, avgPilotSnr, !noPilot);
 		    }
 		}
 	    }
@@ -510,7 +508,7 @@ void fmProcessor::run(void) {
 		DSPFLOAT rdsData;
 
 		// if there's no pilot we band pass the RDS signal
-		// beatify with a Hilbert filter, PLL and low pass
+		// beautify with a Hilbert filter, PLL and low pass
 		if (noPilot) {
 		    DSPCOMPLEX rdsBase = rdsBandFilter->Pass(DSPCOMPLEX(demod, demod));
 		    rdsBase = rdsHilbertFilter->Pass(rdsBase);
@@ -568,6 +566,7 @@ void fmProcessor::run(void) {
 	        showStrength (2*(get_db(peakLevel, 128)-get_db(0, 128)));
 		showSoundMode(stereoCount > 0);
 		stereoCount = 0;
+		log(LOG_FM, LOG_CHATTY, "signal strength %f audio gain %f", peakLevel, audioGain);
 	    }
 	}
     }

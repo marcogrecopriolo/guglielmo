@@ -57,6 +57,7 @@ typedef int (*  pfnrtlsdr_set_direct_sampling) (rtlsdr_dev_t *, int);
 typedef uint32_t (*  pfnrtlsdr_get_device_count) (void);
 typedef	int (* pfnrtlsdr_set_freq_correction)(rtlsdr_dev_t *, int);
 typedef	char *(* pfnrtlsdr_get_device_name)(int);
+typedef	char *(* pfnrtlsdr_get_device_usb_strings)(int, char *, char *, char *);
 }
 //	This class is a simple wrapper around the
 //	rtlsdr library that is read in  as dll (or .so file in linux)
@@ -69,10 +70,13 @@ public:
 //	interface to the reader
 	int32_t		deviceCount	(void);
 	QString		deviceName	(int32_t devNo);
+	void		deviceModel	(int32_t devNo, char *buf, int32_t len);
 	bool		setDevice	(int32_t devNo);
 	bool		restartReader	(int32_t frequency);
 	void		stopReader	(void);
-	int32_t		getSamples	(std::complex<float> *, int32_t);
+	int32_t		getSamples	(std::complex<float> *,
+						int32_t,
+						int32_t *gainChange);
 	int32_t		Samples		(void);
 	void		resetBuffer	(void);
 	int16_t		bitDepth	(void);
@@ -122,6 +126,7 @@ private:
 	pfnrtlsdr_get_device_count rtlsdr_get_device_count;
 	pfnrtlsdr_set_freq_correction rtlsdr_set_freq_correction;
 	pfnrtlsdr_get_device_name rtlsdr_get_device_name;
+	pfnrtlsdr_get_device_usb_strings rtlsdr_get_device_usb_strings;
 /*
 signals:
 	void		new_gainValue		(int);

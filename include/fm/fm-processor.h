@@ -76,7 +76,7 @@ public:
     void setAudioBandwidth(int32_t);
     void setBandwidth(int32_t);
     void setBandFilterDegree(int32_t);
-    void setSignalGain(int16_t, int16_t);
+    void setSignalGain(int16_t);
     void setFMRDSSelector(rdsDecoder::RdsMode);
     void setFMRDSDemod(rdsDemodMode);
     void resetRDS(void);
@@ -100,8 +100,7 @@ private:
     bool scanning;
     bool running;
 
-    int16_t Lgain;
-    int16_t Rgain;
+    int16_t signalGain;
 
     trigTabs *fastTrigTabs;
     common_fft *signalFft;

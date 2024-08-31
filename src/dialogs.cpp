@@ -38,6 +38,7 @@
 #include "ui_about.h"
 #include "listwidget.h"
 #include "logging.h"
+#define STRBUFLEN 256
 
 // yes / no confirmation
 bool yesNo(QWidget *parent) {
@@ -219,15 +220,20 @@ void RadioInterface::handleSettingsAction() {
 	int dc;
 
 	// show the end of the device name
-	settingsUi.deviceNameComboBox->view()->setTextElideMode(Qt::ElideLeft);
 	if (inputDevice == NULL || (dc = inputDevice->deviceCount()) == 0) 
 	     settingsUi.deviceNameComboBox->setEnabled(false);
 	else 
 	    for (int i = 0; i < dc; i++) {
+		char buf[STRBUFLEN], *model = (char *) &buf;
+
 	        settingsUi.deviceNameComboBox->addItem(inputDevice->deviceName(i));
+	        inputDevice->deviceModel(i, model, STRBUFLEN);
+		if (strlen(model) > 0)
+	            settingsUi.deviceNameComboBox->setItemData(i, model, Qt::ToolTipRole);
 		if (i == deviceNumber)
 		    settingsUi.deviceNameComboBox->setCurrentIndex(i);
 	    }
+	settingsUi.deviceNameComboBox->view()->setTextElideMode(Qt::ElideLeft);
 	settingsDialog->connect(settingsUi.deviceComboBox, SIGNAL(activated(int)),
 		this, SLOT(setDevice(int)));
 	settingsDialog->connect(settingsUi.deviceNameComboBox, SIGNAL(activated(int)),
@@ -239,12 +245,15 @@ void RadioInterface::handleSettingsAction() {
 	settingsDialog->connect(settingsUi.lnaSpinBox, SIGNAL(valueChanged(int)),
 		this, SLOT(setLnaGain(int)));
 	if (inputDevice != nullptr) {
-	    if (deviceUiControls & AGC) {
+	    qobject_cast<QStandardItemModel*> (settingsUi.agcComboBox->model())->item(AGC_ON)->setEnabled(deviceUiControls & AGC);
+	    qobject_cast<QStandardItemModel*> (settingsUi.agcComboBox->model())->item(AGC_SW)->setEnabled(deviceUiControls & SW_AGC);
+	    if (qobject_cast<QStandardItemModel*> (settingsUi.agcComboBox->model())->item(agc)->isEnabled()) {
+		inputDevice->setAgcControl(agc == AGC_ON);
 		settingsUi.agcComboBox->setCurrentIndex(agc);
 	    } else {
+		inputDevice->setAgcControl(false);
 		settingsUi.agcComboBox->setCurrentIndex(0);
-		settingsUi.agcComboBox->setEnabled(false);
-            }
+	    }
 	    if (deviceUiControls & IF_GAIN) {
 		settingsUi.gainSpinBox->setValue(ifGain);
 	    } else
@@ -782,13 +791,15 @@ void RadioInterface::setDevice(int d) {
 
     // do it all again for the new device
     settings->beginGroup(deviceType);
-    if (deviceUiControls & AGC) {
-	agc = settings->value(DEV_AGC, DEV_DEF_AGC).toInt();
-	inputDevice->setAgcControl(agc == 1);
+    agc = settings->value(DEV_AGC, DEV_DEF_AGC).toInt();
+    qobject_cast<QStandardItemModel*> (settingsUi.agcComboBox->model())->item(AGC_ON)->setEnabled(deviceUiControls & AGC);
+    qobject_cast<QStandardItemModel*> (settingsUi.agcComboBox->model())->item(AGC_SW)->setEnabled(deviceUiControls & SW_AGC);
+    if (qobject_cast<QStandardItemModel*> (settingsUi.agcComboBox->model())->item(agc)->isEnabled()) {
+	inputDevice->setAgcControl(agc == AGC_ON);
 	settingsUi.agcComboBox->setCurrentIndex(agc);
     } else {
+	inputDevice->setAgcControl(false);
 	settingsUi.agcComboBox->setCurrentIndex(0);
-	settingsUi.agcComboBox->setEnabled(false);
     }
     if (deviceUiControls & IF_GAIN) {
 	ifGain = settings->value(DEV_IF_GAIN, DEV_DEF_IF_GAIN).toInt();
@@ -815,7 +826,12 @@ void RadioInterface::setDevice(int d) {
 	    deviceNumber = 0;
         settingsUi.deviceNameComboBox->setEnabled(true);
         for (int i = 0; i < dc; i++) {
+	    char buf[STRBUFLEN], *model = (char *) &buf;
+
             settingsUi.deviceNameComboBox->addItem(inputDevice->deviceName(i));
+	    inputDevice->deviceModel(i, model, STRBUFLEN);
+	    if (strlen(model) > 0)
+	        settingsUi.deviceNameComboBox->setItemData(i, model, Qt::ToolTipRole);
             if (i == deviceNumber)
                 settingsUi.deviceNameComboBox->setCurrentIndex(i);
         }
@@ -848,7 +864,7 @@ void RadioInterface::setDeviceName(int d) {
 void RadioInterface::setAgcControl(int gain) {
     log(LOG_UI, LOG_MIN, "AGC %i", gain);
     if (inputDevice != NULL)
-	inputDevice->setAgcControl(gain==1);
+	inputDevice->setAgcControl(gain==AGC_ON);
 }
 
 void RadioInterface::setIfGain(int gain) {

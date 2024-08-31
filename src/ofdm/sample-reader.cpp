@@ -41,6 +41,7 @@ std::complex<float> oscillatorTable [INPUT_RATE];
 	                           ) {
 int	i;
 	this	-> theRig	= theRig;
+	this    -> myRadioInterface =	mr;
         bufferSize		= 32768;
         this    -> spectrumBuffer       = spectrumBuffer;
         localBuffer. resize (bufferSize);
@@ -92,7 +93,9 @@ std::complex<float> temp;
 	   throw 20;
 //
 //	so here, bufferContent > 0
-	theRig -> getSamples (&temp, 1);
+	int32_t gainChange;
+	theRig -> getSamples (&temp, 1, &gainChange);
+	myRadioInterface -> processGain(gainChange);
 	bufferContent --;
 	if (dumpfilePointer. load() != nullptr) {
 	   dumpBuffer [2 * dumpIndex    ] = real (temp) * dumpScale;
@@ -147,7 +150,9 @@ int32_t		i;
 	   throw 20;
 //
 //	so here, bufferContent >= n
-	n	= theRig -> getSamples (v, n);
+	int32_t gainChange;
+	n	= theRig -> getSamples (v, n, &gainChange);
+	myRadioInterface -> processGain(gainChange);
 	bufferContent -= n;
 	if (dumpfilePointer. load() != nullptr) {
 	   for (i = 0; i < n; i ++) {

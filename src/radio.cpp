@@ -318,6 +318,9 @@ RadioInterface::RadioInterface (QSettings *Si, QWidget	 *parent):
 RadioInterface::~RadioInterface() {
 }
 
+void RadioInterface::processGain(int32_t gain) {
+}
+
 void RadioInterface::makeDABprocessor() {
     if (inputDevice == nullptr)
 	return;
@@ -360,7 +363,7 @@ void RadioInterface::makeFMprocessor() {
     FMprocessor = new fmProcessor(inputDevice, this, inputRate, fmRate,
 				  workingRate, audioRate, FMthreshold);
     FMprocessor->setSink(soundOut);
-    FMprocessor->setFMRDSSelector(rdsDecoder::RDS1);
+    FMprocessor->setFMRDSSelector(rdsDecoder::RDS2);
     FMprocessor->setFMRDSDemod(fmProcessor::FM_RDS_AUTO);
     FMprocessor->setFMMode(true);
     FMprocessor->setBandwidth(FMfilter);
@@ -508,7 +511,7 @@ void RadioInterface::findDevices() {
 	
 	settings->beginGroup(deviceType);
 	if (deviceUiControls & AGC) {
-	    agc = (settings->value(DEV_AGC, DEV_DEF_AGC).toInt() == 1);
+	    agc = (settings->value(DEV_AGC, DEV_DEF_AGC).toInt() == AGC_ON);
 	    inputDevice->setAgcControl(agc);
 	}
 	if (deviceUiControls & IF_GAIN) {
