@@ -86,7 +86,7 @@ Q_OBJECT
 public:
     RadioInterface(QSettings *, QWidget	*parent = nullptr);
     ~RadioInterface();
-    void processGain(agcStats *stats);
+    void processGain(agcStats *stats, int amount);
 
 private:
 
@@ -154,6 +154,8 @@ private:
     int agc;
     int swAgc;
     int swAgcSkip;
+    int swAgcAmount;
+    agcStats stats;
     int maxSignal;
     bool isFM;
     bool isSlides;
@@ -208,6 +210,10 @@ private:
     void mprisLabelAndText(QString, QString);
     void mprisEmptyArt(bool);
 #endif
+
+// SW AGC
+    void resetSwAgc(void);
+    void resetAgcStats(void);
 
 public slots:
     void addToEnsemble(const QString &, uint);

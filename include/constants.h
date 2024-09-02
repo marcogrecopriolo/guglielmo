@@ -84,8 +84,6 @@ typedef	void	*HINSTANCE;
 
 #define AUDIO_SCALE 100
 #define GAIN_SCALE 100
-#define SIGNAL_THRESHOLD 80
-#define SW_AGC_SKIP_COUNT 4
 
 // DAB
 

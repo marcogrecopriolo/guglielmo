@@ -64,6 +64,11 @@
 #define BAD_SERVICE	"cannot run this service"
 #define BAD_PRESET	"this preset is not valid"
 
+// // Some software AGC constants
+#define SIGNAL_THRESHOLD 70
+#define SW_AGC_SKIP_COUNT 8
+#define SW_AGC_BYTES 65536
+
 // most buffer not used locally, but within the DAB processor
 RadioInterface::RadioInterface (QSettings *Si, QWidget	 *parent):
 	QWidget(parent),
@@ -318,27 +323,49 @@ RadioInterface::RadioInterface (QSettings *Si, QWidget	 *parent):
 RadioInterface::~RadioInterface() {
 }
 
-void RadioInterface::processGain(agcStats *stats) {
+void RadioInterface::processGain(agcStats *newStats, int amount) {
     int oldAgc = swAgc;
 
     if (agc != AGC_SW)
 	return;
-    log(LOG_AGC, LOG_CHATTY, "skip %i min %i max %i overflows %i",
-       swAgcSkip, stats->min, stats->max, stats->overflows);
+    if (newStats->min < stats.min)
+	stats.min = newStats->min;
+    if (newStats->max > stats.max)
+	stats.max = newStats->max;
+    stats.overflows += newStats->overflows;
+    swAgcAmount += amount;
+    log(LOG_AGC, LOG_CHATTY, "skip %i amount %i min %i max %i overflows %i",
+       swAgcSkip, swAgcAmount, stats.min, stats.max, stats.overflows);
+    if (swAgcAmount < SW_AGC_BYTES)
+	return;
     if (swAgcSkip > 0) {
 	swAgcSkip--;
 	return;
     }
-    if (stats->overflows > 0 && swAgc > 0)
+    if (stats.overflows > 0 && swAgc > 0)
 	swAgc--;
-    else if (stats->max < maxSignal && swAgc < GAIN_SCALE - 1)
+    else if (stats.max-stats.min < maxSignal && swAgc < GAIN_SCALE - 1)
 	swAgc++;
     if (swAgc != oldAgc) {
 	log(LOG_AGC, LOG_MIN, "switching gain to %i (thres %i min %i max %i overflows %i)",
-			swAgc, maxSignal, stats->min, stats->max, stats->overflows);
+			swAgc, maxSignal, stats.min, stats.max, stats.overflows);
 	inputDevice->setIfGain(swAgc);
 	swAgcSkip = SW_AGC_SKIP_COUNT;
     }
+    resetAgcStats();
+}
+
+void RadioInterface::resetAgcStats() {
+    swAgcAmount = 0;
+    swAgcSkip = SW_AGC_SKIP_COUNT;
+    stats.min = INT_MAX;;
+    stats.max = 0;
+    stats.overflows = 0;
+}
+
+void RadioInterface::resetSwAgc() {
+    swAgc = ifGain;
+    maxSignal = inputDevice? (SIGNAL_THRESHOLD * pow(2, inputDevice->bitDepth())) / 100 - 1: 0;
 }
 
 void RadioInterface::makeDABprocessor() {
@@ -548,12 +575,11 @@ void RadioInterface::findDevices() {
 	if (dc <= 0 || deviceNumber >= dc)
 	    deviceNumber = 0;
 	inputDevice->setDevice(deviceNumber);
-	maxSignal = (SIGNAL_THRESHOLD * pow(2, inputDevice->bitDepth())) / 100 - 1;
     }
 
     // setup software agc
-    swAgc = ifGain;
-    swAgcSkip = 0;
+    resetSwAgc();
+    resetAgcStats();
 }
 
 /**

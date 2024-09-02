@@ -360,8 +360,12 @@ int32_t overflow = 0, minVal = 255, maxVal = 0;
 		    overflow++;
 		if (r < minVal)
 		    minVal = r;
-		else if (r > maxVal)
+		if (r > maxVal)
 		    maxVal = r;
+		if (im < minVal)
+		    minVal = im;
+		if (im > maxVal)
+		    maxVal = im;
 	    V [i] = std::complex<float>(convTable [r], convTable [im]);
 	}
 	stats->overflows = overflow;

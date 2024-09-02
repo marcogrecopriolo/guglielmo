@@ -165,21 +165,21 @@ void RadioInterface::handleSettingsAction() {
 #endif
 
 	// Sound tab
-	settingsDialog->connect(settingsUi.modeComboBox, SIGNAL(activated(int)),
-		this, SLOT(setSoundMode(int)));
-	settingsDialog->connect(settingsUi.outputComboBox, SIGNAL(activated(int)),
-		this, SLOT(setSoundOutput(int)));
-	settingsDialog->connect(settingsUi.latencySpinBox, SIGNAL(valueChanged(int)),
-		this, SLOT(setLatency(int)));
-	settingsUi.latencySpinBox->setValue(latency);
-	settingsUi.modeComboBox->setCurrentIndex(1);
     	if (isQtAudio) {
 	    settingsUi.modeComboBox->setCurrentIndex(0);
 	    settingsUi.alsaWidget->hide();
 	} else {
 	    ((audioSink *) soundOut)->setupChannels(settingsUi.outputComboBox);
 	    settingsUi.outputComboBox->setCurrentIndex(soundChannel);
+	    settingsUi.modeComboBox->setCurrentIndex(1);
 	}
+	settingsUi.latencySpinBox->setValue(latency);
+	settingsDialog->connect(settingsUi.modeComboBox, SIGNAL(activated(int)),
+		this, SLOT(setSoundMode(int)));
+	settingsDialog->connect(settingsUi.outputComboBox, SIGNAL(activated(int)),
+		this, SLOT(setSoundOutput(int)));
+	settingsDialog->connect(settingsUi.latencySpinBox, SIGNAL(valueChanged(int)),
+		this, SLOT(setLatency(int)));
 
 	// FM tab
 	settingsUi.decoderComboBox->setCurrentIndex(FMdecoder);
@@ -234,21 +234,10 @@ void RadioInterface::handleSettingsAction() {
 		    settingsUi.deviceNameComboBox->setCurrentIndex(i);
 	    }
 	settingsUi.deviceNameComboBox->view()->setTextElideMode(Qt::ElideLeft);
-	settingsDialog->connect(settingsUi.deviceComboBox, SIGNAL(activated(int)),
-		this, SLOT(setDevice(int)));
-	settingsDialog->connect(settingsUi.deviceNameComboBox, SIGNAL(activated(int)),
-		this, SLOT(setDeviceName(int)));
-	settingsDialog->connect(settingsUi.agcComboBox, SIGNAL(activated(int)),
-       		this, SLOT(setAgcControl(int)));
-	settingsDialog->connect(settingsUi.gainSpinBox, SIGNAL(valueChanged(int)),
-       		this, SLOT(setIfGain(int)));
-	settingsDialog->connect(settingsUi.lnaSpinBox, SIGNAL(valueChanged(int)),
-		this, SLOT(setLnaGain(int)));
 	if (inputDevice != nullptr) {
 	    qobject_cast<QStandardItemModel*> (settingsUi.agcComboBox->model())->item(AGC_ON)->setEnabled(deviceUiControls & HW_AGC);
 	    qobject_cast<QStandardItemModel*> (settingsUi.agcComboBox->model())->item(AGC_SW)->setEnabled(deviceUiControls & SW_AGC);
 	    if (qobject_cast<QStandardItemModel*> (settingsUi.agcComboBox->model())->item(agc)->isEnabled()) {
-		inputDevice->setAgcControl(agc == AGC_ON);
 		settingsUi.agcComboBox->setCurrentIndex(agc);
 	    } else {
 		inputDevice->setAgcControl(false);
@@ -268,6 +257,16 @@ void RadioInterface::handleSettingsAction() {
 	    settingsUi.gainSpinBox->setEnabled(false);
 	    settingsUi.lnaSpinBox->setEnabled(false);
 	}
+	settingsDialog->connect(settingsUi.deviceComboBox, SIGNAL(activated(int)),
+		this, SLOT(setDevice(int)));
+	settingsDialog->connect(settingsUi.deviceNameComboBox, SIGNAL(activated(int)),
+		this, SLOT(setDeviceName(int)));
+	settingsDialog->connect(settingsUi.agcComboBox, SIGNAL(activated(int)),
+       		this, SLOT(setAgcControl(int)));
+	settingsDialog->connect(settingsUi.gainSpinBox, SIGNAL(valueChanged(int)),
+       		this, SLOT(setIfGain(int)));
+	settingsDialog->connect(settingsUi.lnaSpinBox, SIGNAL(valueChanged(int)),
+		this, SLOT(setLnaGain(int)));
     }
     settingsDialog->setWindowTitle(windowTitle());
     settingsUi.presetList->clear();
@@ -348,9 +347,9 @@ void RadioInterface::settingsClose(void) {
     if (settingsUi.agcComboBox->isEnabled())
 	settings->setValue(DEV_AGC, agc);
     if (settingsUi.gainSpinBox->isEnabled())
-	settings->setValue(DEV_IF_GAIN, settingsUi.gainSpinBox->value());
+	settings->setValue(DEV_IF_GAIN, ifGain);
     if (settingsUi.lnaSpinBox->isEnabled())
-	settings->setValue(DEV_LNA_GAIN, settingsUi.lnaSpinBox->value());
+	settings->setValue(DEV_LNA_GAIN, lnaGain);
     settings->setValue(DEV_NUMBER, deviceNumber);
     settings->endGroup();
 }
@@ -785,7 +784,6 @@ void RadioInterface::setDevice(int d) {
     inputDevice = deviceList[d].device;
     deviceType = deviceList[d].deviceType;
     deviceUiControls = deviceList[d].controls;
-    maxSignal = (SIGNAL_THRESHOLD * pow(2, inputDevice->bitDepth()) / 100) - 1;
     makeDABprocessor();
     makeFMprocessor();
 
@@ -838,8 +836,8 @@ void RadioInterface::setDevice(int d) {
     }
 
     // reset software agc
-    swAgc = ifGain;
-    swAgcSkip = 0;
+    resetSwAgc();
+    resetAgcStats();
 }
 
 void RadioInterface::setDeviceName(int d) {
@@ -874,14 +872,21 @@ void RadioInterface::setAgcControl(int gain) {
     agc = gain;
     if (gain != oldGain) {
 	swAgc = ifGain;
-        swAgcSkip = 0;
+        resetAgcStats();
     }
 }
 
 void RadioInterface::setIfGain(int gain) {
+    int oldGain = ifGain;
+
     log(LOG_UI, LOG_MIN, "IF %i", gain);
     if (inputDevice != NULL)
 	inputDevice->setIfGain(gain);
+    ifGain = gain;
+    if (gain != oldGain) {
+	swAgc = ifGain;
+        resetAgcStats();
+    }
 }
 
 void RadioInterface::setLnaGain(int gain) {
