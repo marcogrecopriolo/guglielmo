@@ -93,9 +93,9 @@ std::complex<float> temp;
 	   throw 20;
 //
 //	so here, bufferContent > 0
-	int32_t gainChange;
-	theRig -> getSamples (&temp, 1, &gainChange);
-	myRadioInterface -> processGain(gainChange);
+	agcStats stats;
+	theRig -> getSamples (&temp, 1, &stats);
+	myRadioInterface -> processGain(&stats);
 	bufferContent --;
 	if (dumpfilePointer. load() != nullptr) {
 	   dumpBuffer [2 * dumpIndex    ] = real (temp) * dumpScale;
@@ -150,9 +150,9 @@ int32_t		i;
 	   throw 20;
 //
 //	so here, bufferContent >= n
-	int32_t gainChange;
-	n	= theRig -> getSamples (v, n, &gainChange);
-	myRadioInterface -> processGain(gainChange);
+	agcStats stats;
+	n	= theRig -> getSamples (v, n, &stats);
+	myRadioInterface -> processGain(&stats);
 	bufferContent -= n;
 	if (dumpfilePointer. load() != nullptr) {
 	   for (i = 0; i < n; i ++) {

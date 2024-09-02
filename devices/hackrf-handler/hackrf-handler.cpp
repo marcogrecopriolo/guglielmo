@@ -198,8 +198,7 @@ int	res;
 //
 //	The brave old getSamples. For the hackrf, we get
 //	size still in I/Q pairs
-int32_t	hackrfHandler::getSamples (std::complex<float> *V, int32_t size, int32_t *gainChange) { 
-	*gainChange = 0;
+int32_t	hackrfHandler::getSamples (std::complex<float> *V, int32_t size, agcStats *stats) { 
 	return _I_Buffer. getDataFromBuffer (V, size);
 }
 

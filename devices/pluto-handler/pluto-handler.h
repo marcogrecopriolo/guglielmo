@@ -48,7 +48,7 @@ public:
 	void		stopReader		();
 	int32_t		getSamples		(std::complex<float> *,
 	                                                          int32_t,
-								  int32_t *gainChange);
+								  agcStats *stats);
 	int32_t		Samples			();
 	void		resetBuffer		();
 	int16_t		bitDepth		();

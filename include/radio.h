@@ -62,7 +62,7 @@ public:
 };
 
 enum deviceControls {
-    AGC =	0x01,
+    HW_AGC =	0x01,
     IF_GAIN =	0x02,
     LNA_GAIN =	0x04,
     SW_AGC =	0x08
@@ -86,7 +86,7 @@ Q_OBJECT
 public:
     RadioInterface(QSettings *, QWidget	*parent = nullptr);
     ~RadioInterface();
-    void processGain(int32_t gainChange);
+    void processGain(agcStats *stats);
 
 private:
 
@@ -152,6 +152,9 @@ private:
     int ifGain;
     int lnaGain;
     int agc;
+    int swAgc;
+    int swAgcSkip;
+    int maxSignal;
     bool isFM;
     bool isSlides;
     bool playing;

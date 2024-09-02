@@ -434,10 +434,9 @@ std::complex<float> localBuf [DAB_RATE / DIVIDER];
 	log (DEV_PLUTO, LOG_MIN, "stopped");
 }
 
-int32_t	plutoHandler::getSamples (std::complex<float> *V, int32_t size, int32_t *gainChange) { 
+int32_t	plutoHandler::getSamples (std::complex<float> *V, int32_t size, agcStats *stats) { 
 	if (!isRunning ())
 	   return 0;
-	*gainChange = 0;
 	return _I_Buffer. getDataFromBuffer (V, size);
 }
 

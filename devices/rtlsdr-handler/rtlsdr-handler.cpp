@@ -348,16 +348,25 @@ float convTable [] = {
 //	The brave old getSamples. For the dab stick, we get
 //	size samples: still in I/Q pairs, but we have to convert the data from
 //	uint8_t to DSPCOMPLEX *
-int32_t	rtlsdrHandler::getSamples (std::complex<float> *V, int32_t size, int32_t *gainChange) { 
+int32_t	rtlsdrHandler::getSamples (std::complex<float> *V, int32_t size, agcStats *stats) { 
 int32_t	amount, i;
 uint8_t	*tempBuffer = (uint8_t *)alloca (2 * size * sizeof (uint8_t));
-//
+int32_t overflow = 0, minVal = 255, maxVal = 0;
+
 	amount = _I_Buffer. getDataFromBuffer (tempBuffer, 2 * size);
-	for (i = 0; i < amount / 2; i ++)
-	    V [i] = std::complex<float>
-	                    (convTable [tempBuffer [2 * i]],
-	                     convTable [tempBuffer [2 * i + 1]]);;
-	*gainChange = 0;
+	for (i = 0; i < amount / 2; i ++) {
+	    int r = tempBuffer [2 * i], im = tempBuffer [2 * i +1];
+                if (r == 0 || r == 255 || im == 0 || im ==255)
+		    overflow++;
+		if (r < minVal)
+		    minVal = r;
+		else if (r > maxVal)
+		    maxVal = r;
+	    V [i] = std::complex<float>(convTable [r], convTable [im]);
+	}
+	stats->overflows = overflow;
+	stats->min = minVal;
+	stats->max = maxVal;
 	return amount / 2;
 }
 

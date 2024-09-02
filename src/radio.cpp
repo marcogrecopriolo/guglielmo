@@ -189,9 +189,9 @@ RadioInterface::RadioInterface (QSettings *Si, QWidget	 *parent):
     lastVolume = settings->value(GEN_VOLUME, GEN_DEF_VOLUME).toInt();
     if (lastVolume < 0)
 	lastVolume = 0;
-    else if (lastVolume > 100)
-	lastVolume = 100;
-    soundOut->setVolume(qreal(lastVolume)/100);
+    else if (lastVolume > AUDIO_SCALE)
+	lastVolume = AUDIO_SCALE;
+    soundOut->setVolume(qreal(lastVolume)/AUDIO_SCALE);
     volumeKnob->setValue(double(lastVolume));
 #ifdef HAVE_MPRIS
     lastPreset = settings->value(GEN_LAST_PRESET, 1).toInt();
@@ -228,11 +228,11 @@ RadioInterface::RadioInterface (QSettings *Si, QWidget	 *parent):
     lastSquelch = settings->value(GEN_SQUELCH, GEN_DEF_SQUELCH).toInt();
     if (lastSquelch < 0)
 	lastSquelch = 0;
-    else if (lastSquelch > 100)
-	lastSquelch = 100;
+    else if (lastSquelch > AUDIO_SCALE)
+	lastSquelch = AUDIO_SCALE;
     squelchKnob->setValue(double(lastSquelch));
     if (FMprocessor != nullptr) {
-	FMprocessor->setSquelchValue(100-int(lastSquelch));
+	FMprocessor->setSquelchValue(AUDIO_SCALE-int(lastSquelch));
     }
 
     playing = false;
@@ -283,7 +283,7 @@ RadioInterface::RadioInterface (QSettings *Si, QWidget	 *parent):
 
 #ifdef HAVE_MPRIS
     player.setCanControl(true);
-    player.setVolume(double(lastVolume) / 100);
+    player.setVolume(double(lastVolume) / AUDIO_SCALE);
     player.setCanQuit(true);
     player.setCanPlay(true);
     player.setCanPause(true);
@@ -318,7 +318,27 @@ RadioInterface::RadioInterface (QSettings *Si, QWidget	 *parent):
 RadioInterface::~RadioInterface() {
 }
 
-void RadioInterface::processGain(int32_t gain) {
+void RadioInterface::processGain(agcStats *stats) {
+    int oldAgc = swAgc;
+
+    if (agc != AGC_SW)
+	return;
+    log(LOG_AGC, LOG_CHATTY, "skip %i min %i max %i overflows %i",
+       swAgcSkip, stats->min, stats->max, stats->overflows);
+    if (swAgcSkip > 0) {
+	swAgcSkip--;
+	return;
+    }
+    if (stats->overflows > 0 && swAgc > 0)
+	swAgc--;
+    else if (stats->max < maxSignal && swAgc < GAIN_SCALE - 1)
+	swAgc++;
+    if (swAgc != oldAgc) {
+	log(LOG_AGC, LOG_MIN, "switching gain to %i (thres %i min %i max %i overflows %i)",
+			swAgc, maxSignal, stats->min, stats->max, stats->overflows);
+	inputDevice->setIfGain(swAgc);
+	swAgcSkip = SW_AGC_SKIP_COUNT;
+    }
 }
 
 void RadioInterface::makeDABprocessor() {
@@ -429,7 +449,7 @@ void RadioInterface::findDevices() {
     try {
 	    discoveredDevice.device = new sdrplayHandler_v3();
 	    discoveredDevice.deviceType = "Sdrplay V3";
-	    discoveredDevice.controls = AGC|IF_GAIN|LNA_GAIN;
+	    discoveredDevice.controls = HW_AGC|IF_GAIN|LNA_GAIN;
 	    deviceList.push_back(discoveredDevice);
 	    foundV3 = true;
     } catch (int e) {}
@@ -443,7 +463,7 @@ void RadioInterface::findDevices() {
 	try {
 	        discoveredDevice.device = new sdrplayHandler();
 	        discoveredDevice.deviceType = "Sdrplay";
-	        discoveredDevice.controls = AGC|IF_GAIN|LNA_GAIN;
+	        discoveredDevice.controls = HW_AGC|IF_GAIN|LNA_GAIN;
 	        deviceList.push_back(discoveredDevice);
 	} catch (int e) {}
 #endif
@@ -452,7 +472,7 @@ void RadioInterface::findDevices() {
     try {
 	    discoveredDevice.device = new rtlsdrHandler();
 	    discoveredDevice.deviceType = "RtlSdr";
-	    discoveredDevice.controls = AGC|IF_GAIN;
+	    discoveredDevice.controls = SW_AGC|HW_AGC|IF_GAIN;
 	    deviceList.push_back(discoveredDevice);
     } catch (int e) {}
 #endif
@@ -461,7 +481,7 @@ void RadioInterface::findDevices() {
     try {
 	    discoveredDevice.device = new airspyHandler();
 	    discoveredDevice.deviceType = "AirSpy";
-	    discoveredDevice.controls = AGC|IF_GAIN;
+	    discoveredDevice.controls = HW_AGC|IF_GAIN;
 	    deviceList.push_back(discoveredDevice);
     } catch (int e) {}
 #endif
@@ -469,7 +489,7 @@ void RadioInterface::findDevices() {
     try {
 	    discoveredDevice.device = new limeHandler();
 	    discoveredDevice.deviceType = "Lime";
-	    discoveredDevice.controls = AGC|IF_GAIN|LNA_GAIN;
+	    discoveredDevice.controls = HW_AGC|IF_GAIN|LNA_GAIN;
 	    deviceList.push_back(discoveredDevice);
     } catch (int e) {}
 #endif
@@ -478,7 +498,7 @@ void RadioInterface::findDevices() {
     try {
 	    discoveredDevice.device = new plutoHandler();
 	    discoveredDevice.deviceType = "Pluto";
-	    discoveredDevice.controls = AGC|IF_GAIN;
+	    discoveredDevice.controls = HW_AGC|IF_GAIN;
 	    deviceList.push_back(discoveredDevice);
     } catch (int e) {}
 #endif
@@ -510,9 +530,9 @@ void RadioInterface::findDevices() {
 		}
 	
 	settings->beginGroup(deviceType);
-	if (deviceUiControls & AGC) {
-	    agc = (settings->value(DEV_AGC, DEV_DEF_AGC).toInt() == AGC_ON);
-	    inputDevice->setAgcControl(agc);
+	if (deviceUiControls & (HW_AGC | SW_AGC)) {
+	    agc = settings->value(DEV_AGC, DEV_DEF_AGC).toInt();
+	    inputDevice->setAgcControl(agc == AGC_ON);
 	}
 	if (deviceUiControls & IF_GAIN) {
 	    ifGain = settings->value(DEV_IF_GAIN, DEV_DEF_IF_GAIN).toInt();
@@ -528,7 +548,12 @@ void RadioInterface::findDevices() {
 	if (dc <= 0 || deviceNumber >= dc)
 	    deviceNumber = 0;
 	inputDevice->setDevice(deviceNumber);
+	maxSignal = (SIGNAL_THRESHOLD * pow(2, inputDevice->bitDepth())) / 100 - 1;
     }
+
+    // setup software agc
+    swAgc = ifGain;
+    swAgcSkip = 0;
 }
 
 /**
@@ -913,7 +938,7 @@ void RadioInterface::closeEvent(QCloseEvent *event) {
 
 void RadioInterface::handleVolume(double vol) {
     log(LOG_UI, LOG_MIN, "volume changed to %f", vol);
-    soundOut->setVolume(qreal(vol)/100);
+    soundOut->setVolume(qreal(vol)/AUDIO_SCALE);
 #ifdef HAVE_MPRIS
     player.setVolume(vol / 100);
 #endif
@@ -921,7 +946,7 @@ void RadioInterface::handleVolume(double vol) {
 
 void RadioInterface::handleSquelch(double val) {
     log(LOG_UI, LOG_MIN, "squelch changed to %f", val);
-    FMprocessor->setSquelchValue(100-int(val));
+    FMprocessor->setSquelchValue(AUDIO_SCALE-int(val));
 }
 
 //	preset selection
@@ -1732,7 +1757,7 @@ void RadioInterface::mprisClose() {
 
 void RadioInterface::mprisVolume(double vol) {
     log(LOG_MPRIS, LOG_MIN, "mpris volume %f", vol);
-    volumeKnob->setValue(vol * 100);
+    volumeKnob->setValue(vol * AUDIO_SCALE);
     soundOut->setVolume(qreal(vol));
 }
 

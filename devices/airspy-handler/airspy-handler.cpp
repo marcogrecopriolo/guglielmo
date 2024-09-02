@@ -384,9 +384,8 @@ int32_t airspyHandler::getRate (void) {
         return inputRate;
 }
 
-int32_t	airspyHandler::getSamples (std::complex<float> *v, int32_t size, int32_t *gainChange) {
+int32_t	airspyHandler::getSamples (std::complex<float> *v, int32_t size, agcStats *stats) {
 
-	*gainChange = 0;
 	return theBuffer	-> getDataFromBuffer (v, size);
 }
 

@@ -31,6 +31,12 @@
 #include	"constants.h"
 #include	<QThread>
 
+struct agcStats {
+    int min;
+    int max;
+    int overflows;
+};
+
 class	deviceHandler: public QThread {
 public:
 			deviceHandler 	(void);
@@ -41,10 +47,10 @@ virtual		void	deviceModel	(int32_t, char *, int32_t);
 virtual		bool	setDevice	(int32_t);
 virtual		bool	restartReader	(int32_t);
 virtual		void	stopReader	(void);
-virtual		int32_t	getSamples	(std::complex<float> *, int32_t, int32_t *);
+virtual		int32_t	getSamples	(std::complex<float> *, int32_t, agcStats *);
 virtual		int32_t	Samples		(void);
 virtual		void	resetBuffer	(void);
-virtual		int16_t	bitDepth	(void) { return 10;}
+virtual		int16_t	bitDepth	(void) { return 10; }
 virtual		int32_t getRate         (void);
 
 public slots:

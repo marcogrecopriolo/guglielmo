@@ -38,6 +38,7 @@
 #define LOG_VITDEC	0x0200
 #define LOG_SOUND	0x0400
 #define LOG_EPG		0x0800
+#define LOG_AGC		0x1000
 
 extern qint64 logMask;
 extern int logVerbosity;

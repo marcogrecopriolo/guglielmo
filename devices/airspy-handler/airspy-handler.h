@@ -82,7 +82,7 @@ public:
 	void		stopReader		(void);
 	int32_t		getSamples		(std::complex<float> *v,
 	                                                 int32_t size,
-							 int32_t *gainChange);
+							 agcStats *stats);
 	int32_t		Samples			(void);
 	void		resetBuffer		(void);
 	int16_t		bitDepth		(void);

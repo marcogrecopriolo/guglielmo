@@ -56,9 +56,11 @@ void	deviceHandler::stopReader	(void) {
 
 int32_t	deviceHandler::getSamples	(std::complex<float> *v,
 	                                         int32_t amount,
-						 int32_t *gainChange) {
+						 agcStats *stats) {
 	(void)v; 
-        *gainChange = 0;
+        stats->overflows = 0;
+        stats->min = 0;
+        stats->max = 0;
 	return amount;
 }
 
