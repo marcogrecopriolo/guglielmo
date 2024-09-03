@@ -771,12 +771,12 @@ void RadioInterface::setDevice(int d) {
 	settingsUi.lnaSpinBox->setEnabled(true);
     settings->setValue(DEV_NUMBER, deviceNumber);
     settings->endGroup();
-    if (playing) {
-	if (isFM)
+
+    if (isFM) {
+        if (playing)
 	    stopFM();
-	else
-	    stopDAB();
-    }
+    } else
+	stopDAB();
 
     delete DABprocessor;
     delete FMprocessor;
@@ -845,12 +845,11 @@ void RadioInterface::setDeviceName(int d) {
     if (d == deviceNumber)
 	return;
 
-    if (playing) {
-	if (isFM)
+    if (isFM) {
+        if (playing)
 	    stopFM();
-	else
-	    stopDAB();
-    }
+    } else
+	stopDAB();
 
     delete DABprocessor;
     delete FMprocessor;
@@ -863,15 +862,18 @@ void RadioInterface::setDeviceName(int d) {
 	startDAB(channelSelector->currentText());
 }
 
-void RadioInterface::setAgcControl(int gain) {
-    int oldGain = agc;
+void RadioInterface::setAgcControl(int newAgc) {
+    int oldAgc = agc;
 
-    log(LOG_UI, LOG_MIN, "AGC %i", gain);
-    if (inputDevice != NULL)
-	inputDevice->setAgcControl(gain==AGC_ON);
-    agc = gain;
-    if (gain != oldGain) {
-	swAgc = ifGain;
+    log(LOG_UI, LOG_MIN, "AGC %i", newAgc);
+    if (newAgc != agc) {
+        if (inputDevice != NULL)
+	    inputDevice->setAgcControl(newAgc == AGC_ON);
+        agc = newAgc;
+	if (oldAgc == AGC_SW)
+	    inputDevice->setIfGain(ifGain);
+	else
+	    swAgc = ifGain;
         resetAgcStats();
     }
 }

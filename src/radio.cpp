@@ -65,7 +65,8 @@
 #define BAD_PRESET	"this preset is not valid"
 
 // // Some software AGC constants
-#define SIGNAL_THRESHOLD 70
+#define SIGNAL_MIN_THRESHOLD 70
+#define SIGNAL_MAX_THRESHOLD 90
 #define SW_AGC_SKIP_COUNT 8
 #define SW_AGC_BYTES 65536
 
@@ -338,17 +339,26 @@ void RadioInterface::processGain(agcStats *newStats, int amount) {
        swAgcSkip, swAgcAmount, stats.min, stats.max, stats.overflows);
     if (swAgcAmount < SW_AGC_BYTES)
 	return;
+
+    // we most likely already have data in the buffer, which will not be yet
+    // affected by our gain change, so skip some buffers before retesting
+    // this avoids AGC induced signal oscillations
     if (swAgcSkip > 0) {
 	swAgcSkip--;
 	return;
     }
-    if (stats.overflows > 0 && swAgc > 0)
+
+    // if we have overflows, the signal is too strong
+    // otherwise we change the gain to try to land the signal strength
+    // between a high enough percentile and one near the top: after that,
+    // empirically, AGC settles
+    if ((stats.overflows > 0 || stats.max-stats.min > maxSignal) && swAgc > 0)
 	swAgc--;
-    else if (stats.max-stats.min < maxSignal && swAgc < GAIN_SCALE - 1)
+    else if (stats.max-stats.min < minSignal && swAgc < GAIN_SCALE - 1)
 	swAgc++;
     if (swAgc != oldAgc) {
-	log(LOG_AGC, LOG_MIN, "switching gain to %i (thres %i min %i max %i overflows %i)",
-			swAgc, maxSignal, stats.min, stats.max, stats.overflows);
+	log(LOG_AGC, LOG_MIN, "switching gain to %i (min %i max %i overflows %i)",
+			swAgc, stats.min, stats.max, stats.overflows);
 	inputDevice->setIfGain(swAgc);
 	swAgcSkip = SW_AGC_SKIP_COUNT;
     }
@@ -365,7 +375,8 @@ void RadioInterface::resetAgcStats() {
 
 void RadioInterface::resetSwAgc() {
     swAgc = ifGain;
-    maxSignal = inputDevice? (SIGNAL_THRESHOLD * pow(2, inputDevice->bitDepth())) / 100 - 1: 0;
+    minSignal = inputDevice? (SIGNAL_MIN_THRESHOLD * pow(2, inputDevice->bitDepth())) / 100 - 1: 0;
+    maxSignal = inputDevice? (SIGNAL_MAX_THRESHOLD * pow(2, inputDevice->bitDepth())) / 100 - 1: 0;
 }
 
 void RadioInterface::makeDABprocessor() {

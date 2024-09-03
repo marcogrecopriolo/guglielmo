@@ -156,6 +156,7 @@ private:
     int swAgcSkip;
     int swAgcAmount;
     agcStats stats;
+    int minSignal;
     int maxSignal;
     bool isFM;
     bool isSlides;
