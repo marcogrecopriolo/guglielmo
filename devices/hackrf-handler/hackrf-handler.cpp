@@ -99,8 +99,8 @@ int	res;
 	   throw (25);
 	}
 
-	hackrf_set_lna_gain (theDevice, lnaGain * MAX_LNA_GAIN / GAIN_SCALE);
-	hackrf_set_vga_gain (theDevice, vgaGain * MAX_VGA_GAIN / GAIN_SCALE);
+	hackrf_set_lna_gain (theDevice, lnaGain);
+	hackrf_set_vga_gain (theDevice, vgaGain);
 
 	hackrf_device_list_t *deviceList = hackrf_device_list ();
 	if (deviceList != NULL) {
@@ -187,8 +187,8 @@ int	res;
 //	   return true;
 
 	vfoFrequency	= frequency;
-	hackrf_set_lna_gain (theDevice, lnaGain * MAX_LNA_GAIN / GAIN_SCALE);
-        hackrf_set_vga_gain (theDevice, vgaGain * MAX_VGA_GAIN / GAIN_SCALE);
+	hackrf_set_lna_gain (theDevice, lnaGain);
+        hackrf_set_vga_gain (theDevice, vgaGain);
 
 	res	= hackrf_set_freq (theDevice, frequency);
 	res	= hackrf_start_rx (theDevice, callback, this);	
