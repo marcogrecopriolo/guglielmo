@@ -149,7 +149,10 @@ private:
     int deviceUiControls;
     QString deviceType;
     int deviceNumber;
+
     int ifGain;
+    int minIfGain;
+    int maxIfGain;
     int lnaGain;
     int agc;
     int swAgc;
@@ -158,6 +161,7 @@ private:
     agcStats stats;
     int minSignal;
     int maxSignal;
+
     bool isFM;
     bool isSlides;
     bool playing;
@@ -203,6 +207,8 @@ private:
     void setScanning();
     void changePreset(int);
     void changeStation(int);
+    void checkLnaGain();
+    void checkIfGain();
     void cleanScreen();
     void terminateProcess();
 

@@ -38,8 +38,8 @@
 	                                 _I_Buffer (4 * 1024 * 1024) {
 int	err;
 int	res;
-	vgaGain			= 50;
-	lnaGain			= 50;
+	vgaGain			= DEFAULT_GAIN;
+	lnaGain			= 0;
 	this	-> inputRate		= Khz (2048);
 
 #if IS_WINDOWS
@@ -99,8 +99,8 @@ int	res;
 	   throw (25);
 	}
 
-	hackrf_set_lna_gain (theDevice, lnaGain * MAX_LNA_GAIN / 100);
-	hackrf_set_vga_gain (theDevice, vgaGain * MAX_VGA_GAIN / 100);
+	hackrf_set_lna_gain (theDevice, lnaGain * MAX_LNA_GAIN / GAIN_SCALE);
+	hackrf_set_vga_gain (theDevice, vgaGain * MAX_VGA_GAIN / GAIN_SCALE);
 
 	hackrf_device_list_t *deviceList = hackrf_device_list ();
 	if (deviceList != NULL) {
@@ -122,11 +122,26 @@ int	res;
 }
 //
 
+void hackrfHandler::getIfRange(int *min, int *max) {
+    *min = 0;
+    *max = MAX_VGA_GAIN;
+}
+
+void hackrfHandler::getLnaRange(int *min, int *max) {
+    *min = 0;
+    *max = MAX_LNA_GAIN;
+}
+
 void	hackrfHandler::setLnaGain	(int newGain) {
 int	res;
-	   res	= hackrf_set_lna_gain (theDevice, newGain * MAX_LNA_GAIN / 100);
+
+           if (newGain > MAX_LNA_GAIN)
+		newGain = MAX_LNA_GAIN;
+           if (newGain < 0)
+		newGain = 0;
+	   res	= hackrf_set_lna_gain (theDevice, newGain);
 	   if (res != HACKRF_SUCCESS) {
-	      log (DEV_HACKRF, LOG_MIN, "Problem with hackrf_lna_gain %d", res);
+	      log (DEV_HACKRF, LOG_MIN, "Problem with hackrf_lna_gain %d: %d", newGain, res);
 	      return;
 	   }
 	lnaGain		= newGain;
@@ -134,9 +149,14 @@ int	res;
 
 void	hackrfHandler::setIfGain	(int newGain) {
 int	res;
-	   res	= hackrf_set_vga_gain (theDevice, newGain * MAX_VGA_GAIN / 100);
+
+           if (newGain > MAX_VGA_GAIN)
+		newGain = MAX_VGA_GAIN;
+           if (newGain < 0)
+		newGain = 0;
+	   res	= hackrf_set_vga_gain (theDevice, newGain);
 	   if (res != HACKRF_SUCCESS) {
-	      log (DEV_HACKRF, LOG_MIN, "Problem with hackrf_vga_gain %d", res);
+	      log (DEV_HACKRF, LOG_MIN, "Problem with hackrf_vga_gain %d: %d", newGain, res);
 	      return;
 	   }
 	vgaGain		= newGain;
@@ -167,8 +187,8 @@ int	res;
 //	   return true;
 
 	vfoFrequency	= frequency;
-	hackrf_set_lna_gain (theDevice, lnaGain * MAX_LNA_GAIN / 100);
-        hackrf_set_vga_gain (theDevice, vgaGain * MAX_VGA_GAIN / 100);
+	hackrf_set_lna_gain (theDevice, lnaGain * MAX_LNA_GAIN / GAIN_SCALE);
+        hackrf_set_vga_gain (theDevice, vgaGain * MAX_VGA_GAIN / GAIN_SCALE);
 
 	res	= hackrf_set_freq (theDevice, frequency);
 	res	= hackrf_start_rx (theDevice, callback, this);	

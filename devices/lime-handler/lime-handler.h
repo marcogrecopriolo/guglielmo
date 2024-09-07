@@ -33,13 +33,6 @@
 #include	<LimeSuite.h>
 #include	"device-handler.h"
 
-#if IS_WINDOWS
-#define GETPROCADDRESS  GetProcAddress
-#else
-#define GETPROCADDRESS  dlsym
-#endif
-
-
 //	DLL and ".so" function prototypes
 typedef int	(*pfn_LMS_GetDeviceList)(lms_info_str_t *dev_list);
 typedef	int	(*pfn_LMS_Open)(lms_device_t **device,
@@ -109,9 +102,6 @@ public:
 
 public slots:
 	void		setIfGain		(int);
-
-signals:
-	void    	configurationChanged    (void);
 
 private:
 	QString		deviceModel;

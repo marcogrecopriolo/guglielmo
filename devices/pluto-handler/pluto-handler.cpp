@@ -257,12 +257,12 @@ struct iio_channel *chn		= nullptr;
 	                                             "manual");
 	   ret = iio_channel_attr_write_longlong (this -> gain_channel,
 	                                                  "hardwaregain",
-	                                                  gainControl * MAX_GAIN / 100);
+	                                                  gainControl * MAX_GAIN / GAIN_SCALE);
 	}
 	else {
 	   int ret = iio_channel_attr_write_longlong (this -> gain_channel,
 	                                              "hardwaregain",
-	                                              gainControl * MAX_GAIN / 100);
+	                                              gainControl * MAX_GAIN / GAIN_SCALE);
 	   ret = iio_channel_attr_write (this -> gain_channel,
 	                                             "gain_control_mode",
 	                                             "slow_attack");
@@ -313,7 +313,7 @@ int ret;
 
 	ret = iio_channel_attr_write_longlong (this -> gain_channel,
 	                                       "hardwaregain",
-	                                       newGain * MAX_GAIN / 100);
+	                                       newGain * MAX_GAIN / GAIN_SCALE);
 	if (ret < 0) {
 	   log (DEV_PLUTO, LOG_MIN, "could not set hardware gain to %d", newGain);
 	}
@@ -344,7 +344,7 @@ int ret;
 
 	   ret = iio_channel_attr_write_longlong (this -> gain_channel,
 	                                          "hardwaregain", 
-	                                          gainControl * MAX_GAIN / 100);
+	                                          gainControl * MAX_GAIN / GAIN_SCALE);
 	   if (ret < 0) {
 	      log (DEV_PLUTO, LOG_MIN, "could not set hardware gain to %d", gainControl);
 	   }
@@ -369,7 +369,7 @@ int ret;
 	if (!agcMode) {
 	   ret = iio_channel_attr_write_longlong (this -> gain_channel,
 	                                          "hardwaregain",
-	                                          gainControl * MAX_GAIN / 100);
+	                                          gainControl * MAX_GAIN / GAIN_SCALE);
 	   if (ret < 0) {
 	      log (DEV_PLUTO, LOG_MIN, "could not set hardware gain to %d", gainControl);
 	   }

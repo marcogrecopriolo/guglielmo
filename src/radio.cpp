@@ -335,7 +335,7 @@ void RadioInterface::processGain(agcStats *newStats, int amount) {
 	stats.max = newStats->max;
     stats.overflows += newStats->overflows;
     swAgcAmount += amount;
-    log(LOG_AGC, LOG_CHATTY, "skip %i amount %i min %i max %i overflows %i",
+    log(LOG_AGC, LOG_VERBOSE, "skip %i amount %i min %i max %i overflows %i",
        swAgcSkip, swAgcAmount, stats.min, stats.max, stats.overflows);
     if (swAgcAmount < SW_AGC_BYTES)
 	return;
@@ -344,6 +344,7 @@ void RadioInterface::processGain(agcStats *newStats, int amount) {
     // affected by our gain change, so skip some buffers before retesting
     // this avoids AGC induced signal oscillations
     if (swAgcSkip > 0) {
+	swAgcAmount = 0;
 	swAgcSkip--;
 	return;
     }
@@ -352,9 +353,9 @@ void RadioInterface::processGain(agcStats *newStats, int amount) {
     // otherwise we change the gain to try to land the signal strength
     // between a high enough percentile and one near the top: after that,
     // empirically, AGC settles
-    if ((stats.overflows > 0 || stats.max-stats.min > maxSignal) && swAgc > 0)
+    if ((stats.overflows > 0 || stats.max-stats.min > maxSignal) && swAgc > minIfGain)
 	swAgc--;
-    else if (stats.max-stats.min < minSignal && swAgc < GAIN_SCALE - 1)
+    else if (stats.max-stats.min < minSignal && swAgc < maxIfGain)
 	swAgc++;
     if (swAgc != oldAgc) {
 	log(LOG_AGC, LOG_MIN, "switching gain to %i (min %i max %i overflows %i)",
@@ -375,8 +376,8 @@ void RadioInterface::resetAgcStats() {
 
 void RadioInterface::resetSwAgc() {
     swAgc = ifGain;
-    minSignal = inputDevice? (SIGNAL_MIN_THRESHOLD * pow(2, inputDevice->bitDepth())) / 100 - 1: 0;
-    maxSignal = inputDevice? (SIGNAL_MAX_THRESHOLD * pow(2, inputDevice->bitDepth())) / 100 - 1: 0;
+    minSignal = inputDevice? (SIGNAL_MIN_THRESHOLD * inputDevice->amplitude()) / 100 - 1: 0;
+    maxSignal = inputDevice? (SIGNAL_MAX_THRESHOLD * inputDevice->amplitude()) / 100 - 1: 0;
 }
 
 void RadioInterface::makeDABprocessor() {
@@ -524,10 +525,11 @@ void RadioInterface::findDevices() {
     } catch (int e) {}
 #endif
 #ifdef HAVE_LIME
+// no LNA
     try {
 	    discoveredDevice.device = new limeHandler();
 	    discoveredDevice.deviceType = "Lime";
-	    discoveredDevice.controls = HW_AGC|IF_GAIN|LNA_GAIN;
+	    discoveredDevice.controls = HW_AGC|IF_GAIN;
 	    deviceList.push_back(discoveredDevice);
     } catch (int e) {}
 #endif
@@ -574,10 +576,12 @@ void RadioInterface::findDevices() {
 	}
 	if (deviceUiControls & IF_GAIN) {
 	    ifGain = settings->value(DEV_IF_GAIN, DEV_DEF_IF_GAIN).toInt();
+	    checkIfGain();
 	    inputDevice->setIfGain(ifGain);
 	}
 	if (deviceUiControls & LNA_GAIN) {
 	    lnaGain = settings->value(DEV_LNA_GAIN, DEV_DEF_LNA_GAIN).toInt();
+	    checkLnaGain();
 	    inputDevice->setLnaGain(lnaGain);
 	}
 	deviceNumber = settings->value(DEV_NUMBER, 0).toInt();
@@ -591,6 +595,24 @@ void RadioInterface::findDevices() {
     // setup software agc
     resetSwAgc();
     resetAgcStats();
+}
+
+void RadioInterface::checkIfGain() {
+   inputDevice->getIfRange(&minIfGain, &maxIfGain);
+   if (ifGain > maxIfGain)
+	ifGain = maxIfGain;
+   if (ifGain < minIfGain)
+	ifGain = minIfGain;
+}
+
+void RadioInterface::checkLnaGain() {
+   int min, max;
+
+   inputDevice->getLnaRange(&min, &max);
+   if (lnaGain > max)
+	lnaGain = max;
+   if (lnaGain < min)
+	lnaGain = min;
 }
 
 /**
@@ -977,7 +999,7 @@ void RadioInterface::handleVolume(double vol) {
     log(LOG_UI, LOG_MIN, "volume changed to %f", vol);
     soundOut->setVolume(qreal(vol)/AUDIO_SCALE);
 #ifdef HAVE_MPRIS
-    player.setVolume(vol / 100);
+    player.setVolume(vol / AUDIO_SCALE);
 #endif
 }
 

@@ -75,6 +75,10 @@ int32_t deviceHandler::getRate  (void) {
         return 192000;
 }
 
+int32_t deviceHandler::amplitude  (void) {
+        return pow(2, this->bitDepth());
+}
+
 void    deviceHandler::setIfGain      (int g) {
 }
 
@@ -82,7 +86,4 @@ void    deviceHandler::setLnaGain      (int g) {
 }
 
 void    deviceHandler::setAgcControl  (int v) {
-}
-
-void    deviceHandler::configurationChanged(void) {
 }

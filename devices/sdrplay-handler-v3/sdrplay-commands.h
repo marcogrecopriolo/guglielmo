@@ -154,6 +154,4 @@ public:
 	}
 	~antennaRequest	() {}
 };
-
 #endif
-

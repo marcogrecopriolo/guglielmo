@@ -244,13 +244,24 @@ void RadioInterface::handleSettingsAction() {
 		settingsUi.agcComboBox->setCurrentIndex(0);
 	    }
 	    if (deviceUiControls & IF_GAIN) {
+		settingsUi.gainSpinBox->setMinimum(minIfGain);
+		settingsUi.gainSpinBox->setMaximum(maxIfGain);
 		settingsUi.gainSpinBox->setValue(ifGain);
-	    } else
+	    } else {
 		settingsUi.gainSpinBox->setEnabled(false);
+		settingsUi.gainSpinBox->setValue(0);
+	    }
 	    if (deviceUiControls & LNA_GAIN) {
+		int min, max;
+
+		inputDevice->getLnaRange(&min, &max);
+		settingsUi.lnaSpinBox->setMinimum(min);
+		settingsUi.lnaSpinBox->setMaximum(max);
 		settingsUi.lnaSpinBox->setValue(lnaGain);
-	    } else
+	    } else {
 		settingsUi.lnaSpinBox->setEnabled(false);
+		settingsUi.lnaSpinBox->setValue(0);
+	    }
 	} else {
 	    settingsUi.agcComboBox->setCurrentIndex(0);
 	    settingsUi.agcComboBox->setEnabled(false);
@@ -792,28 +803,10 @@ void RadioInterface::setDevice(int d) {
     agc = settings->value(DEV_AGC, DEV_DEF_AGC).toInt();
     qobject_cast<QStandardItemModel*> (settingsUi.agcComboBox->model())->item(AGC_ON)->setEnabled(deviceUiControls & HW_AGC);
     qobject_cast<QStandardItemModel*> (settingsUi.agcComboBox->model())->item(AGC_SW)->setEnabled(deviceUiControls & SW_AGC);
-    if (qobject_cast<QStandardItemModel*> (settingsUi.agcComboBox->model())->item(agc)->isEnabled()) {
-	inputDevice->setAgcControl(agc == AGC_ON);
-	settingsUi.agcComboBox->setCurrentIndex(agc);
-    } else {
-	inputDevice->setAgcControl(false);
-	settingsUi.agcComboBox->setCurrentIndex(0);
-    }
-    if (deviceUiControls & IF_GAIN) {
-	ifGain = settings->value(DEV_IF_GAIN, DEV_DEF_IF_GAIN).toInt();
-	inputDevice->setIfGain(ifGain);
-	settingsUi.gainSpinBox->setValue(ifGain);
-    } else
-	settingsUi.gainSpinBox->setEnabled(false);
-    if (deviceUiControls & LNA_GAIN) {
-	lnaGain = settings->value(DEV_LNA_GAIN, DEV_DEF_LNA_GAIN).toInt();
-	inputDevice->setLnaGain(lnaGain);
-	settingsUi.lnaSpinBox->setValue(lnaGain);
-    } else
-	settingsUi.lnaSpinBox->setEnabled(false);
     deviceNumber = settings->value(DEV_NUMBER, 0).toInt();
     settings->endGroup();
 
+    // set device model first...
     int dc = inputDevice->deviceCount();
     settingsUi.deviceNameComboBox->clear();
     if (dc <= 0) {
@@ -833,6 +826,40 @@ void RadioInterface::setDevice(int d) {
             if (i == deviceNumber)
                 settingsUi.deviceNameComboBox->setCurrentIndex(i);
         }
+    }
+
+    // ...and settings later, as the LNA is known to change depending on model
+    if (qobject_cast<QStandardItemModel*> (settingsUi.agcComboBox->model())->item(agc)->isEnabled()) {
+	inputDevice->setAgcControl(agc == AGC_ON);
+	settingsUi.agcComboBox->setCurrentIndex(agc);
+    } else {
+	inputDevice->setAgcControl(false);
+	settingsUi.agcComboBox->setCurrentIndex(0);
+    }
+    if (deviceUiControls & IF_GAIN) {
+	ifGain = settings->value(DEV_IF_GAIN, DEV_DEF_IF_GAIN).toInt();
+	checkIfGain();
+	inputDevice->setIfGain(ifGain);
+	settingsUi.gainSpinBox->setMinimum(minIfGain);
+	settingsUi.gainSpinBox->setMaximum(maxIfGain);
+	settingsUi.gainSpinBox->setValue(ifGain);
+    } else {
+	settingsUi.gainSpinBox->setEnabled(false);
+	settingsUi.gainSpinBox->setValue(0);
+    }
+    if (deviceUiControls & LNA_GAIN) {
+	int min, max;
+
+	lnaGain = settings->value(DEV_LNA_GAIN, DEV_DEF_LNA_GAIN).toInt();
+	checkLnaGain();
+	inputDevice->setLnaGain(lnaGain);
+	inputDevice->getLnaRange(&min, &max);
+	settingsUi.lnaSpinBox->setMinimum(min);
+	settingsUi.lnaSpinBox->setMaximum(max);
+	settingsUi.lnaSpinBox->setValue(lnaGain);
+    } else {
+	settingsUi.lnaSpinBox->setEnabled(false);
+	settingsUi.lnaSpinBox->setValue(lnaGain);
     }
 
     // reset software agc
@@ -856,6 +883,22 @@ void RadioInterface::setDeviceName(int d) {
 
     deviceNumber = d;
     inputDevice->setDevice(d);
+
+    // reset LNA, as it changes with model
+    if (deviceUiControls & LNA_GAIN) {
+	int min, max;
+
+	lnaGain = settings->value(DEV_LNA_GAIN, DEV_DEF_LNA_GAIN).toInt();
+	checkLnaGain();
+	inputDevice->setLnaGain(lnaGain);
+	inputDevice->getLnaRange(&min, &max);
+	settingsUi.lnaSpinBox->setMinimum(min);
+	settingsUi.lnaSpinBox->setMaximum(max);
+	settingsUi.lnaSpinBox->setValue(lnaGain);
+    } else {
+	settingsUi.lnaSpinBox->setEnabled(false);
+	settingsUi.lnaSpinBox->setValue(lnaGain);
+    }
     makeDABprocessor();
     makeFMprocessor();
     if (!isFM)
@@ -895,4 +938,5 @@ void RadioInterface::setLnaGain(int gain) {
     log(LOG_UI, LOG_MIN, "LNA %i", gain);
     if (inputDevice != NULL)
 	inputDevice->setLnaGain(gain);
+    lnaGain = gain;
 }

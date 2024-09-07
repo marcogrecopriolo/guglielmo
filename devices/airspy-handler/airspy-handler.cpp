@@ -39,12 +39,6 @@
 #include 	"constants.h"
 #include	"logging.h"
 
-#if IS_WINDOWS
-#define	GETPROCADDRESS	GetProcAddress
-#else
-#define	GETPROCADDRESS	dlsym
-#endif
-
 #define DEV_AIRSPY LOG_DEV
 
 static
@@ -185,7 +179,7 @@ char    *samplerateString;
 	theBuffer	= new RingBuffer<std::complex<float>>
 	                                                    (256 * 1024);
 	my_airspy_set_sensitivity_gain (device,
-	                    ifGain * MAX_GAIN / 100);
+	                    ifGain * MAX_GAIN / GAIN_SCALE);
 
 	my_airspy_set_mixer_agc (device, agcControl? 1 : 0);
 }
@@ -242,7 +236,7 @@ int32_t	bufSize	= EXTIO_NS * EXTIO_BASE_TYPE_SIZE * 2;
 
 	my_airspy_set_freq (device, frequency);
 	my_airspy_set_sensitivity_gain (device,
-	                    ifGain * MAX_GAIN / 100);
+	                    ifGain * MAX_GAIN / GAIN_SCALE);
 	result = my_airspy_set_mixer_agc (device, 
 	                                  agcControl? 1 : 0);
 	
@@ -394,14 +388,13 @@ int32_t	airspyHandler::Samples	(void) {
 }
 //
 void	airspyHandler::setIfGain (int theGain) {
-int	result = my_airspy_set_sensitivity_gain (device, theGain * MAX_GAIN / 100);
+int	result = my_airspy_set_sensitivity_gain (device, theGain * MAX_GAIN / GAIN_SCALE);
 	if (result != AIRSPY_SUCCESS) {
 	   log (DEV_AIRSPY, LOG_MIN, "airspy_set_mixer_gain() failed: %s (%d)",
 	            my_airspy_error_name ((airspy_error)result), result);
 	   return;
 	}
 	ifGain = theGain;
-	emit configurationChanged();
 }
 
 //
@@ -418,7 +411,6 @@ int result = my_airspy_set_mixer_agc (device, b);
 	   return;
 	} else
 		agcControl = (b != 0);
-	emit configurationChanged();
 }
 
 

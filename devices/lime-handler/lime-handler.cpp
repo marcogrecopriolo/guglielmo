@@ -156,7 +156,7 @@ lms_info_str_t limedevices [10];
 
 void	limeHandler::setIfGain		(int g) {
 float_type gg;
-	LMS_SetGaindB (theDevice, LMS_CH_RX, 0, g * MAX_GAIN / 100);
+	LMS_SetGaindB (theDevice, LMS_CH_RX, 0, g * MAX_GAIN / GAIN_SCALE);
 	LMS_GetNormalizedGain (theDevice, LMS_CH_RX, 0, &gg);
 }
 

@@ -185,7 +185,7 @@ char    *gainsString;
 	else
 	   rtlsdr_set_agc_mode (device, 0);
 	rtlsdr_set_tuner_gain_mode(device, 1);
-	rtlsdr_set_tuner_gain	(device, gains [(int)(ifGain * gainsCount / 100)]);
+	rtlsdr_set_tuner_gain	(device, gains [(int)(ifGain * gainsCount / GAIN_SCALE)]);
 }
 
 	rtlsdrHandler::~rtlsdrHandler	(void) {
@@ -261,7 +261,7 @@ bool    rtlsdrHandler::setDevice        (int32_t devNo) {
 	else
 	   rtlsdr_set_agc_mode (device, 0);
 	rtlsdr_set_tuner_gain_mode(device, 1);
-	rtlsdr_set_tuner_gain   (device, gains [(int)(ifGain * gainsCount / 100)]);
+	rtlsdr_set_tuner_gain   (device, gains [(int)(ifGain * gainsCount / GAIN_SCALE)]);
 	log (DEV_RTLSDR, LOG_MIN, "switched to device %d", devNo);
 	open  = true;
 	return true;
@@ -286,7 +286,7 @@ int32_t	r;
 	workerHandle	= new dll_driver (this);
 	rtlsdr_set_agc_mode (device, agcControl);
 	rtlsdr_set_tuner_gain (device,
-	                  gains [(int)(/* gainControl -> value () */ ifGain * gainsCount / 100)]);
+	                  gains [(int)(/* gainControl -> value () */ ifGain * gainsCount / GAIN_SCALE)]);
 	return true;
 }
 
@@ -307,11 +307,11 @@ void	rtlsdrHandler::stopReader	(void) {
 //
 //	when selecting  the gain from a table, use the table value
 void	rtlsdrHandler::setIfGain (int gain) {
-	log (DEV_RTLSDR, LOG_MIN, "gain will be set %d to %d",
-	                     gain, gains [gain * gainsCount / 100]);
+	log (DEV_RTLSDR, LOG_MIN, "IF gain will be set to %d%% to %d",
+	                     gain, gains [gain * gainsCount / GAIN_SCALE]);
 	ifGain = gain;
 	rtlsdr_set_tuner_gain (device,
-	                        gains [gain * gainsCount / 100]);
+	                        gains [gain * gainsCount / GAIN_SCALE]);
 }
 //
 void	rtlsdrHandler::setAgcControl	(int v) {
@@ -319,7 +319,7 @@ void	rtlsdrHandler::setAgcControl	(int v) {
 	log (DEV_RTLSDR, LOG_MIN, "agc will be set to %d", v);
 	rtlsdr_set_agc_mode (device, v);
 	rtlsdr_set_tuner_gain (device,
-	             gains [(int)(ifGain * gainsCount / 100)]);
+	             gains [(int)(ifGain * gainsCount / GAIN_SCALE)]);
 }
 
 //
@@ -349,13 +349,13 @@ float convTable [] = {
 //	size samples: still in I/Q pairs, but we have to convert the data from
 //	uint8_t to DSPCOMPLEX *
 int32_t	rtlsdrHandler::getSamples (std::complex<float> *V, int32_t size, agcStats *stats) { 
-int32_t	amount, i;
+int32_t	amount, in, out;
 uint8_t	*tempBuffer = (uint8_t *)alloca (2 * size * sizeof (uint8_t));
 int32_t overflow = 0, minVal = 255, maxVal = 0;
 
 	amount = _I_Buffer. getDataFromBuffer (tempBuffer, 2 * size);
-	for (i = 0; i < amount / 2; i ++) {
-	    int r = tempBuffer [2 * i], im = tempBuffer [2 * i +1];
+	for (in = 0, out = 0; in < amount; out ++) {
+	    int r = tempBuffer [in++], im = tempBuffer [in++];
                 if (r == 0 || r == 255 || im == 0 || im ==255)
 		    overflow++;
 		if (r < minVal)
@@ -366,7 +366,7 @@ int32_t overflow = 0, minVal = 255, maxVal = 0;
 		    minVal = im;
 		if (im > maxVal)
 		    maxVal = im;
-	    V [i] = std::complex<float>(convTable [r], convTable [im]);
+	    V [out] = std::complex<float>(convTable [r], convTable [im]);
 	}
 	stats->overflows = overflow;
 	stats->min = minVal;

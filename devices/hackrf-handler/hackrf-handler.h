@@ -33,12 +33,6 @@
 
 typedef int (*hackrf_samble_block_bc_fn)(hackrf_transfer *transfer);
 
-#if IS_WINDOWS
-#define GETPROCADDRESS  GetProcAddress
-#else
-#define GETPROCADDRESS  dlsym
-#endif
-//
 //	Dll and ".so" function prototypes
 
 typedef	int	(*pfn_hackrf_init)	(void);
@@ -81,12 +75,10 @@ public:
 	RingBuffer<std::complex<float>>	_I_Buffer;
 	hackrf_device	*theDevice;
 
-public slots:
+	void		getIfRange	(int *, int *);
+	void		getLnaRange	(int *, int *);
 	void		setIfGain	(int);
 	void		setLnaGain	(int);
-
-signals:
-	void    	configurationChanged    (void);
 
 private:
 	bool                    load_hackrfFunctions    (void);
