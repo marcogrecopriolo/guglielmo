@@ -122,10 +122,10 @@ RadioInterface::RadioInterface (QSettings *Si, QWidget	 *parent):
     scanBackButton->setIcon(style()->standardIcon(QStyle::SP_MediaSeekBackward));
     stopScanButton->setIcon(style()->standardIcon(QStyle::SP_MediaStop));
     scanForwardButton->setIcon(style()->standardIcon(QStyle::SP_MediaSeekForward));
-    DABButton->setShortcut(QKeySequence(KEY_MODIFIER + Qt::Key_D));
-    FMButton->setShortcut(QKeySequence(KEY_MODIFIER + Qt::Key_F));
-    playButton->setShortcut(QKeySequence(KEY_MODIFIER + Qt::Key_P));
-    recordButton->setShortcut(QKeySequence(KEY_MODIFIER + Qt::Key_R));
+    DABButton->setShortcut(QKeySequence(KEY_MODIFIER | Qt::Key_D));
+    FMButton->setShortcut(QKeySequence(KEY_MODIFIER | Qt::Key_F));
+    playButton->setShortcut(QKeySequence(KEY_MODIFIER | Qt::Key_P));
+    recordButton->setShortcut(QKeySequence(KEY_MODIFIER | Qt::Key_R));
 
     // setting the background to transparent hides the label, so we 
     // store the initial style instead

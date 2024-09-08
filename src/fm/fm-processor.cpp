@@ -461,7 +461,7 @@ void fmProcessor::run(void) {
 
 	    // demodulate and output
 	    DSPFLOAT demod = fmDemodulator->demodulate(v);
-	    if ((fmMode == FM_STEREO)) {
+	    if (fmMode == FM_STEREO) {
 		DSPFLOAT currentPilotPhase = pilotPllFilter->doPll(5*pilotBandFilter->Pass(5*demod));
 		DSPFLOAT phaseForLRDiff	= 2*(currentPilotPhase+pilotDelay);
 		DSPFLOAT LRDiff	= fastTrigTabs->getCos(phaseForLRDiff)*demod;
