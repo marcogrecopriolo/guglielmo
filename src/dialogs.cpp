@@ -211,7 +211,7 @@ void RadioInterface::handleSettingsAction() {
 		this, SLOT(setFMaudioGain(int)));
 
 	// Device tab
-	for (const auto dev: deviceList) {
+	for (const auto &dev: deviceList) {
 	    settingsUi.deviceComboBox->addItem(dev.deviceType);
 	    if (inputDevice == dev.device)
 		settingsUi.deviceComboBox->setCurrentIndex(settingsUi.deviceComboBox->count()-1);
@@ -229,7 +229,7 @@ void RadioInterface::handleSettingsAction() {
 	        settingsUi.deviceNameComboBox->addItem(inputDevice->deviceName(i));
 	        inputDevice->deviceModel(i, model, STRBUFLEN);
 		if (strlen(model) > 0)
-	            settingsUi.deviceNameComboBox->setItemData(i, model, Qt::ToolTipRole);
+	            settingsUi.deviceNameComboBox->setItemData(i, QString(model), Qt::ToolTipRole);
 		if (i == deviceNumber)
 		    settingsUi.deviceNameComboBox->setCurrentIndex(i);
 	    }
@@ -522,7 +522,7 @@ void RadioInterface::nextFullDABScan(void) {
 
 void RadioInterface::scanEnsembleLoaded(int count) {
     log(LOG_EVENT, LOG_MIN, "dab full scan ensemble loaded with %i services", count);
-    for (const auto serv: serviceList) {
+    for (const auto &serv: serviceList) {
 	QString station = channelSelector->itemText(scanIndex) + ":" +serv.name;
 
 	if (settingsUi.scanList->findItems(station, Qt::MatchStartsWith).size() > 0) {
@@ -822,7 +822,7 @@ void RadioInterface::setDevice(int d) {
             settingsUi.deviceNameComboBox->addItem(inputDevice->deviceName(i));
 	    inputDevice->deviceModel(i, model, STRBUFLEN);
 	    if (strlen(model) > 0)
-	        settingsUi.deviceNameComboBox->setItemData(i, model, Qt::ToolTipRole);
+	        settingsUi.deviceNameComboBox->setItemData(i, QString(model), Qt::ToolTipRole);
             if (i == deviceNumber)
                 settingsUi.deviceNameComboBox->setCurrentIndex(i);
         }
@@ -859,7 +859,7 @@ void RadioInterface::setDevice(int d) {
 	settingsUi.lnaSpinBox->setValue(lnaGain);
     } else {
 	settingsUi.lnaSpinBox->setEnabled(false);
-	settingsUi.lnaSpinBox->setValue(lnaGain);
+	settingsUi.lnaSpinBox->setValue(0);
     }
 
     // reset software agc
@@ -881,8 +881,8 @@ void RadioInterface::setDeviceName(int d) {
     delete DABprocessor;
     delete FMprocessor;
 
-    deviceNumber = d;
-    inputDevice->setDevice(d);
+    if (inputDevice->setDevice(d))
+        deviceNumber = d;
 
     // reset LNA, as it changes with model
     if (deviceUiControls & LNA_GAIN) {

@@ -694,4 +694,3 @@ bool sdrplayHandler_v3::loadFunctions() {
 
     return true;
 }
-

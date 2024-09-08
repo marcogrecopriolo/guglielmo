@@ -104,13 +104,13 @@ RadioInterface::RadioInterface (QSettings *Si, QWidget	 *parent):
     menuButton->setIcon(QIcon(":/menubutton.png"));
     QMenu *menu = new QMenu();
     stationsAction = new QAction(QIcon(":/stations.png"), "sTations");
-    stationsAction->setShortcut(QKeySequence(KEY_MODIFIER + Qt::Key_T));
+    stationsAction->setShortcut(QKeySequence(KEY_MODIFIER | Qt::Key_T));
     slidesAction = new QAction(QIcon(":/slides.png"), "sLides");
-    slidesAction->setShortcut(QKeySequence(KEY_MODIFIER + Qt::Key_L));
+    slidesAction->setShortcut(QKeySequence(KEY_MODIFIER | Qt::Key_L));
     aboutAction = new QAction(QIcon(":/copyright.png"), "About");
-    aboutAction->setShortcut(QKeySequence(KEY_MODIFIER + Qt::Key_A));
+    aboutAction->setShortcut(QKeySequence(KEY_MODIFIER | Qt::Key_A));
     settingsAction = new QAction(QIcon(":/settings.png"), "Settings");
-    settingsAction->setShortcut(QKeySequence(KEY_MODIFIER + Qt::Key_S));
+    settingsAction->setShortcut(QKeySequence(KEY_MODIFIER | Qt::Key_S));
     menu->addAction(stationsAction);
     menu->addAction(slidesAction);
     menu->addAction(settingsAction);
@@ -633,7 +633,7 @@ void RadioInterface::changeInConfiguration() {
     // then we (try to) restart the service
     serviceList = DABprocessor->getServices(serviceOrder);
     ensembleModel.clear();
-    for (const auto serv:serviceList) {
+    for (const auto &serv: serviceList) {
 	ensembleModel.appendRow(new QStandardItem(serv.name));
 	for (int i = 0; i < ensembleModel.rowCount(); i ++) {
 	    ensembleModel.setData(ensembleModel.index(i, 0),
@@ -772,7 +772,7 @@ void RadioInterface::addToEnsemble(const QString &serviceName, uint32_t SId) {
     log(LOG_EVENT, LOG_MIN, "received service %s %i", qPrintable(serviceName), SId);
     if (!DABprocessor->is_audioService(serviceName))
        return;
-    for (const auto serv: serviceList)
+    for (const auto &serv: serviceList)
 	if (serv.name == serviceName)
 	    return;
 
@@ -805,7 +805,7 @@ void RadioInterface::addToEnsemble(const QString &serviceName, uint32_t SId) {
 	serviceList.push_back(ed);
 
     ensembleModel.clear();
-    for (const auto serv: serviceList)
+    for (const auto &serv: serviceList)
 	ensembleModel.appendRow(new QStandardItem(serv.name));
     for (int i = 0; i < ensembleModel.rowCount(); i++) {
 	if (currentService.valid && serviceList.at(i).name == currentService.serviceName)
@@ -1066,6 +1066,8 @@ void RadioInterface::handlePresetSelector(int index) {
     newPreset = presetSelector->findText(preset, Qt::MatchExactly);
     if (newPreset > 0)
 	lastPreset = newPreset;
+#else
+    (void) newPreset;
 #endif
 
     if (list.at(0) == "FM") {
@@ -1748,6 +1750,8 @@ void RadioInterface::changePreset(int d) {
      else if (lastPreset <= 1)
 	lastPreset = presetSelector->count()-1;
      handlePresetSelector(lastPreset);
+#else
+     (void) d;
 #endif
 }
 
