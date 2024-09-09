@@ -71,13 +71,13 @@
 #define SW_AGC_BYTES 65536
 
 // most buffer not used locally, but within the DAB processor
-RadioInterface::RadioInterface (QSettings *Si, QWidget	 *parent):
+RadioInterface::RadioInterface(QSettings *Si, QWidget	 *parent):
 	QWidget(parent),
-        iqBuffer(2 * 1536),
-        tiiBuffer(32768),
-        responseBuffer(32768),
-        frameBuffer(2 * 32768),
-        audioBuffer(8 * 32768),
+	iqBuffer(2 * 1536),
+	tiiBuffer(32768),
+	responseBuffer(32768),
+	frameBuffer(2 * 32768),
+	audioBuffer(8 * 32768),
 	DABband("") {
 
     QString presetName;
@@ -210,7 +210,7 @@ RadioInterface::RadioInterface (QSettings *Si, QWidget	 *parent):
     nextService.valid = false;
     currentService.serviceName = settings->value(GEN_SERVICE_NAME, "").toString();
     currentService.valid = currentService.serviceName != "";
-    FMfreq = settings->value (GEN_FM_FREQUENCY, DEF_FM).toDouble();
+    FMfreq = settings->value(GEN_FM_FREQUENCY, DEF_FM).toDouble();
     if (FMfreq < MIN_FM)
 	FMfreq = MIN_FM;
     else if (FMfreq > MAX_FM)
@@ -282,7 +282,7 @@ RadioInterface::RadioInterface (QSettings *Si, QWidget	 *parent):
 		this, SLOT(handleStopScan(void)));
     connect(FMButton, SIGNAL(clicked(void)),
 		this, SLOT(handleFMButton(void)));
-    connect(volumeKnob, SIGNAL (valueChanged (double)),
+    connect(volumeKnob, SIGNAL(valueChanged(double)),
 		this, SLOT(handleVolume(double)));
     connect(squelchKnob, SIGNAL(valueChanged(double)),
 		this, SLOT(handleSquelch(double)));
@@ -500,10 +500,10 @@ void RadioInterface::findDevices() {
     if (!foundV3)
 #endif
 	try {
-	        discoveredDevice.device = new sdrplayHandler();
-	        discoveredDevice.deviceType = "Sdrplay";
-	        discoveredDevice.controls = HW_AGC|IF_GAIN|LNA_GAIN;
-	        deviceList.push_back(discoveredDevice);
+		discoveredDevice.device = new sdrplayHandler();
+		discoveredDevice.deviceType = "Sdrplay";
+		discoveredDevice.controls = HW_AGC|IF_GAIN|LNA_GAIN;
+		deviceList.push_back(discoveredDevice);
 	} catch (int e) {}
 #endif
 #ifdef HAVE_RTLSDR
@@ -553,7 +553,7 @@ void RadioInterface::findDevices() {
 #endif
     if (deviceList.size() == 0) {
 	inputDevice = nullptr;
-        deviceType = "";
+	deviceType = "";
     } else {
 	QString saveType = deviceType;
 
@@ -564,23 +564,25 @@ void RadioInterface::findDevices() {
 	    for (uint i = 0; i < deviceList.size(); ++i)
 		if (!QString::compare(deviceList[i].deviceType, saveType)) {
 		    inputDevice = deviceList[i].device;
-	            deviceUiControls = deviceList[i].controls;
-	            deviceType = deviceList[i].deviceType;
+		    deviceUiControls = deviceList[i].controls;
+		    deviceType = deviceList[i].deviceType;
 		    break;
 		}
 	
+	inputDevice->getIfRange(&minIfGain, &maxIfGain);
+	inputDevice->getLnaRange(&minLnaGain, &maxLnaGain);
 	settings->beginGroup(deviceType);
 	if (deviceUiControls & (HW_AGC | SW_AGC)) {
 	    agc = settings->value(DEV_AGC, DEV_DEF_AGC).toInt();
 	    inputDevice->setAgcControl(agc == AGC_ON);
 	}
 	if (deviceUiControls & IF_GAIN) {
-	    ifGain = settings->value(DEV_IF_GAIN, DEV_DEF_IF_GAIN).toInt();
+	    ifGain = settings->value(DEV_IF_GAIN, minIfGain).toInt();
 	    checkIfGain();
 	    inputDevice->setIfGain(ifGain);
 	}
 	if (deviceUiControls & LNA_GAIN) {
-	    lnaGain = settings->value(DEV_LNA_GAIN, DEV_DEF_LNA_GAIN).toInt();
+	    lnaGain = settings->value(DEV_LNA_GAIN, minLnaGain).toInt();
 	    checkLnaGain();
 	    inputDevice->setLnaGain(lnaGain);
 	}
@@ -598,7 +600,6 @@ void RadioInterface::findDevices() {
 }
 
 void RadioInterface::checkIfGain() {
-   inputDevice->getIfRange(&minIfGain, &maxIfGain);
    if (ifGain > maxIfGain)
 	ifGain = maxIfGain;
    if (ifGain < minIfGain)
@@ -606,13 +607,10 @@ void RadioInterface::checkIfGain() {
 }
 
 void RadioInterface::checkLnaGain() {
-   int min, max;
-
-   inputDevice->getLnaRange(&min, &max);
-   if (lnaGain > max)
-	lnaGain = max;
-   if (lnaGain < min)
-	lnaGain = min;
+   if (lnaGain > maxLnaGain)
+	lnaGain = maxLnaGain;
+   if (lnaGain < minLnaGain)
+	lnaGain = minLnaGain;
 }
 
 /**
@@ -637,7 +635,7 @@ void RadioInterface::changeInConfiguration() {
 	ensembleModel.appendRow(new QStandardItem(serv.name));
 	for (int i = 0; i < ensembleModel.rowCount(); i ++) {
 	    ensembleModel.setData(ensembleModel.index(i, 0),
-			QFont ("Cantarell", 11), Qt::FontRole);
+			QFont("Cantarell", 11), Qt::FontRole);
 	}
 	ensembleDisplay->setModel(&ensembleModel);
     }
@@ -650,16 +648,16 @@ void RadioInterface::changeInConfiguration() {
 		return;
 	    } else {
 		s.SCIds = 0;
-	        s.serviceName = DABprocessor->findService(s.SId, s.SCIds);
+		s.serviceName = DABprocessor->findService(s.SId, s.SCIds);
 	    }
 	}
 
 	// checking for the main service
 	if (s.serviceName != DABprocessor->findService(s. SId, s.SCIds)) {
 	    warning(this, tr(BAD_SERVICE));
-            return;
-        }
-	startDABService (&s);
+	    return;
+	}
+	startDABService(&s);
     }
 }
 
@@ -899,8 +897,8 @@ void RadioInterface::showText(QString s) {
 
 void RadioInterface::showSoundMode(bool s) {
     log(LOG_EVENT, LOG_VERBOSE, "stereo mode %i", s);
-    stereoLabel->setStyleSheet (s?  "QLabel {background-color: green; color: white}":
-                         "QLabel {background-color: red; color: white}");
+    stereoLabel->setStyleSheet(s?  "QLabel {background-color: green; color: white}":
+			 "QLabel {background-color: red; color: white}");
     stereoLabel->setText(s? "stereo" : "mono");
 }
 
@@ -965,12 +963,12 @@ void RadioInterface::showSlides(QPixmap p) {
 #endif
 }
 
-void RadioInterface::handleMotObject (QByteArray result,
-                                          QString name,
-                                          int contentType, bool dirElement) {
+void RadioInterface::handleMotObject(QByteArray result,
+					  QString name,
+					  int contentType, bool dirElement) {
 
     // currently we only handle images
-    switch (getContentBaseType ((MOTContentType)contentType)) {
+    switch (getContentBaseType((MOTContentType)contentType)) {
     case MOTBaseTypeImage:
 	if (dirElement == 0)
 	     showSlides(result, contentType, name, dirElement);
@@ -1083,8 +1081,8 @@ void RadioInterface::handlePresetSelector(int index) {
 	newFreq = list.at(1).toDouble(&ok);
 	if (ok && newFreq > MIN_FM && newFreq < MAX_FM) {
 		FMfreq = newFreq;
-	        frequencyKnob->setValue(double(FMfreq));
-	        frequencyLCD->display(int(FMfreq*1000));
+		frequencyKnob->setValue(double(FMfreq));
+		frequencyLCD->display(int(FMfreq*1000));
 		startFM(int(FMfreq*1000000));
 		playing = true;
 	} else {
@@ -1106,9 +1104,9 @@ void RadioInterface::handlePresetSelector(int index) {
 	stopDABService();
 	DABprocessor->getParameters(service, &s.SId, &s.SCIds);
 	if (s.SId == 0) {
-            warning(this, tr(BAD_PRESET));
+	    warning(this, tr(BAD_PRESET));
 	    deletePreset(presetSelector, preset);
-            return;
+	    return;
 	}
 
 	s.serviceName = service;
@@ -1117,8 +1115,8 @@ void RadioInterface::handlePresetSelector(int index) {
     }
 
     // have to start channel first
-    disconnect (channelSelector, SIGNAL(activated(int)),
-	            this, SLOT(handleSelectChannel(int)));
+    disconnect(channelSelector, SIGNAL(activated(int)),
+		    this, SLOT(handleSelectChannel(int)));
     int k = channelSelector->findText(channel);
 
     if (k != -1)
@@ -1128,7 +1126,7 @@ void RadioInterface::handlePresetSelector(int index) {
 	deletePreset(presetSelector, preset);
     }
     connect(channelSelector, SIGNAL(activated(int)),
-	         this, SLOT(handleSelectChannel(int)));
+		 this, SLOT(handleSelectChannel(int)));
     if (k == -1)
 	return;
 
@@ -1145,7 +1143,7 @@ void RadioInterface::handlePresetSelector(int index) {
 
 void RadioInterface::handleAddDABPreset() {
     if (currentService.serviceName.at(1) == ' ') {
-        log(LOG_UI, LOG_MIN, "add dab empty preset");
+	log(LOG_UI, LOG_MIN, "add dab empty preset");
 	return;
     }
 
@@ -1154,7 +1152,7 @@ void RadioInterface::handleAddDABPreset() {
 
 void RadioInterface::handleDeleteDABPreset() {
     if (currentService.serviceName.at(1) == ' ') {
-        log(LOG_UI, LOG_MIN, "delete dab empty preset");
+	log(LOG_UI, LOG_MIN, "delete dab empty preset");
 	return;
     }
 
@@ -1172,7 +1170,7 @@ void RadioInterface::handleDeleteFMPreset() {
 //	DAB services
 
 void RadioInterface::stopDABService() {
-    presetSelector->setCurrentIndex (0);
+    presetSelector->setCurrentIndex(0);
     if (currentService.valid) {
 	audiodata ad;
 
@@ -1249,7 +1247,7 @@ void RadioInterface::startDABService(dabService *s) {
     currentService = *s;
     currentService.valid = false;
     for (int i = 0; i < (int) ensembleModel.rowCount(); i ++) {
-	QString itemText = ensembleModel.index(i, 0).data(Qt::DisplayRole).toString ();
+	QString itemText = ensembleModel.index(i, 0).data(Qt::DisplayRole).toString();
 	if (itemText == serviceName) {
 	    audiodata ad;
 
@@ -1262,11 +1260,11 @@ void RadioInterface::startDABService(dabService *s) {
 		    warning(this, tr(BAD_SERVICE));
 		else {
 		    ad.procMode = __ONLY_SOUND;
-	 	    DABprocessor->set_audioChannel (&ad, &audioBuffer);
-		    soundOut->restart ();
+	 	    DABprocessor->set_audioChannel(&ad, &audioBuffer);
+		    soundOut->restart();
 		}
-	        currentService.valid = true;
-	        currentService.serviceName = serviceName;
+		currentService.valid = true;
+		currentService.serviceName = serviceName;
 		playing = true;
 		setPlaying();
 		setRecording();
@@ -1369,10 +1367,10 @@ void RadioInterface::handleNextChanButton() {
     currentChannel++;
     if (currentChannel >= channelSelector->count())
 	currentChannel = 0;
-    disconnect (channelSelector, SIGNAL(activated (int)),
+    disconnect(channelSelector, SIGNAL(activated(int)),
 		this, SLOT(handleSelectChannel(int)));
     channelSelector->setCurrentIndex(currentChannel);
-    connect (channelSelector, SIGNAL(activated (int)),
+    connect(channelSelector, SIGNAL(activated(int)),
 		this, SLOT(handleSelectChannel(int)));
     currentService.valid = false;
     nextService.valid = true;
@@ -1412,7 +1410,7 @@ void RadioInterface::handlePrevChanButton() {
     currentChannel--;
     if (currentChannel < 0)
 	currentChannel = channelSelector->count()-1;
-    disconnect(channelSelector, SIGNAL (activated(int)),
+    disconnect(channelSelector, SIGNAL(activated(int)),
 		this, SLOT(handleSelectChannel(int)));
     channelSelector->setCurrentIndex(currentChannel);
     connect(channelSelector, SIGNAL(activated(int)),
@@ -1516,8 +1514,8 @@ void RadioInterface::handleFMfrequency(double freq) {
 
 void RadioInterface::handlePlayButton() {
     log(LOG_UI, LOG_MIN, "play");
-    disconnect(playButton, SIGNAL (clicked (void)),
-                 this, SLOT (handlePlayButton(void)));
+    disconnect(playButton, SIGNAL(clicked(void)),
+		 this, SLOT(handlePlayButton(void)));
     if (isFM)
 	startFM(int(FMfreq*1000000));
     else
@@ -1545,12 +1543,12 @@ void RadioInterface::setPlaying() {
     if (inputDevice != nullptr && ((isFM && !scanning) || (!isFM && currentService.valid))) {
 	playButton->setEnabled(true);
 	if (playing) {
-	    connect(playButton, SIGNAL(clicked (void)),
+	    connect(playButton, SIGNAL(clicked(void)),
 			this, SLOT(handlePauseButton(void)));
 	    playButton->setIcon(style()->standardIcon(QStyle::SP_MediaStop));
 	    playButton->setToolTip("Pause playback");
 	} else {
-	    connect(playButton, SIGNAL(clicked (void)),
+	    connect(playButton, SIGNAL(clicked(void)),
 			this, SLOT(handlePlayButton(void)));
 	    playButton->setIcon(style()->standardIcon(QStyle::SP_MediaPlay));
 	    playButton->setToolTip("Start playback");
@@ -1632,10 +1630,10 @@ void RadioInterface::setRecording() {
 	    connect(recordButton, SIGNAL(clicked(void)),
 			this, SLOT(handleStopRecordButton(void)));
 	    recordButton->setIcon(QIcon(":/recordbutton.png"));
-	    recordButton->setToolTip ("Stop recording");
+	    recordButton->setToolTip("Stop recording");
     	} else {
-	    connect(recordButton, SIGNAL (clicked (void)),
-			this, SLOT (handleRecordButton(void)));
+	    connect(recordButton, SIGNAL(clicked (void)),
+			this, SLOT(handleRecordButton(void)));
 	    recordButton->setIcon(QIcon(":/recordbuttonred.png"));
 	    recordButton->setToolTip("Start recording");
     	}
@@ -1666,16 +1664,16 @@ void RadioInterface::handleDABButton() {
 
 void RadioInterface::toDAB() {
     isFM = false;
-    disconnect(addPresetButton, SIGNAL(clicked (void)),
+    disconnect(addPresetButton, SIGNAL(clicked(void)),
 		this, SLOT(handleAddFMPreset(void)));
-    disconnect(deletePresetButton, SIGNAL(clicked (void)),
+    disconnect(deletePresetButton, SIGNAL(clicked(void)),
 		this, SLOT(handleDeleteFMPreset(void)));
     fmWidget->hide();
     dabWidget->show();
     squelchKnob->setEnabled(false);
-    connect(addPresetButton, SIGNAL(clicked (void)),
+    connect(addPresetButton, SIGNAL(clicked(void)),
 		this, SLOT(handleAddDABPreset(void)));
-    connect(deletePresetButton, SIGNAL(clicked (void)),
+    connect(deletePresetButton, SIGNAL(clicked(void)),
 		this, SLOT(handleDeleteDABPreset(void)));
     FMButton->setChecked(false);
     DABButton->setChecked(true);
@@ -1700,15 +1698,15 @@ void RadioInterface::handleFMButton() {
 void RadioInterface::toFM() {
     isFM = true;
     disconnect(addPresetButton, SIGNAL(clicked(void)),
-		this, SLOT (handleAddDABPreset(void)));
-    disconnect(deletePresetButton, SIGNAL(clicked (void)),
+		this, SLOT(handleAddDABPreset(void)));
+    disconnect(deletePresetButton, SIGNAL(clicked(void)),
 		this, SLOT(handleDeleteDABPreset(void)));
     dabWidget->hide();
     fmWidget->show();
     squelchKnob->setEnabled(true);
-    connect(addPresetButton, SIGNAL(clicked (void)),
+    connect(addPresetButton, SIGNAL(clicked(void)),
 		this, SLOT(handleAddFMPreset(void)));
-    connect(deletePresetButton, SIGNAL(clicked (void)),
+    connect(deletePresetButton, SIGNAL(clicked(void)),
 		this, SLOT(handleDeleteFMPreset(void)));
     DABButton->setChecked(false);
     FMButton->setChecked(true);
@@ -1761,7 +1759,7 @@ void RadioInterface::changeStation(int d) {
 		handleDABButton();
 		channelSelector->setCurrentIndex(channelSelector->count()-1);
 		nextService.serviceName = "";
-	        nextService.valid = true;
+		nextService.valid = true;
 		nextService.fromEnd = true;
 		startDAB(channelSelector->currentText());
 		return;
@@ -1769,7 +1767,7 @@ void RadioInterface::changeStation(int d) {
 		handleDABButton();
 		channelSelector->setCurrentIndex(0);
 		nextService.serviceName = "";
-	        nextService.valid = true;
+		nextService.valid = true;
 		nextService.fromEnd = false;
 		startDAB(channelSelector->currentText());
 		return;

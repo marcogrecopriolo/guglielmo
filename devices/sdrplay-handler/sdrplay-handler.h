@@ -85,7 +85,7 @@ typedef mir_sdr_ErrT (*pfn_mir_sdr_GetHwVersion) (unsigned char *);
 typedef mir_sdr_ErrT (*pfn_mir_sdr_RSPII_AntennaControl) (mir_sdr_RSPII_AntennaSelectT);
 typedef mir_sdr_ErrT (*pfn_mir_sdr_rspDuo_TunerSel) (mir_sdr_rspDuo_TunerSelT);
 typedef mir_sdr_ErrT (*pfn_mir_sdr_SetDeviceIdx) (unsigned int);
-typedef mir_sdr_ErrT (*pfn_mir_sdr_ReleaseDeviceIdx) (unsigned int);
+typedef mir_sdr_ErrT (*pfn_mir_sdr_ReleaseDeviceIdx) ();
 
 class sdrplayHandler: public deviceHandler {
 Q_OBJECT
@@ -93,6 +93,9 @@ public:
     sdrplayHandler(void);
     ~sdrplayHandler(void);
 
+    int32_t deviceCount(void);
+    QString deviceName(int32_t devNo);
+    bool setDevice(int32_t devNo);
     bool restartReader(int32_t);
     void stopReader(void);
     int32_t getSamples(std::complex<float> *, int32_t, agcStats *stats);
@@ -112,10 +115,9 @@ public:
     float denominator;
 
 private:
-    QString errorCodes (mir_sdr_ErrT);
-    void record_gainSettings (int);
-    void update_gainSettings (int);
-    bool loadFunctions (void);
+    QString errorCodes(mir_sdr_ErrT);
+    bool switchDevice(int32_t devNo, mir_sdr_DeviceT *devDesc);
+    bool loadFunctions(void);
 
     int	 GRdB;
     int	 lnaGain;
@@ -149,7 +151,6 @@ private:
     pfn_mir_sdr_ReleaseDeviceIdx my_mir_sdr_ReleaseDeviceIdx;
 
     int16_t hwVersion;
-    uint32_t numofDevs;
     int16_t deviceIndex;
     int32_t inputRate;
     bool libraryLoaded;

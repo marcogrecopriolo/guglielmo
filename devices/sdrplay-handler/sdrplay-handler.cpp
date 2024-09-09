@@ -31,11 +31,12 @@
 
 #define MIN_GAIN 20
 #define MAX_GAIN 59
+#define MAX_DEVICES 4
 
 sdrplayHandler::sdrplayHandler(): _I_Buffer (4 * 1024 * 1024) {
-    int	err;
     float ver;
-    mir_sdr_DeviceT devDesc[4];
+    uint32_t devCount;
+    mir_sdr_DeviceT devDesc[MAX_DEVICES];
 
     this-> GRdB	= MIN_GAIN;
     this-> lnaGain = 0;
@@ -90,29 +91,44 @@ sdrplayHandler::sdrplayHandler(): _I_Buffer (4 * 1024 * 1024) {
 	throw(23);
     }
 
-    err = my_mir_sdr_ApiVersion(&ver);
+    my_mir_sdr_ApiVersion(&ver);
     if (ver < 2.13) {
 	log (DEV_PLAY, LOG_MIN, "please install mir_sdr library >= 2.13");
 	CLOSE_LIBRARY(Handle);
 	throw(24);
     }
 
-    my_mir_sdr_GetDevices(devDesc, &numofDevs, uint32_t(4));
-    if (numofDevs == 0) {
+    my_mir_sdr_GetDevices(devDesc, &devCount, uint32_t(MAX_DEVICES));
+    if (devCount == 0) {
 	log (DEV_PLAY, LOG_MIN, "no device found");
 	CLOSE_LIBRARY(Handle);
 	throw(25);
     }
 
-    deviceIndex = 0;
-    hwVersion = devDesc[deviceIndex].hwVer;
-    log(DEV_PLAY, LOG_MIN, "sdrplay hwVer = %d", hwVersion);
-    err = my_mir_sdr_SetDeviceIdx(deviceIndex);
+    (void) switchDevice(0, &devDesc[0]);
+    running.store(false);
+}
+
+sdrplayHandler::~sdrplayHandler(void) {
+
+    // should not happen, but still!
+    if (!libraryLoaded)
+	return;
+    stopReader();
+    CLOSE_LIBRARY(Handle);
+}
+
+bool sdrplayHandler::switchDevice(int index, mir_sdr_DeviceT *devDesc) {
+    mir_sdr_ErrT err;
+
+    log(DEV_PLAY, LOG_MIN, "sdrplay %s hwVer = %d", devDesc->DevNm, devDesc->hwVer);
+    err = my_mir_sdr_SetDeviceIdx(index);
     if (err != mir_sdr_Success) {
-	log(DEV_PLAY, LOG_MIN, "SetDevice failed");
-	throw(26);
+	log(DEV_PLAY, LOG_MIN, "SetDevice failed %s", errorCodes(err).toLatin1().data());
+	return false;
     }
 
+    deviceIndex = index;
     // we know we are only in the frequency range 88 .. 230 Mhz,
     // so we can rely on a single table for the lna reductions
     switch (hwVersion) {
@@ -147,31 +163,56 @@ sdrplayHandler::sdrplayHandler(): _I_Buffer (4 * 1024 * 1024) {
     }
 
     if (hwVersion == 2) {
-	   mir_sdr_ErrT err;
-	   err = my_mir_sdr_RSPII_AntennaControl (mir_sdr_RSPII_ANTENNA_A);
-	   if (err != mir_sdr_Success)
-	      log (DEV_PLAY, LOG_MIN, "error %d in setting antenna", err);
-	   
+	mir_sdr_ErrT err;
+	err = my_mir_sdr_RSPII_AntennaControl (mir_sdr_RSPII_ANTENNA_A);
+	if (err != mir_sdr_Success)
+	    log (DEV_PLAY, LOG_MIN, "error %d in setting antenna", err);
     }
 
     if (hwVersion == 3) {   // duo
-	   err  = my_mir_sdr_rspDuo_TunerSel (mir_sdr_rspDuo_Tuner_1);
-	   if (err != mir_sdr_Success)
-	      log (DEV_PLAY, LOG_MIN, "error %d in setting of rspDuo", err);
+	err  = my_mir_sdr_rspDuo_TunerSel (mir_sdr_rspDuo_Tuner_1);
+	if (err != mir_sdr_Success)
+	    log (DEV_PLAY, LOG_MIN, "error %d in setting of rspDuo", err);
     }
-
-    running.store(false);
+    return true;
 }
 
-sdrplayHandler::~sdrplayHandler(void) {
+int32_t sdrplayHandler::deviceCount() {
+    uint32_t devCount;
+    mir_sdr_DeviceT devDesc[MAX_DEVICES];
 
-    // should not happen, but still!
-    if (!libraryLoaded)
-	return;
-    stopReader();
-    CLOSE_LIBRARY(Handle);
+    my_mir_sdr_GetDevices(devDesc, &devCount, uint32_t(MAX_DEVICES));
+    return devCount;
 }
 
+QString sdrplayHandler::deviceName(int32_t devNo) {
+    uint32_t devCount;
+    mir_sdr_DeviceT devDesc[MAX_DEVICES];
+
+    my_mir_sdr_GetDevices(devDesc, &devCount, uint32_t(MAX_DEVICES));
+    if (devNo < 0 || devNo > (int32_t) devCount)
+	return "";
+    return devDesc[devNo].DevNm;
+}
+
+bool sdrplayHandler::setDevice(int32_t devNo) {
+    uint32_t devCount;
+    mir_sdr_DeviceT devDesc[MAX_DEVICES];
+
+    my_mir_sdr_GetDevices(devDesc, &devCount, uint32_t(MAX_DEVICES));
+    if (devNo < 0 || devNo > (int32_t) devCount)
+	return false;
+    if (running.load()) {
+        log(DEV_PLAY, LOG_MIN, "stopping old device");
+        stopReader();
+    }
+    my_mir_sdr_ReleaseDeviceIdx();
+    log(DEV_PLAY, LOG_MIN, "switching to device %d", devNo);
+    if (!switchDevice(devNo, &devDesc[devNo]))
+	return false;
+    log(DEV_PLAY, LOG_MIN, "switched to device %d", devNo);
+    return true;
+}
 
 void sdrplayHandler::getIfRange(int *min, int *max) {
     *min = MIN_GAIN;
@@ -186,8 +227,8 @@ void sdrplayHandler::getLnaRange(int *min, int *max) {
 void sdrplayHandler::setIfGain(int newGRdB) {
     mir_sdr_ErrT err;
 
-    if (!running.load())
-	return;
+//    if (!running.load())
+//	return;
 
     if (newGRdB > MAX_GAIN)
 	newGRdB = MAX_GAIN;
@@ -205,8 +246,8 @@ void sdrplayHandler::setIfGain(int newGRdB) {
 void sdrplayHandler::setLnaGain(int lnaState) {
     mir_sdr_ErrT err;
 
-    if (!running.load())
-	return;
+//    if (!running.load())
+//	return;
 
     if (lnaState > lnaGainMax)
 	lnaState = lnaGainMax;
@@ -294,6 +335,10 @@ bool sdrplayHandler::restartReader(int32_t frequency) {
 	return false;
     }
 	
+    err =  my_mir_sdr_RSP_SetGr(GRdB, lnaGain, 1, 0);
+    if (err != mir_sdr_Success)
+	log (DEV_PLAY, LOG_MIN, "error at set_ifgain %s (%d %d)",
+		errorCodes(err).toLatin1().data(), GRdB, lnaGain);
     if (agcMode)
 	my_mir_sdr_AgcControl(mir_sdr_AGC_100HZ, -30,
 			       0, 0, 0, 0, lnaGain);

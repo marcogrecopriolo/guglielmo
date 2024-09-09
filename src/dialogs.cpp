@@ -122,21 +122,21 @@ void RadioInterface::handleSettingsAction() {
 	settingsUi.sortButton->setIcon(QIcon(":/sort.png"));
 	descendingOrder = false;
 	settingsDialog->connect(settingsUi.scanComboBox, SIGNAL(activated(int)),
-		this, SLOT (startFullScan()));
+		this, SLOT(startFullScan()));
 	settingsDialog->connect(settingsUi.stopScanButton, SIGNAL(clicked()),
-		this, SLOT (stopFullScan()));
+		this, SLOT(stopFullScan()));
 	settingsDialog->connect(settingsUi.copyButton, SIGNAL(clicked()),
-		this, SLOT (copyStation()));
+		this, SLOT(copyStation()));
 	settingsDialog->connect(settingsUi.sortButton, SIGNAL(clicked()),
-		this, SLOT (sortPresets()));
+		this, SLOT(sortPresets()));
 	settingsDialog->connect(settingsUi.minusButton, SIGNAL(clicked()),
-		this, SLOT (dropPreset()));
+		this, SLOT(dropPreset()));
 	settingsDialog->connect(settingsUi.downButton, SIGNAL(clicked()),
-		this, SLOT (lowerPreset()));
+		this, SLOT(lowerPreset()));
 	settingsDialog->connect(settingsUi.upButton, SIGNAL(clicked()),
-		this, SLOT (liftPreset()));
+		this, SLOT(liftPreset()));
 	settingsDialog->connect(settingsUi.clearButton, SIGNAL(clicked()),
-		this, SLOT (clearScanList()));
+		this, SLOT(clearScanList()));
 
 	// UI tab
 	QStringList list = QStyleFactory::keys();
@@ -146,8 +146,8 @@ void RadioInterface::handleSettingsAction() {
 		if (list[i].toLower() == currentStyle)
 			settingsUi.styleComboBox->setCurrentIndex(i);
 	}
-	settingsDialog->connect(settingsUi.styleComboBox, SIGNAL(activated (int)),
-		this, SLOT (setUiStyle(int)));
+	settingsDialog->connect(settingsUi.styleComboBox, SIGNAL(activated(int)),
+		this, SLOT(setUiStyle(int)));
 
 	// MPRIS
 #ifndef HAVE_MPRIS
@@ -226,10 +226,10 @@ void RadioInterface::handleSettingsAction() {
 	    for (int i = 0; i < dc; i++) {
 		char buf[STRBUFLEN], *model = (char *) &buf;
 
-	        settingsUi.deviceNameComboBox->addItem(inputDevice->deviceName(i));
-	        inputDevice->deviceModel(i, model, STRBUFLEN);
+		settingsUi.deviceNameComboBox->addItem(inputDevice->deviceName(i));
+		inputDevice->deviceModel(i, model, STRBUFLEN);
 		if (strlen(model) > 0)
-	            settingsUi.deviceNameComboBox->setItemData(i, QString(model), Qt::ToolTipRole);
+		    settingsUi.deviceNameComboBox->setItemData(i, QString(model), Qt::ToolTipRole);
 		if (i == deviceNumber)
 		    settingsUi.deviceNameComboBox->setCurrentIndex(i);
 	    }
@@ -784,7 +784,7 @@ void RadioInterface::setDevice(int d) {
     settings->endGroup();
 
     if (isFM) {
-        if (playing)
+	if (playing)
 	    stopFM();
     } else
 	stopDAB();
@@ -804,31 +804,32 @@ void RadioInterface::setDevice(int d) {
     qobject_cast<QStandardItemModel*> (settingsUi.agcComboBox->model())->item(AGC_ON)->setEnabled(deviceUiControls & HW_AGC);
     qobject_cast<QStandardItemModel*> (settingsUi.agcComboBox->model())->item(AGC_SW)->setEnabled(deviceUiControls & SW_AGC);
     deviceNumber = settings->value(DEV_NUMBER, 0).toInt();
-    settings->endGroup();
 
     // set device model first...
     int dc = inputDevice->deviceCount();
     settingsUi.deviceNameComboBox->clear();
     if (dc <= 0) {
-        settingsUi.deviceNameComboBox->setEnabled(false);
+	settingsUi.deviceNameComboBox->setEnabled(false);
 	deviceNumber = 0;
     } else {
 	if (deviceNumber >= dc)
 	    deviceNumber = 0;
-        settingsUi.deviceNameComboBox->setEnabled(true);
-        for (int i = 0; i < dc; i++) {
+	settingsUi.deviceNameComboBox->setEnabled(true);
+	for (int i = 0; i < dc; i++) {
 	    char buf[STRBUFLEN], *model = (char *) &buf;
 
-            settingsUi.deviceNameComboBox->addItem(inputDevice->deviceName(i));
+	    settingsUi.deviceNameComboBox->addItem(inputDevice->deviceName(i));
 	    inputDevice->deviceModel(i, model, STRBUFLEN);
 	    if (strlen(model) > 0)
-	        settingsUi.deviceNameComboBox->setItemData(i, QString(model), Qt::ToolTipRole);
-            if (i == deviceNumber)
-                settingsUi.deviceNameComboBox->setCurrentIndex(i);
-        }
+		settingsUi.deviceNameComboBox->setItemData(i, QString(model), Qt::ToolTipRole);
+	    if (i == deviceNumber)
+		settingsUi.deviceNameComboBox->setCurrentIndex(i);
+	}
     }
 
     // ...and settings later, as the LNA is known to change depending on model
+    inputDevice->getIfRange(&minIfGain, &maxIfGain);
+    inputDevice->getLnaRange(&minLnaGain, &maxLnaGain);
     if (qobject_cast<QStandardItemModel*> (settingsUi.agcComboBox->model())->item(agc)->isEnabled()) {
 	inputDevice->setAgcControl(agc == AGC_ON);
 	settingsUi.agcComboBox->setCurrentIndex(agc);
@@ -837,7 +838,7 @@ void RadioInterface::setDevice(int d) {
 	settingsUi.agcComboBox->setCurrentIndex(0);
     }
     if (deviceUiControls & IF_GAIN) {
-	ifGain = settings->value(DEV_IF_GAIN, DEV_DEF_IF_GAIN).toInt();
+	ifGain = settings->value(DEV_IF_GAIN, minIfGain).toInt();
 	checkIfGain();
 	inputDevice->setIfGain(ifGain);
 	settingsUi.gainSpinBox->setMinimum(minIfGain);
@@ -848,19 +849,17 @@ void RadioInterface::setDevice(int d) {
 	settingsUi.gainSpinBox->setValue(0);
     }
     if (deviceUiControls & LNA_GAIN) {
-	int min, max;
-
-	lnaGain = settings->value(DEV_LNA_GAIN, DEV_DEF_LNA_GAIN).toInt();
+	lnaGain = settings->value(DEV_LNA_GAIN, minLnaGain).toInt();
 	checkLnaGain();
 	inputDevice->setLnaGain(lnaGain);
-	inputDevice->getLnaRange(&min, &max);
-	settingsUi.lnaSpinBox->setMinimum(min);
-	settingsUi.lnaSpinBox->setMaximum(max);
+	settingsUi.lnaSpinBox->setMinimum(minLnaGain);
+	settingsUi.lnaSpinBox->setMaximum(maxLnaGain);
 	settingsUi.lnaSpinBox->setValue(lnaGain);
     } else {
 	settingsUi.lnaSpinBox->setEnabled(false);
 	settingsUi.lnaSpinBox->setValue(0);
     }
+    settings->endGroup();
 
     // reset software agc
     resetSwAgc();
@@ -873,7 +872,7 @@ void RadioInterface::setDeviceName(int d) {
 	return;
 
     if (isFM) {
-        if (playing)
+	if (playing)
 	    stopFM();
     } else
 	stopDAB();
@@ -882,23 +881,23 @@ void RadioInterface::setDeviceName(int d) {
     delete FMprocessor;
 
     if (inputDevice->setDevice(d))
-        deviceNumber = d;
+	deviceNumber = d;
 
     // reset LNA, as it changes with model
+    settings->beginGroup(deviceType);
     if (deviceUiControls & LNA_GAIN) {
-	int min, max;
-
-	lnaGain = settings->value(DEV_LNA_GAIN, DEV_DEF_LNA_GAIN).toInt();
+	inputDevice->getLnaRange(&minLnaGain, &maxLnaGain);
+	lnaGain = settings->value(DEV_LNA_GAIN, minLnaGain).toInt();
 	checkLnaGain();
 	inputDevice->setLnaGain(lnaGain);
-	inputDevice->getLnaRange(&min, &max);
-	settingsUi.lnaSpinBox->setMinimum(min);
-	settingsUi.lnaSpinBox->setMaximum(max);
+	settingsUi.lnaSpinBox->setMinimum(minLnaGain);
+	settingsUi.lnaSpinBox->setMaximum(maxLnaGain);
 	settingsUi.lnaSpinBox->setValue(lnaGain);
     } else {
 	settingsUi.lnaSpinBox->setEnabled(false);
 	settingsUi.lnaSpinBox->setValue(lnaGain);
     }
+    settings->endGroup();
     makeDABprocessor();
     makeFMprocessor();
     if (!isFM)
@@ -910,14 +909,14 @@ void RadioInterface::setAgcControl(int newAgc) {
 
     log(LOG_UI, LOG_MIN, "AGC %i", newAgc);
     if (newAgc != agc) {
-        if (inputDevice != NULL)
+	if (inputDevice != NULL)
 	    inputDevice->setAgcControl(newAgc == AGC_ON);
-        agc = newAgc;
+	agc = newAgc;
 	if (oldAgc == AGC_SW)
 	    inputDevice->setIfGain(ifGain);
 	else
 	    swAgc = ifGain;
-        resetAgcStats();
+	resetAgcStats();
     }
 }
 
@@ -930,7 +929,7 @@ void RadioInterface::setIfGain(int gain) {
     ifGain = gain;
     if (gain != oldGain) {
 	swAgc = ifGain;
-        resetAgcStats();
+	resetAgcStats();
     }
 }
 

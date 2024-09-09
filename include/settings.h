@@ -125,8 +125,6 @@
 #define DEV_LNA_GAIN		"lnaGain"
 
 #define DEV_DEF_AGC		"0"
-#define DEV_DEF_IF_GAIN		"50"
-#define DEV_DEF_LNA_GAIN	"50"
 
 // dialogs
 #define DIALOGS_RECORDING	"recording"

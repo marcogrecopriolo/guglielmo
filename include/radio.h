@@ -154,6 +154,8 @@ private:
     int minIfGain;
     int maxIfGain;
     int lnaGain;
+    int minLnaGain;
+    int maxLnaGain;
     int agc;
     int swAgc;
     int swAgcSkip;
