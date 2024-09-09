@@ -227,8 +227,8 @@ void sdrplayHandler::getLnaRange(int *min, int *max) {
 void sdrplayHandler::setIfGain(int newGRdB) {
     mir_sdr_ErrT err;
 
-//    if (!running.load())
-//	return;
+    if (!running.load())
+	return;
 
     if (newGRdB > MAX_GAIN)
 	newGRdB = MAX_GAIN;
@@ -246,8 +246,8 @@ void sdrplayHandler::setIfGain(int newGRdB) {
 void sdrplayHandler::setLnaGain(int lnaState) {
     mir_sdr_ErrT err;
 
-//    if (!running.load())
-//	return;
+    if (!running.load())
+	return;
 
     if (lnaState > lnaGainMax)
 	lnaState = lnaGainMax;
