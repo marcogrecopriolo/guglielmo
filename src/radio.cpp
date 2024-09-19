@@ -469,7 +469,6 @@ void RadioInterface::terminateProcess() {
 
     // destruct
     delete soundOut;
-    delete inputDevice;
     if (DABprocessor != nullptr)
 	delete DABprocessor;
     if (FMprocessor != nullptr)
@@ -478,6 +477,8 @@ void RadioInterface::terminateProcess() {
 	delete scanTimer;
     if (settingsDialog != nullptr)
 	delete settingsDialog;
+    for (const auto &dev: deviceList)
+	delete dev.device;
 }
 
 void RadioInterface::findDevices() {
@@ -556,6 +557,7 @@ void RadioInterface::findDevices() {
 	deviceType = "";
     } else {
 	QString saveType = deviceType;
+	deviceStrings devNames[MAX_DEVICES];
 
 	inputDevice = deviceList[0].device;
 	deviceUiControls = deviceList[0].controls;
@@ -569,29 +571,38 @@ void RadioInterface::findDevices() {
 		    break;
 		}
 	
+	settings->beginGroup(deviceType);
+	uint dc = inputDevice->devices((deviceStrings *) &devNames, MAX_DEVICES);
+	bool found = false;
+	if (dc > 0) {
+	    deviceId = settings->value(DEV_ID, "").toString();
+	    for (uint i = 0; i < dc; i++)
+		if (QString::compare(devNames[i].id, deviceId) == 0) {
+		    found = true;
+		    break;
+		}
+	    if (!found)
+	       deviceId = devNames[0].id;
+	    inputDevice->setDevice(qPrintable(deviceId));
+	}
 	inputDevice->getIfRange(&minIfGain, &maxIfGain);
 	inputDevice->getLnaRange(&minLnaGain, &maxLnaGain);
-	settings->beginGroup(deviceType);
+	agc = settings->value(DEV_AGC, DEV_DEF_AGC).toInt();
+	ifGain = settings->value(DEV_IF_GAIN, minIfGain).toInt();
+	lnaGain = settings->value(DEV_LNA_GAIN, minLnaGain).toInt();
+	settings->endGroup();
+
 	if (deviceUiControls & (HW_AGC | SW_AGC)) {
-	    agc = settings->value(DEV_AGC, DEV_DEF_AGC).toInt();
 	    inputDevice->setAgcControl(agc == AGC_ON);
 	}
 	if (deviceUiControls & IF_GAIN) {
-	    ifGain = settings->value(DEV_IF_GAIN, minIfGain).toInt();
 	    checkIfGain();
 	    inputDevice->setIfGain(ifGain);
 	}
 	if (deviceUiControls & LNA_GAIN) {
-	    lnaGain = settings->value(DEV_LNA_GAIN, minLnaGain).toInt();
 	    checkLnaGain();
 	    inputDevice->setLnaGain(lnaGain);
 	}
-	deviceNumber = settings->value(DEV_NUMBER, 0).toInt();
-	settings->endGroup();
-	int dc = inputDevice->deviceCount();
-	if (dc <= 0 || deviceNumber >= dc)
-	    deviceNumber = 0;
-	inputDevice->setDevice(deviceNumber);
     }
 
     // setup software agc
@@ -1736,6 +1747,7 @@ void RadioInterface::cleanScreen() {
     stereoLabel->clear();
     signalQuality->setValue(0);
     signalStrength->setValue(0);
+    log(LOG_EVENT, LOG_CHATTY, "clean screen");
 }
 
 void RadioInterface::changePreset(int d) {

@@ -23,19 +23,15 @@
  *    Jan van Katwijk (J.vanKatwijk@gmail.com)
  *    Lazy Chair Programming
  */
-#ifndef __SDRPLAY_HANDLER_V3__
-#define	__SDRPLAY_HANDLER_V3__
+#ifndef SDRPLAY_HANDLER_V3_H
+#define	SDRPLAY_HANDLER_V3_H
 
-#include <QSemaphore>
 #include <atomic>
 #include <stdio.h>
-#include <queue>
 #include "constants.h"
 #include "ringbuffer.h"
 #include "device-handler.h"
 #include <sdrplay_api.h>
-
-class generalCommand;
 
 class sdrplayHandler_v3: public deviceHandler {
 Q_OBJECT
@@ -43,6 +39,8 @@ public:
     sdrplayHandler_v3(void);
     ~sdrplayHandler_v3(void);
 
+    int32_t devices(deviceStrings *, int);
+    bool setDevice(const char *);
     bool restartReader(int32_t);
     void stopReader(void);
     int32_t getSamples(std::complex<float> *, int32_t, agcStats *stats);
@@ -60,9 +58,31 @@ public:
     void setAgcControl(int);
 
     RingBuffer<std::complex<int16_t>> _I_Buffer;
-    std::atomic<bool> receiverRuns;
+    std::atomic<bool> running;
 
 private:
+    bool configDevice(sdrplay_api_DeviceT *);
+    void fetchLibrary();
+    bool loadFunctions();
+
+    sdrplay_api_DeviceT deviceDesc;
+    sdrplay_api_DeviceT *chosenDevice;
+    sdrplay_api_DeviceParamsT *deviceParams;
+    sdrplay_api_CallbackFnsT cbFns;
+    sdrplay_api_RxChannelParamsT *chParams;
+    int denominator;
+    int32_t vfoFrequency;
+    bool agcMode;
+    int GRdB;
+    int16_t nrBits;
+    int	lnaGainMax;
+    int32_t inputRate;
+    float apiVersion;
+    bool has_antennaSelect;
+    int lnaState;
+    int ppmValue;
+    HINSTANCE Handle;
+
     sdrplay_api_Open_t sdrplay_api_Open;
     sdrplay_api_Close_t sdrplay_api_Close;
     sdrplay_api_ApiVersion_t sdrplay_api_ApiVersion;
@@ -78,37 +98,5 @@ private:
     sdrplay_api_Init_t sdrplay_api_Init;
     sdrplay_api_Uninit_t sdrplay_api_Uninit;
     sdrplay_api_Update_t sdrplay_api_Update;
-
-    sdrplay_api_DeviceT *chosenDevice;
-    sdrplay_api_DeviceParamsT *deviceParams;
-    sdrplay_api_CallbackFnsT cbFns;
-    sdrplay_api_RxChannelParamsT *chParams;
-
-    bool successFlag;
-    bool failFlag;
-    int denominator;
-    std::atomic<bool> threadRuns;
-
-    int32_t vfoFrequency;
-    int16_t hwVersion;
-    bool agcMode;
-    int GRdB;
-    int16_t nrBits;
-    int	lnaGainMax;
-    int32_t inputRate;
-    float apiVersion;
-    QString serial;
-    bool has_antennaSelect;
-    QString deviceModel;
-    int	 lnaState;
-    int	 ppmValue;
-    HINSTANCE Handle;
-    std::queue<generalCommand *> server_queue;
-    QSemaphore serverjobs;
-
-    void run();
-    bool messageHandler(generalCommand *);
-    void fetchLibrary();
-    bool loadFunctions();
 };
 #endif

@@ -1,35 +1,34 @@
-#
 /*
- *    Copyright (C) 2020
- *    Jan van Katwijk (J.vanKatwijk@gmail.com)
- *    Lazy Chair Computing
+ *    Copyright (C) 2021
+ *    Marco Greco <marcogrecopriolo@gmail.com>
  *
- *    This file is part of the dabMini program
+ *    This file is part of the guglielmo FM DAB tuner software package.
  *
- *    dabMini is free software; you can redistribute it and/or modify
+ *    guglielmo is free software; you can redistribute it and/or modify
  *    it under the terms of the GNU General Public License as published by
- *    the Free Software Foundation; either version 2 of the License, or
- *    (at your option) any later version.
+ *    the Free Software Foundation, version 2 of the License.
  *
- *    dabMini is distributed in the hope that it will be useful,
+ *    guglielmo is distributed in the hope that it will be useful,
  *    but WITHOUT ANY WARRANTY; without even the implied warranty of
  *    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *    GNU General Public License for more details.
  *
  *    You should have received a copy of the GNU General Public License
- *    along with dabMini; if not, write to the Free Software
+ *    along with guglielmo; if not, write to the Free Software
  *    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
- *	We have to create a simple virtual class here, since we
- *	want the interface with different devices (including  filehandling)
- *	to be transparent
+ *    Taken from qt-dab, with bug fixes and enhancements.
+ *
+ *    Copyright (C) 2013 .. 2017
+ *    Jan van Katwijk (J.vanKatwijk@gmail.com)
+ *    Lazy Chair Computing
  */
-#ifndef	__DEVICE_HANDLER__
-#define	__DEVICE_HANDLER__
 
-#include	<stdint.h>
-#include	"constants.h"
-#include	<QThread>
+#ifndef	DEVICE_HANDLER_H
+#define	DEVICE_HANDLER_H
+
+#include <stdint.h>
+#include "constants.h"
 
 #if IS_WINDOWS
 #define GETPROCADDRESS GetProcAddress
@@ -45,30 +44,47 @@ struct agcStats {
     int overflows;
 };
 
-class	deviceHandler: public QThread {
-public:
-			deviceHandler 	(void);
-virtual			~deviceHandler 	(void);
-virtual		int32_t	deviceCount	(void);
-virtual		QString	deviceName	(int32_t);
-virtual		void	deviceModel	(int32_t, char *, int32_t);
-virtual		bool	setDevice	(int32_t);
-virtual		bool	restartReader	(int32_t);
-virtual		void	stopReader	(void);
-virtual		int32_t	getSamples	(std::complex<float> *, int32_t, agcStats *);
-virtual		int32_t	Samples		(void);
-virtual		void	resetBuffer	(void);
-virtual		int16_t	bitDepth	(void) { return 10; }
-virtual		int32_t amplitude	(void);
-virtual		int32_t getRate         (void);
-virtual         void	getIfRange      (int32_t *min, int32_t *max) { *min = 0, *max = GAIN_SCALE - 1; }
-virtual         void	getLnaRange     (int32_t *min, int32_t *max) { *min = 0, *max = 0; }
-virtual		void	setIfGain	(int);
-virtual		void	setLnaGain	(int);
-virtual		void	setAgcControl	(int);
+#define DEV_SHORT 32
+#define DEV_LONG 64
+#define MAX_DEVICES 6
 
-//
-protected:
-		int32_t	vfoFrequency;
+struct deviceStrings {
+    char name[DEV_SHORT];
+    char id[DEV_SHORT];
+    char description[DEV_LONG];
+};
+
+class deviceHandler: public QThread {
+    public:
+    deviceHandler(void);
+    virtual ~deviceHandler(void) {}
+
+    virtual int	devices(deviceStrings *devs, int max) { (void) devs; (void) max; return 0; }
+
+    // we use an id rather than device list position (as used by RTLSDR / SDRPLAY)
+    // because the V3 SDRPLAY API only reports devices that are available, so list
+    // positions are unreliable: for one, the device that we are currently using
+    // will skew the list!
+    virtual bool setDevice(const char *) { return true; }
+    virtual bool restartReader(int32_t) { return true; }
+    virtual void stopReader(void) {}
+    virtual int32_t getSamples(std::complex<float> *v, int32_t amount, agcStats *stats) {
+	(void) v;
+	(void) stats;
+	return amount;
+    }
+    virtual int32_t Samples(void) { return 0; }
+    virtual void resetBuffer(void) {}
+    virtual int16_t bitDepth(void) { return 10; }
+    virtual int32_t amplitude(void);
+    virtual int32_t getRate(void) { return 192000; }
+    virtual void getIfRange(int32_t *min, int32_t *max) { *min = 0, *max = GAIN_SCALE - 1; }
+    virtual void getLnaRange(int32_t *min, int32_t *max) { *min = 0, *max = 0; }
+    virtual void setIfGain(int) {}
+    virtual void setLnaGain(int) {}
+    virtual void setAgcControl(int) {}
+
+    protected:
+    int32_t vfoFrequency;
 };
 #endif

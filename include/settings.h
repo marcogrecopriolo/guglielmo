@@ -119,7 +119,7 @@
 #define PRESETS_NAME		"preset"
 
 // devices
-#define DEV_NUMBER		"deviceNumber"
+#define DEV_ID			"deviceId"
 #define DEV_AGC			"agc"
 #define DEV_IF_GAIN		"ifGain"
 #define DEV_LNA_GAIN		"lnaGain"

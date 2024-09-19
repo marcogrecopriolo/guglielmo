@@ -23,8 +23,8 @@
  *    Jan van Katwijk (J.vanKatwijk@gmail.com)
  *    Lazy Chair Programming
  */
-#ifndef __SDRPLAY_HANDLER__
-#define	__SDRPLAY_HANDLER__
+#ifndef SDRPLAY_HANDLER_H
+#define	SDRPLAY_HANDLER_H
 
 #include	<atomic>
 #include	"constants.h"
@@ -93,9 +93,8 @@ public:
     sdrplayHandler(void);
     ~sdrplayHandler(void);
 
-    int32_t deviceCount(void);
-    QString deviceName(int32_t devNo);
-    bool setDevice(int32_t devNo);
+    int32_t devices(deviceStrings *, int);
+    bool setDevice(const char *);
     bool restartReader(int32_t);
     void stopReader(void);
     int32_t getSamples(std::complex<float> *, int32_t, agcStats *stats);
@@ -116,13 +115,20 @@ public:
 
 private:
     QString errorCodes(mir_sdr_ErrT);
-    bool switchDevice(int32_t devNo, mir_sdr_DeviceT *devDesc);
+    bool configDevice(int32_t devNo, mir_sdr_DeviceT *devDesc);
     bool loadFunctions(void);
 
+    char currentId[DEV_SHORT];
     int	 GRdB;
     int	 lnaGain;
     int	 lnaGainMax;
     bool agcMode;
+    int32_t inputRate;
+    int16_t nrBits;
+    std::atomic<bool> running;
+    bool libraryLoaded;
+    HINSTANCE Handle;
+
     pfn_mir_sdr_StreamInit my_mir_sdr_StreamInit;
     pfn_mir_sdr_Reinit my_mir_sdr_Reinit;
     pfn_mir_sdr_StreamUninit my_mir_sdr_StreamUninit;
@@ -149,14 +155,5 @@ private:
     pfn_mir_sdr_rspDuo_TunerSel my_mir_sdr_rspDuo_TunerSel;
     pfn_mir_sdr_SetDeviceIdx my_mir_sdr_SetDeviceIdx;
     pfn_mir_sdr_ReleaseDeviceIdx my_mir_sdr_ReleaseDeviceIdx;
-
-    int16_t hwVersion;
-    int16_t deviceIndex;
-    int32_t inputRate;
-    bool libraryLoaded;
-    std::atomic<bool> running;
-    HINSTANCE Handle;
-    int16_t nrBits;
-
 };
 #endif

@@ -148,7 +148,7 @@ private:
     SNDFILE *recordingFile;
     int deviceUiControls;
     QString deviceType;
-    int deviceNumber;
+    QString deviceId;
 
     int ifGain;
     int minIfGain;

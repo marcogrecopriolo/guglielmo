@@ -1,135 +1,118 @@
-#
 /*
- *    Copyright (C) 2014 .. 2017
- *    Jan van Katwijk (J.vanKatwijk@gmail.com)
- *    Lazy Chair Computing
+ *    Copyright (C) 2021
+ *    Marco Greco <marcogrecopriolo@gmail.com>
  *
- *    This file is part of the dabradio
+ *    This file is part of the guglielmo FM DAB tuner software package.
  *
- *    dabradio is free software; you can redistribute it and/or modify
+ *    guglielmo is free software; you can redistribute it and/or modify
  *    it under the terms of the GNU General Public License as published by
- *    the Free Software Foundation; either version 2 of the License, or
- *    (at your option) any later version.
+ *    the Free Software Foundation, version 2 of the License.
  *
- *    dabradio is distributed in the hope that it will be useful,
+ *    guglielmo is distributed in the hope that it will be useful,
  *    but WITHOUT ANY WARRANTY; without even the implied warranty of
  *    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *    GNU General Public License for more details.
  *
  *    You should have received a copy of the GNU General Public License
- *    along with dabradio; if not, write to the Free Software
+ *    along with guglielmo; if not, write to the Free Software
  *    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ *
+ *    Taken from qt-dab, with bug fixes and enhancements.
+ *
+ *    Copyright (C) 2013 .. 2017
+ *    Jan van Katwijk (J.vanKatwijk@gmail.com)
+ *    Lazy Chair Computing
  */
 
-#ifndef __RTLSDR_HANDLER__
-#define	__RTLSDR_HANDLER__
+#ifndef RTLSDR_HANDLER_H
+#define	RTLSDR_HANDLER_H
 
-#include	<stdio.h>
-#include	"constants.h"
-#include	"device-handler.h"
-#include	"ringbuffer.h"
+#include <stdio.h>
+#include "constants.h"
+#include "device-handler.h"
+#include "ringbuffer.h"
 
-class	dll_driver;
-//
-//	create typedefs for the library functions
+class dll_driver;
+
 typedef	struct rtlsdr_dev rtlsdr_dev_t;
-extern "C"  {
-typedef	void (*rtlsdr_read_async_cb_t) (uint8_t *buf, uint32_t len, void *ctx);
-typedef	 int (*  pfnrtlsdr_open )(rtlsdr_dev_t **, uint32_t);
-typedef	int (*  pfnrtlsdr_close) (rtlsdr_dev_t *);
-typedef	int (*  pfnrtlsdr_set_center_freq) (rtlsdr_dev_t *, uint32_t);
-typedef uint32_t (*  pfnrtlsdr_get_center_freq) (rtlsdr_dev_t *);
-typedef	int (*  pfnrtlsdr_get_tuner_gains) (rtlsdr_dev_t *, int *);
-typedef	int (*  pfnrtlsdr_set_tuner_gain_mode) (rtlsdr_dev_t *, int);
-typedef	int (*  pfnrtlsdr_set_agc_mode)        (rtlsdr_dev_t *, int);
-typedef	int (*  pfnrtlsdr_set_sample_rate) (rtlsdr_dev_t *, uint32_t);
-typedef	int (*  pfnrtlsdr_get_sample_rate) (rtlsdr_dev_t *);
-typedef	int (*  pfnrtlsdr_set_tuner_gain) (rtlsdr_dev_t *, int);
-typedef	int (*  pfnrtlsdr_get_tuner_gain) (rtlsdr_dev_t *);
-typedef int (*  pfnrtlsdr_reset_buffer) (rtlsdr_dev_t *);
-typedef	int (*  pfnrtlsdr_read_async) (rtlsdr_dev_t *,
-	                               rtlsdr_read_async_cb_t,
-	                               void *,
-	                               uint32_t,
-	                               uint32_t);
-typedef int (*  pfnrtlsdr_cancel_async) (rtlsdr_dev_t *);
-typedef int (*  pfnrtlsdr_set_direct_sampling) (rtlsdr_dev_t *, int);
-typedef uint32_t (*  pfnrtlsdr_get_device_count) (void);
-typedef	int (* pfnrtlsdr_set_freq_correction)(rtlsdr_dev_t *, int);
-typedef	char *(* pfnrtlsdr_get_device_name)(int);
-typedef	char *(* pfnrtlsdr_get_device_usb_strings)(int, char *, char *, char *);
+extern "C" {
+    typedef void (*rtlsdr_read_async_cb_t)(uint8_t *buf, uint32_t len, void *ctx);
+    typedef int (*pfnrtlsdr_open )(rtlsdr_dev_t **, uint32_t);
+    typedef int (*pfnrtlsdr_close)(rtlsdr_dev_t *);
+    typedef int (*pfnrtlsdr_set_center_freq)(rtlsdr_dev_t *, uint32_t);
+    typedef uint32_t (*pfnrtlsdr_get_center_freq)(rtlsdr_dev_t *);
+    typedef int (*pfnrtlsdr_get_tuner_gains)(rtlsdr_dev_t *, int *);
+    typedef int (*pfnrtlsdr_set_tuner_gain_mode)(rtlsdr_dev_t *, int);
+    typedef int (*pfnrtlsdr_set_agc_mode)(rtlsdr_dev_t *, int);
+    typedef int (*pfnrtlsdr_set_sample_rate)(rtlsdr_dev_t *, uint32_t);
+    typedef int (*pfnrtlsdr_get_sample_rate)(rtlsdr_dev_t *);
+    typedef int (*pfnrtlsdr_set_tuner_gain)(rtlsdr_dev_t *, int);
+    typedef int (*pfnrtlsdr_get_tuner_gain)(rtlsdr_dev_t *);
+    typedef int (*pfnrtlsdr_reset_buffer)(rtlsdr_dev_t *);
+    typedef int (*pfnrtlsdr_read_async)(rtlsdr_dev_t *, rtlsdr_read_async_cb_t,
+				       void *, uint32_t, uint32_t);
+    typedef int (*pfnrtlsdr_cancel_async)(rtlsdr_dev_t *);
+    typedef int (*pfnrtlsdr_set_direct_sampling)(rtlsdr_dev_t *, int);
+    typedef uint32_t (*pfnrtlsdr_get_device_count)(void);
+    typedef int (*pfnrtlsdr_set_freq_correction)(rtlsdr_dev_t *, int);
+    typedef char *(*pfnrtlsdr_get_device_name)(int);
+    typedef char *(*pfnrtlsdr_get_device_usb_strings)(int, char *, char *, char *);
 }
-//	This class is a simple wrapper around the
-//	rtlsdr library that is read in  as dll (or .so file in linux)
-//	It does not do any processing
-class	rtlsdrHandler: public deviceHandler {
+
+class rtlsdrHandler: public deviceHandler {
 Q_OBJECT
 public:
-			rtlsdrHandler	(void);
-			~rtlsdrHandler	(void);
-//	interface to the reader
-	int32_t		deviceCount	(void);
-	QString		deviceName	(int32_t devNo);
-	void		deviceModel	(int32_t devNo, char *buf, int32_t len);
-	bool		setDevice	(int32_t devNo);
-	bool		restartReader	(int32_t frequency);
-	void		stopReader	(void);
-	int32_t		getSamples	(std::complex<float> *,
-						int32_t,
-						agcStats *stats);
-	int32_t		Samples		(void);
-	void		resetBuffer	(void);
-	int16_t		bitDepth	(void);
-	int32_t         getRate		(void);
-//
-//	These need to be visible for the separate usb handling thread
-	RingBuffer<uint8_t>	_I_Buffer;
-	pfnrtlsdr_read_async	rtlsdr_read_async;
-	struct rtlsdr_dev	*device;
+    rtlsdrHandler(void);
+    ~rtlsdrHandler(void);
 
-public slots:
-	void            setIfGain	(int);
-        void            setAgcControl	(int);
+    int32_t devices(deviceStrings *, int);
+    bool setDevice(const char *);
+    bool restartReader(int32_t frequency);
+    void stopReader(void);
+    int32_t getSamples(std::complex<float> *,
+		       int32_t, agcStats *stats);
+    int32_t Samples(void);
+    void resetBuffer(void);
+    int16_t bitDepth(void);
+    int32_t getRate(void);
+    void setIfGain(int);
+    void setAgcControl(int);
+ 
+    // These need to be visible for the separate usb handling thread
+    RingBuffer<uint8_t> _I_Buffer;
+    pfnrtlsdr_read_async rtlsdr_read_async;
+    struct rtlsdr_dev *device;
 
 private:
-	bool		agcControl;
-	int		ifGain;
-	int32_t		inputRate;
-	HINSTANCE	Handle;
-	dll_driver	*workerHandle;
-	bool		libraryLoaded;
-	bool		open;
-	int		*gains;
-	int16_t		gainsCount;
-//	void		update_gainSettings	(int);
-//	void		record_gainSettings	(int);
-//	here we need to load functions from the dll
-	bool		load_rtlFunctions	(void);
-	pfnrtlsdr_open	rtlsdr_open;
-	pfnrtlsdr_close	rtlsdr_close;
+    bool load_rtlFunctions(void);
+    char currentId[DEV_SHORT];
+    bool agcControl;
+    int	 ifGain;
+    int32_t inputRate;
+    HINSTANCE Handle;
+    dll_driver *workerHandle;
+    bool libraryLoaded;
+    bool open;
+    int *gains;
+    int16_t gainsCount;
 
-	pfnrtlsdr_set_center_freq rtlsdr_set_center_freq;
-	pfnrtlsdr_get_center_freq rtlsdr_get_center_freq;
-	pfnrtlsdr_get_tuner_gains rtlsdr_get_tuner_gains;
-	pfnrtlsdr_set_tuner_gain_mode rtlsdr_set_tuner_gain_mode;
-	pfnrtlsdr_set_agc_mode rtlsdr_set_agc_mode;
-	pfnrtlsdr_set_sample_rate rtlsdr_set_sample_rate;
-	pfnrtlsdr_get_sample_rate rtlsdr_get_sample_rate;
-	pfnrtlsdr_set_tuner_gain rtlsdr_set_tuner_gain;
-	pfnrtlsdr_get_tuner_gain rtlsdr_get_tuner_gain;
-	pfnrtlsdr_reset_buffer rtlsdr_reset_buffer;
-	pfnrtlsdr_cancel_async rtlsdr_cancel_async;
-	pfnrtlsdr_set_direct_sampling	rtlsdr_set_direct_sampling;
-	pfnrtlsdr_get_device_count rtlsdr_get_device_count;
-	pfnrtlsdr_set_freq_correction rtlsdr_set_freq_correction;
-	pfnrtlsdr_get_device_name rtlsdr_get_device_name;
-	pfnrtlsdr_get_device_usb_strings rtlsdr_get_device_usb_strings;
-/*
-signals:
-	void		new_gainValue		(int);
-	void		new_agcValue		(bool);
-private slots:
-*/
+    pfnrtlsdr_open rtlsdr_open;
+    pfnrtlsdr_close rtlsdr_close;
+    pfnrtlsdr_set_center_freq rtlsdr_set_center_freq;
+    pfnrtlsdr_get_center_freq rtlsdr_get_center_freq;
+    pfnrtlsdr_get_tuner_gains rtlsdr_get_tuner_gains;
+    pfnrtlsdr_set_tuner_gain_mode rtlsdr_set_tuner_gain_mode;
+    pfnrtlsdr_set_agc_mode rtlsdr_set_agc_mode;
+    pfnrtlsdr_set_sample_rate rtlsdr_set_sample_rate;
+    pfnrtlsdr_get_sample_rate rtlsdr_get_sample_rate;
+    pfnrtlsdr_set_tuner_gain rtlsdr_set_tuner_gain;
+    pfnrtlsdr_get_tuner_gain rtlsdr_get_tuner_gain;
+    pfnrtlsdr_reset_buffer rtlsdr_reset_buffer;
+    pfnrtlsdr_cancel_async rtlsdr_cancel_async;
+    pfnrtlsdr_set_direct_sampling rtlsdr_set_direct_sampling;
+    pfnrtlsdr_get_device_count rtlsdr_get_device_count;
+    pfnrtlsdr_set_freq_correction rtlsdr_set_freq_correction;
+    pfnrtlsdr_get_device_name rtlsdr_get_device_name;
+    pfnrtlsdr_get_device_usb_strings rtlsdr_get_device_usb_strings;
 };
 #endif
-

@@ -218,31 +218,29 @@ void RadioInterface::handleSettingsAction() {
 	}
 
 	int dc;
+	deviceStrings devNames[MAX_DEVICES];
 
 	// show the end of the device name
-	if (inputDevice == NULL || (dc = inputDevice->deviceCount()) == 0) 
+	if (inputDevice == NULL || (dc = inputDevice->devices((deviceStrings *) &devNames, MAX_DEVICES)) == 0)
 	     settingsUi.deviceNameComboBox->setEnabled(false);
 	else 
 	    for (int i = 0; i < dc; i++) {
-		char buf[STRBUFLEN], *model = (char *) &buf;
-
-		settingsUi.deviceNameComboBox->addItem(inputDevice->deviceName(i));
-		inputDevice->deviceModel(i, model, STRBUFLEN);
-		if (strlen(model) > 0)
-		    settingsUi.deviceNameComboBox->setItemData(i, QString(model), Qt::ToolTipRole);
-		if (i == deviceNumber)
+		settingsUi.deviceNameComboBox->addItem(devNames[i].name);
+		settingsUi.deviceNameComboBox->setItemData(i, QString(devNames[i].id), Qt::UserRole);
+		if (strlen(devNames[i].description) > 0)
+		    settingsUi.deviceNameComboBox->setItemData(i, QString(devNames[i].description), Qt::ToolTipRole);
+		if (devNames[i].id == deviceId)
 		    settingsUi.deviceNameComboBox->setCurrentIndex(i);
 	    }
 	settingsUi.deviceNameComboBox->view()->setTextElideMode(Qt::ElideLeft);
 	if (inputDevice != nullptr) {
-	    qobject_cast<QStandardItemModel*> (settingsUi.agcComboBox->model())->item(AGC_ON)->setEnabled(deviceUiControls & HW_AGC);
-	    qobject_cast<QStandardItemModel*> (settingsUi.agcComboBox->model())->item(AGC_SW)->setEnabled(deviceUiControls & SW_AGC);
-	    if (qobject_cast<QStandardItemModel*> (settingsUi.agcComboBox->model())->item(agc)->isEnabled()) {
-		settingsUi.agcComboBox->setCurrentIndex(agc);
-	    } else {
+	    qobject_cast<QListView*> (settingsUi.agcComboBox->view())->setRowHidden(AGC_ON, !(deviceUiControls & HW_AGC));
+	    qobject_cast<QListView*> (settingsUi.agcComboBox->view())->setRowHidden(AGC_SW, !(deviceUiControls & SW_AGC));
+	    if (qobject_cast<QListView*> (settingsUi.agcComboBox->view())->isRowHidden(agc)) {
 		inputDevice->setAgcControl(false);
 		settingsUi.agcComboBox->setCurrentIndex(0);
-	    }
+	    } else
+		settingsUi.agcComboBox->setCurrentIndex(agc);
 	    if (deviceUiControls & IF_GAIN) {
 		settingsUi.gainSpinBox->setMinimum(minIfGain);
 		settingsUi.gainSpinBox->setMaximum(maxIfGain);
@@ -273,7 +271,7 @@ void RadioInterface::handleSettingsAction() {
 	settingsDialog->connect(settingsUi.deviceNameComboBox, SIGNAL(activated(int)),
 		this, SLOT(setDeviceName(int)));
 	settingsDialog->connect(settingsUi.agcComboBox, SIGNAL(activated(int)),
-       		this, SLOT(setAgcControl(int)));
+		this, SLOT(setAgcControl(int)));
 	settingsDialog->connect(settingsUi.gainSpinBox, SIGNAL(valueChanged(int)),
        		this, SLOT(setIfGain(int)));
 	settingsDialog->connect(settingsUi.lnaSpinBox, SIGNAL(valueChanged(int)),
@@ -361,7 +359,7 @@ void RadioInterface::settingsClose(void) {
 	settings->setValue(DEV_IF_GAIN, ifGain);
     if (settingsUi.lnaSpinBox->isEnabled())
 	settings->setValue(DEV_LNA_GAIN, lnaGain);
-    settings->setValue(DEV_NUMBER, deviceNumber);
+    settings->setValue(DEV_ID, deviceId);
     settings->endGroup();
 }
 
@@ -780,7 +778,7 @@ void RadioInterface::setDevice(int d) {
 	settings->setValue(DEV_LNA_GAIN, settingsUi.lnaSpinBox->value());
     } else
 	settingsUi.lnaSpinBox->setEnabled(true);
-    settings->setValue(DEV_NUMBER, deviceNumber);
+    settings->setValue(DEV_ID, deviceId);
     settings->endGroup();
 
     if (isFM) {
@@ -801,28 +799,30 @@ void RadioInterface::setDevice(int d) {
     // do it all again for the new device
     settings->beginGroup(deviceType);
     agc = settings->value(DEV_AGC, DEV_DEF_AGC).toInt();
-    qobject_cast<QStandardItemModel*> (settingsUi.agcComboBox->model())->item(AGC_ON)->setEnabled(deviceUiControls & HW_AGC);
-    qobject_cast<QStandardItemModel*> (settingsUi.agcComboBox->model())->item(AGC_SW)->setEnabled(deviceUiControls & SW_AGC);
-    deviceNumber = settings->value(DEV_NUMBER, 0).toInt();
+    qobject_cast<QListView*> (settingsUi.agcComboBox->view())->setRowHidden(AGC_ON, !(deviceUiControls & HW_AGC));
+    qobject_cast<QListView*> (settingsUi.agcComboBox->view())->setRowHidden(AGC_SW, !(deviceUiControls & SW_AGC));
+    if (qobject_cast<QListView*> (settingsUi.agcComboBox->view())->isRowHidden(agc)) {
+	inputDevice->setAgcControl(false);
+	settingsUi.agcComboBox->setCurrentIndex(0);
+    } else
+	settingsUi.agcComboBox->setCurrentIndex(agc);
+    deviceId = settings->value(DEV_ID, "").toString();
 
     // set device model first...
-    int dc = inputDevice->deviceCount();
+    deviceStrings devNames[MAX_DEVICES];
+    int dc = inputDevice->devices((deviceStrings *) &devNames, MAX_DEVICES);
     settingsUi.deviceNameComboBox->clear();
     if (dc <= 0) {
 	settingsUi.deviceNameComboBox->setEnabled(false);
-	deviceNumber = 0;
+	deviceId = "";
     } else {
-	if (deviceNumber >= dc)
-	    deviceNumber = 0;
 	settingsUi.deviceNameComboBox->setEnabled(true);
 	for (int i = 0; i < dc; i++) {
-	    char buf[STRBUFLEN], *model = (char *) &buf;
-
-	    settingsUi.deviceNameComboBox->addItem(inputDevice->deviceName(i));
-	    inputDevice->deviceModel(i, model, STRBUFLEN);
-	    if (strlen(model) > 0)
-		settingsUi.deviceNameComboBox->setItemData(i, QString(model), Qt::ToolTipRole);
-	    if (i == deviceNumber)
+	    settingsUi.deviceNameComboBox->addItem(devNames[i].name);
+	    settingsUi.deviceNameComboBox->setItemData(i, QString(devNames[i].id), Qt::UserRole);
+	    if (strlen(devNames[i].description) > 0)
+		settingsUi.deviceNameComboBox->setItemData(i, QString(devNames[i].description), Qt::ToolTipRole);
+	    if (devNames[i].id == deviceId)
 		settingsUi.deviceNameComboBox->setCurrentIndex(i);
 	}
     }
@@ -867,8 +867,12 @@ void RadioInterface::setDevice(int d) {
 }
 
 void RadioInterface::setDeviceName(int d) {
-    log(LOG_UI, LOG_MIN, "device name %i", d);
-    if (d == deviceNumber)
+    QString id;
+
+    log(LOG_UI, LOG_MIN, "device name %s", qPrintable(settingsUi.deviceNameComboBox->itemText(d)));
+    id = settingsUi.deviceNameComboBox->itemData(d, Qt::UserRole).toString();
+
+    if (id == deviceId)
 	return;
 
     if (isFM) {
@@ -880,8 +884,8 @@ void RadioInterface::setDeviceName(int d) {
     delete DABprocessor;
     delete FMprocessor;
 
-    if (inputDevice->setDevice(d))
-	deviceNumber = d;
+    if (inputDevice->setDevice(qPrintable(id)))
+	deviceId = id;
 
     // reset LNA, as it changes with model
     settings->beginGroup(deviceType);
