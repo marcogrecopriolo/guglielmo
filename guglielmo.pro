@@ -440,8 +440,7 @@ sdrplay-v3 {
         DEPENDPATH      += ./devices/sdrplay-handler-v3
         INCLUDEPATH     += ./devices/sdrplay-handler-v3 \
 			   ./devices/sdrplay-handler-v3/include
-        HEADERS         += ./devices/sdrplay-handler-v3/sdrplay-handler-v3.h \
-			   ./devices/sdrplay-handler-v3/sdrplay-commands.h
+        HEADERS         += ./devices/sdrplay-handler-v3/sdrplay-handler-v3.h
         SOURCES         += ./devices/sdrplay-handler-v3/sdrplay-handler-v3.cpp
 }
 
