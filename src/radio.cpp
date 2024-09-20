@@ -327,7 +327,7 @@ RadioInterface::~RadioInterface() {
 void RadioInterface::processGain(agcStats *newStats, int amount) {
     int oldAgc = swAgc;
 
-    if (agc != AGC_SW)
+    if (agc != SW_AGC && !log_active(LOG_AGC, LOG_VERBOSE))
 	return;
     if (newStats->min < stats.min)
 	stats.min = newStats->min;
@@ -335,10 +335,10 @@ void RadioInterface::processGain(agcStats *newStats, int amount) {
 	stats.max = newStats->max;
     stats.overflows += newStats->overflows;
     swAgcAmount += amount;
-    log(LOG_AGC, LOG_VERBOSE, "skip %i amount %i min %i max %i overflows %i",
-       swAgcSkip, swAgcAmount, stats.min, stats.max, stats.overflows);
     if (swAgcAmount < SW_AGC_BYTES)
 	return;
+    log(LOG_AGC, LOG_VERBOSE, "skip %i amount %i min %i max %i overflows %i",
+       swAgcSkip, swAgcAmount, stats.min, stats.max, stats.overflows);
 
     // we most likely already have data in the buffer, which will not be yet
     // affected by our gain change, so skip some buffers before retesting
@@ -346,6 +346,10 @@ void RadioInterface::processGain(agcStats *newStats, int amount) {
     if (swAgcSkip > 0) {
 	swAgcAmount = 0;
 	swAgcSkip--;
+	return;
+    }
+    if (agc != AGC_SW) {
+	resetAgcStats();
 	return;
     }
 

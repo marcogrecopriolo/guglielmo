@@ -70,17 +70,15 @@ private:
     sdrplay_api_DeviceParamsT *deviceParams;
     sdrplay_api_CallbackFnsT cbFns;
     sdrplay_api_RxChannelParamsT *chParams;
-    int denominator;
-    int32_t vfoFrequency;
+    float signalAmplitude;
+    int signalMin;
+    int signalMax;
     bool agcMode;
     int GRdB;
     int16_t nrBits;
     int	lnaGainMax;
     int32_t inputRate;
-    float apiVersion;
-    bool has_antennaSelect;
     int lnaState;
-    int ppmValue;
     HINSTANCE Handle;
 
     sdrplay_api_Open_t sdrplay_api_Open;

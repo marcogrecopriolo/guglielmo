@@ -110,8 +110,7 @@ public:
     void setAgcControl(int);
 
 //  The buffer should be visible by the callback function
-    RingBuffer<std::complex<float>> _I_Buffer;
-    float denominator;
+    RingBuffer<std::complex<int16_t>> _I_Buffer;
 
 private:
     QString errorCodes(mir_sdr_ErrT);
@@ -119,6 +118,9 @@ private:
     bool loadFunctions(void);
 
     char currentId[DEV_SHORT];
+    float signalAmplitude;
+    int signalMin;
+    int signalMax;
     int	 GRdB;
     int	 lnaGain;
     int	 lnaGainMax;

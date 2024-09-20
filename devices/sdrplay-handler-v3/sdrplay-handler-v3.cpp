@@ -92,10 +92,13 @@ sdrplayHandler_v3::sdrplayHandler_v3(): _I_Buffer(4 * 1024 * 1024) {
     sdrplay_api_ErrT err;
     sdrplay_api_DeviceT devs[MAX_DEVICES];
     uint32_t devCount;
+    float apiVersion;
 
     running.store(false);
     nrBits = 12;
-    denominator = 2048;
+    signalMin = -2048;
+    signalMax = -signalMin-1;
+    signalAmplitude = -signalMin;
     vfoFrequency = MHz(220);
     GRdB = MIN_GAIN;
     lnaState = 0;
@@ -219,28 +222,28 @@ bool sdrplayHandler_v3::configDevice(sdrplay_api_DeviceT *devDesc) {
 	// RSP1
 	case 1:
 	    lnaGainMax = 3;
-	    denominator = 2048;
+	    signalMin = -2048;
 	    nrBits = 12;
 	    break;
 
 	// RSP2
 	case 2:
 	    lnaGainMax = 8;
-	    denominator = 8192;
+	    signalMin = -8192;
 	    nrBits = 14;
 	    break;
 
 	// RSP DUO
 	case 3:
 	    lnaGainMax = 9;
-	    denominator = 2048;
+	    signalMin = -2048;
 	    nrBits = 12;
 	    break;
 
 	// RSPDx
 	case 4:
 	    lnaGainMax = 26;
-	    denominator = 8192;
+	    signalMin = -8192;
 	    nrBits = 14;
 	    break;
 
@@ -248,10 +251,12 @@ bool sdrplayHandler_v3::configDevice(sdrplay_api_DeviceT *devDesc) {
 	case 255:
 	default:
 	      lnaGainMax = 9;
-	      denominator = 8192;
+	      signalMin = -8192;
 	      nrBits = 14;
 	      break;
     }
+    signalAmplitude = -signalAmplitude;
+    signalMax = -signalMin-1;
     return true;
 }
 
@@ -349,10 +354,9 @@ bool sdrplayHandler_v3::restartReader(int32_t newFreq) {
 
     vfoFrequency = newFreq;
     chParams->tunerParams.rfFreq.rfHz = vfoFrequency;
-    err = sdrplay_api_Update(chosenDevice->dev,
-					 chosenDevice->tuner,
-					 sdrplay_api_Update_Tuner_Frf,
-					 sdrplay_api_Update_Ext1_None);
+    err = sdrplay_api_Update(chosenDevice->dev, chosenDevice->tuner,
+			     sdrplay_api_Update_Tuner_Frf,
+			     sdrplay_api_Update_Ext1_None);
     if (err != sdrplay_api_Success) {
 	log(DEV_PLAYV3, LOG_MIN, "restart: error %s",
 	    sdrplay_api_GetErrorString (err));
@@ -381,13 +385,28 @@ void sdrplayHandler_v3::stopReader() {
 
 int32_t	sdrplayHandler_v3::getSamples(std::complex<float> *V, int32_t size, agcStats *stats) { 
     _VLA(std::complex<int16_t>, temp, size);
+    int32_t overflow = 0, minVal = SHRT_MAX, maxVal = SHRT_MIN;
     int i;
 
-    (void) stats;
     int amount = _I_Buffer.getDataFromBuffer(temp, size);
-    for (i = 0; i < amount; i++)
-	   V[i] = std::complex<float>(real(temp [i]) / (float) denominator,
-				      imag(temp [i]) / (float) denominator);
+    for (i = 0; i < amount; i++) {
+	int r = real(temp[i]), im = imag(temp[i]);
+
+	if (r <= signalMin || r >= signalMax || im <= signalMin || im >= signalMax)
+	    overflow++;
+	if (r < minVal)
+	    minVal = r;
+	if (r > maxVal) 
+	    maxVal = r;
+	if (im < minVal)
+	    minVal = im;
+	if (im > maxVal)
+	    maxVal = im;
+	V[i] = std::complex<float>(r / signalAmplitude, im / signalAmplitude);
+    }
+    stats->overflows = overflow;
+    stats->min = minVal;
+    stats->max = maxVal;
     return amount;
 }
 
@@ -404,7 +423,7 @@ int16_t sdrplayHandler_v3::bitDepth() {
 }
 
 int32_t sdrplayHandler_v3::amplitude(void) {
-    return 2*denominator;
+    return signalMax*2+2;
 }
 
 int32_t sdrplayHandler_v3::getRate(void) {

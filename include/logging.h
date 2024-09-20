@@ -48,5 +48,6 @@ extern int logVerbosity;
 #else
 #define log(comp, level, fmt, ...) if ((logVerbosity >= (level)) && (logMask & (comp)) != 0) fprintf(stderr, "%-7s " fmt "\n", (#comp ":")+4, __VA_ARGS__)
 #endif
+#define log_active(comp, level) ((logVerbosity >= (level)) && (logMask & (comp)) != 0)
 
 #endif	// __LOGGING_H__

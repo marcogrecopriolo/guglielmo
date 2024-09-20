@@ -138,30 +138,32 @@ bool sdrplayHandler::configDevice(int index, mir_sdr_DeviceT *devDesc) {
 	case 1:
 	    lnaGainMax = 3;
 	    nrBits = 12;
-	    denominator	= 2048;
+	    signalMin = -2048;
 	    break;
 
 	// RSP2
 	case 2:
 	    lnaGainMax = 8;
 	    nrBits = 14;
-	    denominator	= 8192;
+	    signalMin = -8192;
 	    break;
 
 	// RSP DUO
 	case 3:
 	    lnaGainMax = 9;
 	    nrBits = 14;
-	    denominator	= 8192;
+	    signalMin = -8192;
 	    break;
 
 	// RSP1A
 	default:
 	    lnaGainMax = 9;
 	    nrBits = 14;
-	    denominator	= 8192;
+	    signalMin = -8192;
 	    break;
     }
+    signalAmplitude = -signalAmplitude;
+    signalMax = -signalMin-1;
 
     if (devDesc->hwVer == 2) {
 	mir_sdr_ErrT err;
@@ -333,18 +335,17 @@ void myStreamCallback(int16_t *xi,
 		      uint32_t reset,
 		      uint32_t hwRemoved,
 		      void *cbContext) {
-    int16_t i;
+    uint32_t i;
     sdrplayHandler *p = static_cast<sdrplayHandler *> (cbContext);
-    float denominator = p->denominator;
-    std::complex<float> *localBuf =
-	   (std::complex<float> *) alloca(numSamples * sizeof (std::complex<float>));
+    _VLA(std::complex<int16_t>, localBuf, numSamples);
 
     if (reset || hwRemoved)
 	return;
 
-    for (i = 0; i < (int) numSamples;i ++)
-	localBuf[i] = std::complex<float>(float (xi[i]) / denominator,
-					  float (xq[i]) / denominator);
+    for (i = 0; i < numSamples;i ++) {
+	std::complex<int16_t> symb = std::complex<int16_t>(xi[i], xq[i]);
+	localBuf[i] = symb;
+    }
     p->_I_Buffer.putDataIntoBuffer(localBuf, numSamples);
     (void) firstSampleNum;
     (void) grChanged;
@@ -408,8 +409,30 @@ void sdrplayHandler::stopReader(void) {
 }
 
 int32_t	sdrplayHandler::getSamples(std::complex<float> *V, int32_t size, agcStats *stats) { 
-    (void) stats;
-    return _I_Buffer. getDataFromBuffer(V, size);
+    _VLA(std::complex<int16_t>, temp, size);
+    int32_t overflow = 0, minVal = SHRT_MAX, maxVal = SHRT_MIN;
+    int i;
+
+    int amount = _I_Buffer.getDataFromBuffer(temp, size);
+    for (i = 0; i < amount; i++) {
+	int r = real(temp[i]), im = imag(temp[i]);
+
+	if (r <= signalMin || r >= signalMax || im <= signalMin || im >= signalMax)
+	    overflow++;
+	if (r < minVal)
+	    minVal = r;
+	if (r > maxVal)
+	    maxVal = r;
+	if (im < minVal)
+	    minVal = im;
+	if (im > maxVal)
+	    maxVal = im;
+	V[i] = std::complex<float>(r / signalAmplitude, im / signalAmplitude);
+    }
+    stats->overflows = overflow;
+    stats->min = minVal;
+    stats->max = maxVal;
+    return amount;
 }
 
 int32_t	sdrplayHandler::Samples(void) {
@@ -417,7 +440,7 @@ int32_t	sdrplayHandler::Samples(void) {
 }
 
 void sdrplayHandler::resetBuffer(void) {
-    _I_Buffer. FlushRingBuffer();
+    _I_Buffer.FlushRingBuffer();
 }
 
 int16_t	sdrplayHandler::bitDepth(void) {

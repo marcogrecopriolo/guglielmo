@@ -32,7 +32,7 @@
 #include "device-handler.h"
 #include "ringbuffer.h"
 
-class dll_driver;
+class dllDriver;
 
 typedef	struct rtlsdr_dev rtlsdr_dev_t;
 extern "C" {
@@ -85,16 +85,18 @@ public:
 
 private:
     bool load_rtlFunctions(void);
+
     char currentId[DEV_SHORT];
     bool agcControl;
     int	 ifGain;
     int32_t inputRate;
     HINSTANCE Handle;
-    dll_driver *workerHandle;
+    dllDriver *workerHandle;
     bool libraryLoaded;
     bool open;
     int *gains;
     int16_t gainsCount;
+    float convTable[UCHAR_MAX+1];
 
     pfnrtlsdr_open rtlsdr_open;
     pfnrtlsdr_close rtlsdr_close;
