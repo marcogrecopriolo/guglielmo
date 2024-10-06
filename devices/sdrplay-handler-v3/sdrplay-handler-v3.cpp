@@ -44,13 +44,13 @@ void StreamACallback(short *xi, short *xq,
 
     if (reset)
 	return;
-    if (!p->running.load())
-	return;
 
     for (int i = 0; i < (int) numSamples; i ++) {
 	std::complex<int16_t> symb = std::complex<int16_t>(xi[i], xq[i]);
 	localBuf[i] = symb;
     }
+    if (!p->running.load())
+	return;
     p->_I_Buffer.putDataIntoBuffer(localBuf, numSamples);
 }
 
@@ -255,7 +255,7 @@ bool sdrplayHandler_v3::configDevice(sdrplay_api_DeviceT *devDesc) {
 	      nrBits = 14;
 	      break;
     }
-    signalAmplitude = -signalAmplitude;
+    signalAmplitude = -signalMin;
     signalMax = -signalMin-1;
     return true;
 }
@@ -366,6 +366,7 @@ bool sdrplayHandler_v3::restartReader(int32_t newFreq) {
     log(DEV_PLAYV3, LOG_MIN, "reader started");
     setIfGain(GRdB);
     setLnaGain(lnaState);
+    setAgcControl(agcMode);
     return true;
 }
 

@@ -109,8 +109,8 @@ public:
     void setLnaGain(int);
     void setAgcControl(int);
 
-//  The buffer should be visible by the callback function
     RingBuffer<std::complex<int16_t>> _I_Buffer;
+    std::atomic<bool> running;
 
 private:
     QString errorCodes(mir_sdr_ErrT);
@@ -127,7 +127,6 @@ private:
     bool agcMode;
     int32_t inputRate;
     int16_t nrBits;
-    std::atomic<bool> running;
     bool libraryLoaded;
     HINSTANCE Handle;
 

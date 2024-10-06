@@ -66,7 +66,7 @@ void	rdsGroupDecoder::reset (void) {
 	stationNameSegmentRegister	= 0;
 
 // Initialize Group 2 members
-	memset (textBuffer, ' ', RADIOTEXT_LENGTH);
+	memset (textBuffer, '\0', RADIOTEXT_LENGTH);
 	textABflag		= -1; // Not defined
 	textSegmentRegister	= 0;
 	setRadioText		("");
@@ -192,7 +192,7 @@ uint16_t	i;
 //	Reset the segment buffer
 //	The text will be redisplayed when the new one arrives
 	   textSegmentRegister = 0;
-	   memset (textBuffer, ' ', RADIOTEXT_LENGTH);
+	   memset (textBuffer, '\0', RADIOTEXT_LENGTH);
 	}
 
 	textPart1	= grp -> getBlock_C ();
@@ -215,7 +215,7 @@ uint16_t	i;
 	   if (textBuffer [i] == END_OF_RADIO_TEXT && (textSegmentRegister & 1)) {
 	      setRadioText (prepareText (textBuffer, i));
 	      textSegmentRegister = 0;
-	      memset (textBuffer, ' ', RADIOTEXT_LENGTH);
+	      memset (textBuffer, '\0', RADIOTEXT_LENGTH);
 	      return;
 	   }
 
@@ -223,7 +223,7 @@ uint16_t	i;
 	if (textSegmentRegister == ALL_TEXT_SEGMENTS) {
 	   setRadioText (prepareText (textBuffer, RADIOTEXT_LENGTH));
 	   textSegmentRegister = 0;
-	   memset (textBuffer, ' ', RADIOTEXT_LENGTH);
+	   memset (textBuffer, '\0', RADIOTEXT_LENGTH);
 	}
 }
 

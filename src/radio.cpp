@@ -1465,9 +1465,9 @@ void RadioInterface::stopFM() {
 	stopFMscan();
     ficBlocks = 0;
     ficSuccess = 0;
+    FMprocessor->stop();
     soundOut->stop();
     inputDevice->stopReader();
-    FMprocessor->stop();
     playing = false;
     scanning = false;
     stopRecording();

@@ -162,7 +162,7 @@ bool sdrplayHandler::configDevice(int index, mir_sdr_DeviceT *devDesc) {
 	    signalMin = -8192;
 	    break;
     }
-    signalAmplitude = -signalAmplitude;
+    signalAmplitude = -signalMin;
     signalMax = -signalMin-1;
 
     if (devDesc->hwVer == 2) {
@@ -269,7 +269,7 @@ void sdrplayHandler::setIfGain(int newGRdB) {
 	return;
     }
 
-    err = my_mir_sdr_RSP_SetGr(newGRdB, lnaGain, 1, 1);
+    err = my_mir_sdr_RSP_SetGr(newGRdB, lnaGain, 1, 0);
     if (err != mir_sdr_Success) {
 	log(DEV_PLAY, LOG_MIN, "IF change: val %i error %s",
 	     newGRdB, errorCodes(err).toLatin1().data());
@@ -346,6 +346,8 @@ void myStreamCallback(int16_t *xi,
 	std::complex<int16_t> symb = std::complex<int16_t>(xi[i], xq[i]);
 	localBuf[i] = symb;
     }
+    if (!p->running.load())
+	return;
     p->_I_Buffer.putDataIntoBuffer(localBuf, numSamples);
     (void) firstSampleNum;
     (void) grChanged;
@@ -391,8 +393,7 @@ bool sdrplayHandler::restartReader(int32_t frequency) {
 	
     running.store(true);
     log(DEV_PLAY, LOG_MIN, "reader started");
-    setIfGain(GRdB);
-    setLnaGain(lnaGain);
+    setAgcControl(agcMode);
     err	= my_mir_sdr_SetDcMode(4, 1);
     err	= my_mir_sdr_SetDcTrackTime(63);
     return true;
