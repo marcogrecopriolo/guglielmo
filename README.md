@@ -200,8 +200,11 @@ Currently supported devices are
 
 The binary supplied with each version supports all available devices except for PLUTO.
 
-At this moment in time, the only devices tested are the SDR RTL stick and the SDRplay RSP1a,
-and the only build linux.
+At this moment in time, the only devices tested are the RTL SDR stick (both V3 and V4) and the SDRplay RSP1a.
+
+The RTL SDR stick has been successfully tested on Linux (OpenSuse Leap 15.2 and 15.5, Ubutu 22.04, macOS High
+Sierra x86_64, Windows 11), the RSP1a with Linux and Windows.
+
 Windows does build with Visual Studio, and Mingw plus Msys or Msys2, but the process needs a fair
 amount of manual intervention.
 
@@ -211,17 +214,18 @@ amount of manual intervention.
 - debug verbosity (and logging in general)
 - cleanup the source, remove objects that are not needed, consolidate buffer usage
 - make loading settings more resilient to duff values
-- selecting devices when multiple devices of the same type are available
-- improve on IF and LNA gain settings
 
 ## Acknowledgements, copyright, etc...
 
 The backends have wholesale lifted from Qt-dab and Sdr-j-fm by Jan van Katwijk and
 various other contributors.
 
-I have written the interface, integrated the two processors, adapted the devices to work
+I have written the interface, integrated the two processors, rewritten the devices to work
 against the guglielmo interface and fixed several bugs and improved several things, most
 notably the FM and RDS subsystem.
+
+Carl Laufer at rtl-sdr.com and Jon Hudson at sdrplay.com deserve a special mention for
+having provided hardware that I have used to develop the drivers.
 
 The few icons not included in the Qt default style have been taken from freesvg.org.
 
