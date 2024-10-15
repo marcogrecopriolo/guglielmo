@@ -322,6 +322,19 @@ RadioInterface::RadioInterface(QSettings *Si, QWidget	 *parent):
 }
 
 RadioInterface::~RadioInterface() {
+
+    // destruct
+    delete soundOut;
+    if (DABprocessor != nullptr)
+	delete DABprocessor;
+    if (FMprocessor != nullptr)
+	delete FMprocessor;
+    if (scanTimer != nullptr)
+	delete scanTimer;
+    if (settingsDialog != nullptr)
+	delete settingsDialog;
+    for (const auto &dev: deviceList)
+	delete dev.device;
 }
 
 void RadioInterface::processGain(agcStats *newStats, int amount) {
@@ -470,19 +483,6 @@ void RadioInterface::terminateProcess() {
     }
     settings->endArray();
     settings->sync();
-
-    // destruct
-    delete soundOut;
-    if (DABprocessor != nullptr)
-	delete DABprocessor;
-    if (FMprocessor != nullptr)
-	delete FMprocessor;
-    if (scanTimer != nullptr)
-	delete scanTimer;
-    if (settingsDialog != nullptr)
-	delete settingsDialog;
-    for (const auto &dev: deviceList)
-	delete dev.device;
 }
 
 void RadioInterface::findDevices() {
@@ -1311,20 +1311,26 @@ void RadioInterface::startDAB(const QString &channel) {
 void RadioInterface::stopDAB() {
     if (inputDevice == nullptr || DABprocessor == nullptr)
 	return;
+    if (currentService.valid) {
+	audiodata ad;
+
+	DABprocessor->dataforAudioService(currentService.serviceName, &ad);
+	DABprocessor->stopService(&ad);
+	usleep(1000);
+	soundOut->stop();
+    }
     playing = false;
     stopRecording();
     setPlaying();
     setRecording();
-    soundOut->stop();
     ficSuccess = 0;
     ficBlocks = 0;
     presetSelector->setCurrentIndex(0);
 
-    // the service if any - is stopped by halting the DAB processor
+    currentService.valid = false;
     DABprocessor->stop();
     inputDevice->stopReader();
     usleep(1000);
-    currentService.valid = false;
     nextService.valid = false;
     serviceList.clear();
     ensembleModel.clear();

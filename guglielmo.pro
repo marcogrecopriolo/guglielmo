@@ -7,10 +7,10 @@ orgDomain	= sqsl.org
 TARGET		= $$objectName
 DEFINES		+= TARGET=\\\"$$objectName\\\" CURRENT_VERSION=\\\"$$objectVersion\\\" ORGNAME=\\\"$$orgName\\\" ORGDOMAIN=\\\"$$orgDomain\\\"
 QT		+= widgets multimedia
-QMAKE_CXXFLAGS	+= -std=c++11 -g -O0
-QMAKE_CFLAGS	+= -flto -ffast-math -g -O0
-MAKE_CXXFLAGS	+= -flto -ffast-math
-QMAKE_CXXFLAGS  += -isystem $$[QT_INSTALL_HEADERS] -g -O0
+QMAKE_CXXFLAGS	+= -std=c++11 -O3 -isystem $$[QT_INSTALL_HEADERS]
+QMAKE_CFLAGS	+= -flto -ffast-math -O3
+QMAKE_CXXFLAGS_DEBUG	+= -std=c++11 -g -O0 -isystem $$[QT_INSTALL_HEADERS]
+QMAKE_CFLAGS_DEBUG	+= -flto -ffast-math -g -O0
 RC_ICONS	= icons/guglielmo.ico
 RESOURCES	+= guglielmo.qrc
 

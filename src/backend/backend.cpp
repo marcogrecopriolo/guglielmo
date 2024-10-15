@@ -95,13 +95,13 @@ int32_t i, j;
 }
 
 	Backend::~Backend() {
-	log (LOG_DAB, LOG_MIN, "stopping backend for %s (%X)",
-	                  serviceName. toLatin1 (). data (), serviceId);
 #ifdef	__THREADED_BACKEND
 	running. store (false);
 	while (this -> isRunning())
 	   usleep (1000);
 #endif
+	log (LOG_DAB, LOG_MIN, "stopped backend for %s (%X)",
+	                  serviceName. toLatin1 (). data (), serviceId);
 }
 
 int32_t	Backend::process	(int16_t *v, int16_t cnt) {
