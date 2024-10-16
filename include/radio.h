@@ -289,6 +289,7 @@ private slots:
 #endif
 
     void setSoundMode(int);
+    void setSoundChannels(void);
     void setSoundOutput(int);
     void setLatency(int);
 

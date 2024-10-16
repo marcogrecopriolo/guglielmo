@@ -27,32 +27,30 @@
 
 #ifndef __AUDIO_SINK
 #define	__AUDIO_SINK
-#include	<QString>
 #include	"constants.h"
 #include	<portaudio.h>
 #include	<cstdio>
 #include	"audio-base.h"
 #include	"ringbuffer.h"
 
-class	QComboBox;
+struct channelList {
+    const char *name;
+    int16_t dev;
+};
 
 class	audioSink  : public audioBase {
 Q_OBJECT
 public:
 	                audioSink		(int16_t);
 			~audioSink();
-	bool		setupChannels		(QComboBox *);
+	bool		setupChannels		(void);
 	void		stop();
 	void		restart			(void);
         void            setVolume       (qreal);
-	bool		selectDevice		(int16_t);
-	bool		selectDefaultDevice();
-	int32_t		missed();
+	bool		selectDevice		(int32_t *);
+	int16_t		numberOfDevices();
+	const char		*outputChannel	(int16_t);
 private:
-	int16_t		numberofDevices();
-	QString		outputChannelwithRate	(int16_t, int32_t);
-	int16_t		invalidDevice		(void);
-	bool		isValidDevice		(int16_t);
 	int32_t		cardRate();
 
 	bool		OutputrateIsSupported	(int16_t, int32_t);
@@ -63,15 +61,15 @@ private:
 	int32_t		size;
 	bool		portAudio;
 	bool		writerRunning;
-	int16_t		numofDevices;
+	int16_t		maxDevices;
+	int16_t		numDevices;
 	int		paCallbackReturn;
 	int16_t		bufSize;
 	PaStream	*ostream;
 	RingBuffer<float>	_O_Buffer;
 	PaStreamParameters	outputParameters;
 
-	int16_t		*outTable;
-	QStringList	*InterfaceList;
+	channelList		*outTable;
 protected:
 static	int		paCallback_o	(const void	*input,
 	                                 void		*output,

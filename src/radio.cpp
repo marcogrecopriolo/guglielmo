@@ -186,8 +186,8 @@ RadioInterface::RadioInterface(QSettings *Si, QWidget	 *parent):
 	soundOut = new Qt_Audio;
     } else {
 	soundOut = new audioSink(latency);
-	if (!((audioSink *) soundOut)->selectDevice(soundChannel))
-	    ((audioSink *) soundOut)->selectDefaultDevice();
+	((audioSink *) soundOut)->setupChannels();
+	((audioSink *) soundOut)->selectDevice(&soundChannel);
     }
     settings->endGroup();
 

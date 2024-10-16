@@ -44,15 +44,16 @@ int32_t	i;
 
 	portAudio	= true;
 
-	qDebug ("Hostapis: %d\n", Pa_GetHostApiCount());
 
 	for (i = 0; i < Pa_GetHostApiCount(); i ++)
-	   qDebug ("Api %d is %s\n", i, Pa_GetHostApiInfo (i) -> name);
+	   log (LOG_SOUND, LOG_MIN, "Api %d: %s", i, Pa_GetHostApiInfo (i) -> name);
 
-	numofDevices	= Pa_GetDeviceCount();
-	outTable	= new int16_t [numofDevices + 1];
-	for (i = 0; i < numofDevices; i ++)
-	   outTable [i] = -1;
+	maxDevices	= Pa_GetDeviceCount();
+	outTable	= new channelList [maxDevices + 1];
+	for (i = 0; i < maxDevices; i ++) {
+	   outTable [i].dev = -1;
+	   outTable [i].name = "";
+	}
 	ostream		= nullptr;
 }
 
@@ -83,19 +84,25 @@ void    audioSink::setVolume(qreal v) {
 		volume		= v;
 }
 
-bool	audioSink::selectDevice (int16_t idx) {
+bool	audioSink::selectDevice (int32_t *ch) {
 PaError err;
-int16_t	outputDevice;
+int16_t	i, outputDevice;
 
-	if (idx	== 0)
-	   return false;
-
-	outputDevice	= outTable [idx];
-	if (!isValidDevice (outputDevice)) {
-	   log (LOG_SOUND, LOG_MIN, "invalid device (%d) selected", outputDevice);
-	   return false;
-	}
-
+        int idx = *ch; 
+	if ((idx < 0) || (idx >= numDevices)) {
+	   log (LOG_SOUND, LOG_MIN, "invalid device %d selected", idx);
+	   outputDevice = Pa_GetDefaultOutputDevice();
+	   for (i = 0; i < numDevices; i++)
+		if (outTable[i].dev == outputDevice)
+			break;
+	   if (i >= numDevices) {
+		log (LOG_SOUND, LOG_MIN, "no default device available");
+		return false;
+	   }
+	   log (LOG_SOUND, LOG_MIN, "switched to default device %i", i);
+	   *ch = i;
+	} else 
+	    outputDevice = outTable [idx].dev;
 	if ((ostream != nullptr) && !Pa_IsStreamStopped (ostream)) {
 	   paCallbackReturn = paAbort;
 	   (void) Pa_AbortStream (ostream);
@@ -135,14 +142,14 @@ int16_t	outputDevice;
 	      );
 
 	if (err != paNoError) {
-	   qDebug ("Open ostream error\n");
+	   log (LOG_SOUND, LOG_MIN, "Open ostream error %i", err);
 	   return false;
 	}
 	log (LOG_SOUND, LOG_MIN, "stream opened");
 	paCallbackReturn = paContinue;
 	err = Pa_StartStream (ostream);
 	if (err != paNoError) {
-	   log (LOG_SOUND, LOG_MIN, "Open startstream error");
+	   log (LOG_SOUND, LOG_MIN, "Open startstream error %i", err);
 	   return false;
 	}
 	log (LOG_SOUND, LOG_MIN, "stream started");
@@ -219,12 +226,6 @@ uint32_t	i;
 	return ud -> paCallbackReturn;
 }
 
-int32_t	audioSink::missed() {
-int32_t	h	= theMissed;
-	theMissed = 0;
-	return h / 2;
-}
-
 void	audioSink::audioOutput	(float *b, int32_t amount) {
 
 	for (int i = 0; i < 2 * amount; i++)
@@ -232,64 +233,45 @@ void	audioSink::audioOutput	(float *b, int32_t amount) {
 	_O_Buffer. putDataIntoBuffer (b, 2 * amount);
 }
 
-QString audioSink::outputChannelwithRate (int16_t ch, int32_t rate) {
-const PaDeviceInfo *deviceInfo;
-QString name = QString ("");
-
-	if ((ch < 0) || (ch >= numofDevices))
-	   return name;
-
-	deviceInfo = Pa_GetDeviceInfo (ch);
-	if (deviceInfo == nullptr)
-	   return name;
-	if (deviceInfo -> maxOutputChannels <= 0)
-	   return name;
-
-	if (OutputrateIsSupported (ch, rate))
-	   name = QString (deviceInfo -> name);
-	return name;
-}
-
-int16_t	audioSink::invalidDevice() {
-	return numofDevices + 128;
-}
-
-bool	audioSink::isValidDevice (int16_t dev) {
-	return 0 <= dev && dev < numofDevices;
-}
-
-bool	audioSink::selectDefaultDevice() {
-	return selectDevice (Pa_GetDefaultOutputDevice());
+const char *audioSink::outputChannel (int16_t ch) {
+	if ((ch < 0) || (ch >= numDevices))
+	   return "";
+	return outTable[ch].name;
 }
 
 int32_t	audioSink::cardRate() {
 	return 48000;
 }
 
-bool	audioSink::setupChannels (QComboBox *streamOutSelector) {
-uint16_t	ocnt	= 1;
+bool	audioSink::setupChannels () {
 uint16_t	i;
+const PaDeviceInfo *deviceInfo;
 
-	for (i = 0; i <  numofDevices; i ++) {
-	   const QString so = 
-	             outputChannelwithRate (i, 48000);
-	   qDebug ("Investigating Device %d\n", i);
-
-	   if (so != QString ("")) {
-	      streamOutSelector -> insertItem (ocnt, so, QVariant (i));
-	      outTable [ocnt] = i;
-	      qDebug (" (output):item %d wordt stream %d (%s)\n", ocnt , i,
-	                      so. toLatin1().data());
-	      ocnt ++;
-	   }
+	log (LOG_SOUND, LOG_MIN, "setting up %i channels", maxDevices);
+        numDevices = 0;
+	for (i = 0; i < maxDevices; i ++) {
+	   outTable [i].dev = -1;
+	   outTable [i].name = "";
 	}
-
-	log (LOG_SOUND, LOG_MIN, "added %i channels", ocnt);
-	return ocnt > 1;
+	for (i = 1; i <  maxDevices; i ++) {
+	    deviceInfo = Pa_GetDeviceInfo (i);
+	    if (deviceInfo == nullptr)
+		continue;
+	    if (deviceInfo -> maxOutputChannels <= 0)
+		continue;
+	    if (!OutputrateIsSupported (i, CardRate))
+		continue;
+	    outTable [numDevices].dev = i;
+	    outTable [numDevices].name = (char *) deviceInfo -> name;
+	    numDevices ++;
+	    log (LOG_SOUND, LOG_MIN, "channel %d stream %d (%s)", numDevices , i,
+	                      deviceInfo -> name);
+	}
+	return numDevices > 1;
 }
 
 //
-int16_t	audioSink::numberofDevices() {
-	return numofDevices;
+int16_t	audioSink::numberOfDevices() {
+	return numDevices;
 }
 

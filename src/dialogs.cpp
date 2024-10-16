@@ -169,7 +169,9 @@ void RadioInterface::handleSettingsAction() {
 	    settingsUi.modeComboBox->setCurrentIndex(0);
 	    settingsUi.alsaWidget->hide();
 	} else {
-	    ((audioSink *) soundOut)->setupChannels(settingsUi.outputComboBox);
+
+	    // channels are already set up
+	    setSoundChannels();
 	    settingsUi.outputComboBox->setCurrentIndex(soundChannel);
 	    settingsUi.modeComboBox->setCurrentIndex(1);
 	}
@@ -222,7 +224,7 @@ void RadioInterface::handleSettingsAction() {
 
 	// show the end of the device name
 	if (inputDevice == NULL || (dc = inputDevice->devices((deviceStrings *) &devNames, MAX_DEVICES)) == 0)
-	     settingsUi.deviceNameComboBox->setEnabled(false);
+	    settingsUi.deviceNameComboBox->setEnabled(false);
 	else 
 	    for (int i = 0; i < dc; i++) {
 		settingsUi.deviceNameComboBox->addItem(devNames[i].name);
@@ -273,7 +275,7 @@ void RadioInterface::handleSettingsAction() {
 	settingsDialog->connect(settingsUi.agcComboBox, SIGNAL(activated(int)),
 		this, SLOT(setAgcControl(int)));
 	settingsDialog->connect(settingsUi.gainSpinBox, SIGNAL(valueChanged(int)),
-       		this, SLOT(setIfGain(int)));
+		this, SLOT(setIfGain(int)));
 	settingsDialog->connect(settingsUi.lnaSpinBox, SIGNAL(valueChanged(int)),
 		this, SLOT(setLnaGain(int)));
     }
@@ -631,6 +633,14 @@ void RadioInterface::setRemoteMode(int index) {
 }
 #endif
 
+void RadioInterface::setSoundChannels() {
+    int d = ((audioSink *) soundOut)->numberOfDevices();
+
+    settingsUi.outputComboBox->clear();
+    for (int i = 0; i < d; i++)
+	settingsUi.outputComboBox->insertItem(i, ((audioSink *) soundOut)->outputChannel(i), QVariant(i));
+}
+
 void RadioInterface::setSoundMode(int index) {
     QString mode = settingsUi.modeComboBox->itemText(index);
     bool nextIsQtAudio = (mode == "Qt");
@@ -658,10 +668,11 @@ void RadioInterface::setSoundMode(int index) {
 	// FIXME audiosink requires that the combobox be populated every time
 //	if (settingsUi.outputComboBox->currentIndex() < 0) {
 	    settingsUi.outputComboBox->clear();
-	    ((audioSink *) soundOut)->setupChannels(settingsUi.outputComboBox);
-	    settingsUi.outputComboBox->setCurrentIndex(soundChannel);
+	    ((audioSink *) soundOut)->setupChannels();
+	    setSoundChannels();
 //	}
-	((audioSink *) soundOut)->selectDevice(soundChannel);
+	((audioSink *) soundOut)->selectDevice(&soundChannel);
+	settingsUi.outputComboBox->setCurrentIndex(soundChannel);
 	settingsUi.alsaWidget->show();
     }
     if (FMprocessor != nullptr)
@@ -678,7 +689,9 @@ void RadioInterface::setSoundMode(int index) {
 void RadioInterface::setSoundOutput(int c) {
     log(LOG_UI, LOG_MIN, "sound channel %i", c);
     soundChannel = c;
-    ((audioSink *) soundOut)->selectDevice(int16_t(c));
+    ((audioSink *) soundOut)->selectDevice(&c);
+    if (soundChannel != c)
+	settingsUi.outputComboBox->setCurrentIndex(soundChannel);
 }
 
 void RadioInterface::setLatency(int newLatency) {
@@ -697,8 +710,11 @@ void RadioInterface::setLatency(int newLatency) {
     delete soundOut;
     latency = newLatency;
     soundOut = new audioSink(latency);
+    ((audioSink *) soundOut)->setupChannels();
+    setSoundChannels();
     soundOut->setVolume(volumeKnob->value()/100);
-    ((audioSink *) soundOut)->selectDevice(soundChannel);
+    ((audioSink *) soundOut)->selectDevice(&soundChannel);
+    settingsUi.outputComboBox->setCurrentIndex(soundChannel);
     if (stop) {
 	if (isFM)
 	    startFM(int(FMfreq*1000000));
