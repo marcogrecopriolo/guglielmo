@@ -186,8 +186,10 @@ RadioInterface::RadioInterface(QSettings *Si, QWidget	 *parent):
 	soundOut = new Qt_Audio;
     } else {
 	soundOut = new audioSink(latency);
-	((audioSink *) soundOut)->setupChannels();
-	((audioSink *) soundOut)->selectDevice(&soundChannel);
+	if (!((audioSink *) soundOut)->selectDevice(soundChannel)) {
+	    soundChannel = ((audioSink *) soundOut)->defaultDevice();
+	    ((audioSink *) soundOut)->selectDevice(soundChannel);
+	}
     }
     settings->endGroup();
 
@@ -351,7 +353,7 @@ void RadioInterface::processGain(agcStats *newStats, int amount) {
     if (swAgcAmount < SW_AGC_BYTES)
 	return;
     log(LOG_AGC, LOG_VERBOSE, "skip %i amount %i min %i max %i overflows %i",
-       swAgcSkip, swAgcAmount, stats.min, stats.max, stats.overflows);
+	swAgcSkip, swAgcAmount, stats.min, stats.max, stats.overflows);
 
     // we most likely already have data in the buffer, which will not be yet
     // affected by our gain change, so skip some buffers before retesting
@@ -586,7 +588,7 @@ void RadioInterface::findDevices() {
 		    break;
 		}
 	    if (!found)
-	       deviceId = devNames[0].id;
+		deviceId = devNames[0].id;
 	    inputDevice->setDevice(qPrintable(deviceId));
 	}
 	inputDevice->getIfRange(&minIfGain, &maxIfGain);
@@ -784,7 +786,7 @@ void RadioInterface::addToEnsemble(const QString &serviceName, uint32_t SId) {
 
     log(LOG_EVENT, LOG_MIN, "received service %s %i", qPrintable(serviceName), SId);
     if (!DABprocessor->is_audioService(serviceName))
-       return;
+	return;
     for (const auto &serv: serviceList)
 	if (serv.name == serviceName)
 	    return;
@@ -986,7 +988,7 @@ void RadioInterface::handleMotObject(QByteArray result,
     switch (getContentBaseType((MOTContentType)contentType)) {
     case MOTBaseTypeImage:
 	if (dirElement == 0)
-	     showSlides(result, contentType, name, dirElement);
+	    showSlides(result, contentType, name, dirElement);
 	break;
     default:
 	break;
@@ -1373,7 +1375,7 @@ void RadioInterface::handleNextChanButton() {
 		    DABprocessor->getParameters(s.serviceName, &s.SId, &s.SCIds);
 	 	    if (s.SId == 0)
 		    	warning(this, tr(BAD_SERVICE));
-	       	    else
+		    else
 		    	startDABService(&s);
 		} else {
 		    currentService.serviceName = serviceList.at(i).name;
@@ -1416,8 +1418,8 @@ void RadioInterface::handlePrevChanButton() {
 		    DABprocessor->getParameters(s.serviceName, &s.SId, &s.SCIds);
 	 	    if (s.SId == 0)
 		    	warning(this, tr(BAD_SERVICE));
-	       	    else
-		    	startDABService(&s);
+		    else
+			startDABService(&s);
 		} else {
 		    currentService.serviceName = serviceList.at(i).name;
 		    ensembleDisplay->setCurrentIndex(ensembleModel.index(i, 0));
@@ -1762,16 +1764,16 @@ void RadioInterface::cleanScreen() {
 
 void RadioInterface::changePreset(int d) {
 #ifdef HAVE_MPRIS
-     if (presetSelector->count() <= 1)
+    if (presetSelector->count() <= 1)
 	return;
-     lastPreset += d;
-     if (lastPreset >= presetSelector->count())
+    lastPreset += d;
+    if (lastPreset >= presetSelector->count())
 	lastPreset = 1;
-     else if (lastPreset <= 1)
+    else if (lastPreset <= 1)
 	lastPreset = presetSelector->count()-1;
-     handlePresetSelector(lastPreset);
+    handlePresetSelector(lastPreset);
 #else
-     (void) d;
+    (void) d;
 #endif
 }
 

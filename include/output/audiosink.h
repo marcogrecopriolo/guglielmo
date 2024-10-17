@@ -36,6 +36,7 @@
 struct channelList {
     const char *name;
     int16_t dev;
+    PaTime latency;
 };
 
 class	audioSink  : public audioBase {
@@ -46,10 +47,11 @@ public:
 	bool		setupChannels		(void);
 	void		stop();
 	void		restart			(void);
-        void            setVolume       (qreal);
-	bool		selectDevice		(int32_t *);
+        void            setVolume       	(qreal);
+	bool		selectDevice		(int16_t);
 	int16_t		numberOfDevices();
-	const char		*outputChannel	(int16_t);
+	int16_t         defaultDevice		(void);
+	const char	*outputChannel		(int16_t);
 private:
 	int32_t		cardRate();
 
@@ -63,6 +65,7 @@ private:
 	bool		writerRunning;
 	int16_t		maxDevices;
 	int16_t		numDevices;
+	int16_t		defDevice;
 	int		paCallbackReturn;
 	int16_t		bufSize;
 	PaStream	*ostream;

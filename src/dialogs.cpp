@@ -668,10 +668,12 @@ void RadioInterface::setSoundMode(int index) {
 	// FIXME audiosink requires that the combobox be populated every time
 //	if (settingsUi.outputComboBox->currentIndex() < 0) {
 	    settingsUi.outputComboBox->clear();
-	    ((audioSink *) soundOut)->setupChannels();
 	    setSoundChannels();
 //	}
-	((audioSink *) soundOut)->selectDevice(&soundChannel);
+	if (!((audioSink *) soundOut)->selectDevice(soundChannel)) {
+	    soundChannel = ((audioSink *) soundOut)->defaultDevice();
+	    ((audioSink *) soundOut)->selectDevice(soundChannel);
+	}
 	settingsUi.outputComboBox->setCurrentIndex(soundChannel);
 	settingsUi.alsaWidget->show();
     }
@@ -689,9 +691,11 @@ void RadioInterface::setSoundMode(int index) {
 void RadioInterface::setSoundOutput(int c) {
     log(LOG_UI, LOG_MIN, "sound channel %i", c);
     soundChannel = c;
-    ((audioSink *) soundOut)->selectDevice(&c);
-    if (soundChannel != c)
+    if (!((audioSink *) soundOut)->selectDevice(soundChannel)) {
+	soundChannel = ((audioSink *) soundOut)->defaultDevice();
+	((audioSink *) soundOut)->selectDevice(soundChannel);
 	settingsUi.outputComboBox->setCurrentIndex(soundChannel);
+    }
 }
 
 void RadioInterface::setLatency(int newLatency) {
@@ -710,10 +714,12 @@ void RadioInterface::setLatency(int newLatency) {
     delete soundOut;
     latency = newLatency;
     soundOut = new audioSink(latency);
-    ((audioSink *) soundOut)->setupChannels();
     setSoundChannels();
     soundOut->setVolume(volumeKnob->value()/100);
-    ((audioSink *) soundOut)->selectDevice(&soundChannel);
+    if (!((audioSink *) soundOut)->selectDevice(soundChannel)) {
+	soundChannel = ((audioSink *) soundOut)->defaultDevice();
+	((audioSink *) soundOut)->selectDevice(soundChannel);
+    }
     settingsUi.outputComboBox->setCurrentIndex(soundChannel);
     if (stop) {
 	if (isFM)

@@ -55,6 +55,8 @@ int32_t	i;
 	   outTable [i].name = "";
 	}
 	ostream		= nullptr;
+	defDevice	= -1;
+	setupChannels();
 }
 
 	audioSink::~audioSink() {
@@ -84,23 +86,13 @@ void    audioSink::setVolume(qreal v) {
 		volume		= v;
 }
 
-bool	audioSink::selectDevice (int32_t *ch) {
+bool	audioSink::selectDevice (int16_t idx) {
 PaError err;
 int16_t	i, outputDevice;
 
-        int idx = *ch; 
 	if ((idx < 0) || (idx >= numDevices)) {
 	   log (LOG_SOUND, LOG_MIN, "invalid device %d selected", idx);
-	   outputDevice = Pa_GetDefaultOutputDevice();
-	   for (i = 0; i < numDevices; i++)
-		if (outTable[i].dev == outputDevice)
-			break;
-	   if (i >= numDevices) {
-		log (LOG_SOUND, LOG_MIN, "no default device available");
-		return false;
-	   }
-	   log (LOG_SOUND, LOG_MIN, "switched to default device %i", i);
-	   *ch = i;
+	   return false;
 	} else 
 	    outputDevice = outTable [idx].dev;
 	if ((ostream != nullptr) && !Pa_IsStreamStopped (ostream)) {
@@ -117,9 +109,7 @@ int16_t	i, outputDevice;
 	outputParameters. device		= outputDevice;
 	outputParameters. channelCount		= 2;
 	outputParameters. sampleFormat		= paFloat32;
-	outputParameters. suggestedLatency	= 
-	                          Pa_GetDeviceInfo (outputDevice) ->
-	                                      defaultHighOutputLatency;
+	outputParameters. suggestedLatency	=  outTable [idx] . latency;
 	bufSize	= (int)((float)outputParameters. suggestedLatency * latency);
 //
 //	A small buffer causes more callback invocations, sometimes
@@ -145,14 +135,13 @@ int16_t	i, outputDevice;
 	   log (LOG_SOUND, LOG_MIN, "Open ostream error %i", err);
 	   return false;
 	}
-	log (LOG_SOUND, LOG_MIN, "stream opened");
 	paCallbackReturn = paContinue;
 	err = Pa_StartStream (ostream);
 	if (err != paNoError) {
 	   log (LOG_SOUND, LOG_MIN, "Open startstream error %i", err);
 	   return false;
 	}
-	log (LOG_SOUND, LOG_MIN, "stream started");
+	log (LOG_SOUND, LOG_MIN, "opened device %i", idx);
 	writerRunning	= true;
 	return true;
 }
@@ -246,6 +235,7 @@ int32_t	audioSink::cardRate() {
 bool	audioSink::setupChannels () {
 uint16_t	i;
 const PaDeviceInfo *deviceInfo;
+        int16_t defDev = Pa_GetDefaultOutputDevice();
 
 	log (LOG_SOUND, LOG_MIN, "setting up %i channels", maxDevices);
         numDevices = 0;
@@ -253,7 +243,7 @@ const PaDeviceInfo *deviceInfo;
 	   outTable [i].dev = -1;
 	   outTable [i].name = "";
 	}
-	for (i = 1; i <  maxDevices; i ++) {
+	for (i = 0; i <  maxDevices; i ++) {
 	    deviceInfo = Pa_GetDeviceInfo (i);
 	    if (deviceInfo == nullptr)
 		continue;
@@ -261,17 +251,23 @@ const PaDeviceInfo *deviceInfo;
 		continue;
 	    if (!OutputrateIsSupported (i, CardRate))
 		continue;
+	    if (i == defDev)
+		defDevice = i;
 	    outTable [numDevices].dev = i;
 	    outTable [numDevices].name = (char *) deviceInfo -> name;
-	    numDevices ++;
+	    outTable [numDevices].latency = deviceInfo -> defaultHighOutputLatency;
 	    log (LOG_SOUND, LOG_MIN, "channel %d stream %d (%s)", numDevices , i,
 	                      deviceInfo -> name);
+	    numDevices ++;
 	}
 	return numDevices > 1;
 }
 
-//
 int16_t	audioSink::numberOfDevices() {
 	return numDevices;
+}
+
+int16_t	audioSink::defaultDevice() {
+	return defDevice;
 }
 
