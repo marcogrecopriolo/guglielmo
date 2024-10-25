@@ -342,7 +342,7 @@ RadioInterface::~RadioInterface() {
 void RadioInterface::processGain(agcStats *newStats, int amount) {
     int oldAgc = swAgc;
 
-    if (agc != SW_AGC && !log_active(LOG_AGC, LOG_VERBOSE))
+    if ((agc != AGC_SW) && !log_active(LOG_AGC, LOG_VERBOSE))
 	return;
     if (newStats->min < stats.min)
 	stats.min = newStats->min;
