@@ -2,8 +2,8 @@
 <Package>
     <DisplayName>Guglielmo</DisplayName>
     <Description>Install Guglielmo</Description>
-    <Version>0.5</Version>
-    <ReleaseDate>2022-11-25</ReleaseDate>
+    <Version>0.6</Version>
+    <ReleaseDate>2024-10-26</ReleaseDate>
     <Licenses>
         <License name="GNU GENERAL PUBLIC LICENSE" file="COPYING" />
     </Licenses>
