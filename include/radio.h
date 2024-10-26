@@ -69,9 +69,9 @@ enum deviceControls {
 };
 
 enum agcMode {
-    AGC_OFF =	0,
-    AGC_ON =	1,
-    AGC_SW =	2
+    AGC_OFF =		0,
+    AGC_ON =		1,
+    AGC_SOFTWARE =	2
 };
 
 class deviceDescriptor {

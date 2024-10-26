@@ -237,7 +237,7 @@ void RadioInterface::handleSettingsAction() {
 	settingsUi.deviceNameComboBox->view()->setTextElideMode(Qt::ElideLeft);
 	if (inputDevice != nullptr) {
 	    qobject_cast<QListView*> (settingsUi.agcComboBox->view())->setRowHidden(AGC_ON, !(deviceUiControls & HW_AGC));
-	    qobject_cast<QListView*> (settingsUi.agcComboBox->view())->setRowHidden(AGC_SW, !(deviceUiControls & SW_AGC));
+	    qobject_cast<QListView*> (settingsUi.agcComboBox->view())->setRowHidden(AGC_SOFTWARE, !(deviceUiControls & SW_AGC));
 	    if (qobject_cast<QListView*> (settingsUi.agcComboBox->view())->isRowHidden(agc)) {
 		inputDevice->setAgcControl(false);
 		settingsUi.agcComboBox->setCurrentIndex(0);
@@ -822,7 +822,7 @@ void RadioInterface::setDevice(int d) {
     settings->beginGroup(deviceType);
     agc = settings->value(DEV_AGC, DEV_DEF_AGC).toInt();
     qobject_cast<QListView*> (settingsUi.agcComboBox->view())->setRowHidden(AGC_ON, !(deviceUiControls & HW_AGC));
-    qobject_cast<QListView*> (settingsUi.agcComboBox->view())->setRowHidden(AGC_SW, !(deviceUiControls & SW_AGC));
+    qobject_cast<QListView*> (settingsUi.agcComboBox->view())->setRowHidden(AGC_SOFTWARE, !(deviceUiControls & SW_AGC));
     if (qobject_cast<QListView*> (settingsUi.agcComboBox->view())->isRowHidden(agc)) {
 	inputDevice->setAgcControl(false);
 	settingsUi.agcComboBox->setCurrentIndex(0);
@@ -938,7 +938,7 @@ void RadioInterface::setAgcControl(int newAgc) {
 	if (inputDevice != NULL)
 	    inputDevice->setAgcControl(newAgc == AGC_ON);
 	agc = newAgc;
-	if (oldAgc == AGC_SW)
+	if (oldAgc == AGC_SOFTWARE)
 	    inputDevice->setIfGain(ifGain);
 	else
 	    swAgc = ifGain;
