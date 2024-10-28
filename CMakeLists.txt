@@ -5,6 +5,20 @@ set (BINARY_TARGET ${PROJECT_NAME})
 set (orgName SQSL)
 set (orgDomain sqsl.org)
 
+option(LTO "Attempt to enable Link Time Optimization if available" ON)
+option(AIRSPY "Enable Airspy support" ON)
+option(SDRPLAY "Enable SDRPlay support" ON)
+option(SDRPLAY_V3 "Enable SDRPlay-v3 support" ON)
+option(RTLSDR "Enable rtl-sdr support" ON)
+option(HACKRF "Enable HackRF support" ON)
+option(LIMESDR "Enable LimeSDR support" ON)
+option(PLUTO "Enable Pluto support" OFF)
+option(FDK_AAC "Use FDK AAC instead of FAAD2, for AAC decoding" OFF)
+option(RPI "Enable Raspberry PI support" OFF)
+option(VITERBI_NEON "Use NEON instructions for the Viterbi decoder (only on ARM)" OFF)
+option(VITERBI_SSE "Use SSE instructions for the Viterbi decoder" ON)
+option(TRY_EPG "Enable EPG support" OFF)
+
 # sigh! add_definitions ignore anything past the variable, so the single and double quotes have to be added to the date format
 execute_process(COMMAND date "+\"%Y-%m-%d %H:%M:%S %z\"" OUTPUT_VARIABLE currentDate OUTPUT_STRIP_TRAILING_WHITESPACE)
 add_definitions (-DCURRENT_DATE=${currentDate})
@@ -12,22 +26,30 @@ add_definitions (-DTARGET=\"${PROJECT_NAME}\")
 add_definitions (-DCURRENT_VERSION=\"${PROJECT_VERSION}\")
 add_definitions (-DORGNAME=\"${orgName}\")
 add_definitions (-DORGDOMAIN=\"${orgDomain}\")
+set(MPRIS_DEFAULT OFF)
 if (UNIX)
     add_definitions(-DCHOOSE_CONFIG=Unix)
     execute_process(COMMAND uname OUTPUT_VARIABLE os OUTPUT_STRIP_TRAILING_WHITESPACE)
     if(${os} STREQUAL "Linux")
-	set(MPRIS true)
+	set(MPRIS_DEFAULT ON)
     endif()
 elseif (NOT MSYS AND NOT MINGW)
     execute_process(COMMAND powershell Get-Date -Uformat \"%Y-%m-%d %H:%M:%S %Z\" OUTPUT_VARIABLE currentDate OUTPUT_STRIP_TRAILING_WHITESPACE)
         add_definitions (-DCURRENT_DATE=\"${currentDate}\")
 	add_definitions(-DCHOOSE_CONFIG=Windows)
 endif()
+option(MPRIS "Enable MPRIS support" ${MPRIS_DEFAULT})
 
-if (UNIX OR MSYS OR MINGW)
-    set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -flto")
-    set (CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -flto")
-else()
+set(CMAKE_CXX_STANDARD 11)
+if(LTO)
+    include(CheckIPOSupported)
+    check_ipo_supported(RESULT guglielmo_ipo_supported)
+    if(guglielmo_ipo_supported AND NOT DEFINED CMAKE_INTERPROCEDURAL_OPTIMIZATION)
+        set(CMAKE_INTERPROCEDURAL_OPTIMIZATION ON)
+    endif()
+endif()
+
+if (NOT (UNIX OR MSYS OR MINGW))
     set (MSVC_INCLUDE_PATH "${CMAKE_SOURCE_DIR}/../includes")
     set (MSVC_LIBRARIES_PATH "${CMAKE_SOURCE_DIR}/../libraries")
     set (incBasePath "c:/\"Program\ Files/Microsoft\ Visual\ Studio\"/2022/Community/SDK/ScopeCppSDK/vc15")
@@ -47,7 +69,6 @@ else()
         ${libBasePath}/um/x86
         c:/"Program\ Files/Microsoft\ Visual\ Studio"/2022/Community/VC/Tools/MSVC/14.31.31103/lib/x86
     )
-    set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /std:c11")
 endif()
 
 set(CMAKE_AUTORCC ON)
@@ -55,7 +76,6 @@ set(CMAKE_AUTOMOC ON)
 if (CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
     set (CMAKE_INSTALL_PREFIX "/usr/local/bin" CACHE PATH "default install path" FORCE)
 endif()
-#set (CMAKE_INSTALL_PREFIX /usr/local/bin)
 
 if(MINGW)
     add_definitions ( -municode)
@@ -79,52 +99,8 @@ set(CMAKE_BUILD_TYPE ${CMAKE_BUILD_TYPE} CACHE STRING "")
 ### make sure our local CMake Modules path comes first
 list(INSERT CMAKE_MODULE_PATH 0 ${CMAKE_SOURCE_DIR}/cmake/Modules)
 
-if(DEFINED AIRSPY)
-	set(AIRSPY true)
-	set(deviceChosen true)
-endif ()
-
-if(DEFINED SDRPLAY)
-	set(SDRPLAY true)
-	set(deviceChosen true)
-endif ()
-
-if(DEFINED SDRPLAY_V3)
-	set(SDRPLAY_V3 true)
-	set(deviceChosen true)
-endif ()
-
-if(DEFINED RTLSDR)
-	set(RTLSDR true)
-	set(deviceChosen true)
-endif ()
-
-if(DEFINED HACKRF)
-	set(HACKRF true)
-	set(deviceChosen true)
-endif ()
-
-if(DEFINED LIMESDR)
-	set(LIMESDR true)
-	set(deviceChosen true)
-endif ()
-
-# choose all devices if none specified
-if (NOT deviceChosen)
-	set(AIRSPY true)
-	set(SDRPLAY true)
-	set(SDRPLAY_V3 true)
-	set(RTLSDR true)
-	set(HACKRF true)
-	set(LIMESDR true)
-endif()
-
-if (DEFINED FDK_AAC)
-        set (FDK_AAC true)
-endif ()
-
 add_definitions (-DPRESET_NAME)
-if(DEFINED RPI)
+if(RPI)
 	add_definitions (-D__THREADED_BACKEND)
 	add_definitions (-D__MSC_THREAD__)
 endif()
@@ -178,7 +154,6 @@ endif()
         list(APPEND extraLibs ${LIBSAMPLERATE_LIBRARY})
 
 	if (MPRIS)
-
 		# TODO check
 		pkg_check_modules(MPRIS mpris-qt5)
 		if (MPRIS_FOUND)
@@ -396,7 +371,7 @@ endif()
 	   )
            list(APPEND extraLibs ${FDK_AAC_LIBRARIES})
 	   add_definitions (-D__WITH_FDK_AAC__)
-	elseif (NOT FDK_AAC)
+	else (FDK_AAC)
            find_package(Faad)
            if (NOT FAAD_FOUND )
               message(FATAL_ERROR "please install libfaad")
@@ -575,6 +550,26 @@ endif()
 
 	   add_definitions (-DHAVE_RTLSDR)
 	endif()
+
+	if (PLUTO)
+	   include_directories (
+	     ./devices/pluto-handler
+	   )
+
+	   set ($(PROJECT_NAME)_HDRS
+	        ${${PROJECT_NAME}_HDRS}
+	        ./devices/pluto-handler/dabFilter.h
+	        ./devices/pluto-handler/pluto-handler.h
+	   )
+
+	   set (${PROJECT_NAME}_SRCS
+	        ${${PROJECT_NAME}_SRCS}
+	        ./devices/pluto-handler/pluto-handler.cpp
+	   )
+
+	   add_definitions (-DHAVE_PLUTO)
+	   list(APPEND extraLibs -liio  -lad9361)
+	endif (PLUTO)
 
 #
 	if (TRY_EPG)
