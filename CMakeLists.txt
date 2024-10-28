@@ -25,7 +25,7 @@ elseif (NOT MSYS AND NOT MINGW)
 endif()
 
 if (UNIX OR MSYS OR MINGW)
-    set (CMAKE_CXX_FLAGS "${CMAKE_XCC_FLAGS} -std=c++11 -flto")
+    set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -flto")
     set (CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -flto")
 else()
     set (MSVC_INCLUDE_PATH "${CMAKE_SOURCE_DIR}/../includes")
@@ -47,7 +47,7 @@ else()
         ${libBasePath}/um/x86
         c:/"Program\ Files/Microsoft\ Visual\ Studio"/2022/Community/VC/Tools/MSVC/14.31.31103/lib/x86
     )
-    set (CMAKE_CXX_FLAGS "${CMAKE_XCC_FLAGS} /std:c11")
+    set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /std:c11")
 endif()
 
 set(CMAKE_AUTORCC ON)
@@ -157,7 +157,7 @@ endif()
         endif ()
 
 	# for MinGW we rely on the system zlib
-	if (!MINGW)
+	if (NOT MINGW)
 	    find_package(zlib)
 	    if (NOT ZLIB_FOUND)
 		message(FATAL_ERROR "please install libz")
