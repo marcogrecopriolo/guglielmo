@@ -109,7 +109,7 @@ std::vector<int> resultVector;
   *	We compute the average and the max signal values
   */
 	for (i = 0; i < T_u / 2; i ++) {
-	   lbuf [i] = jan_abs (fft_buffer [i]);
+	   lbuf [i] = fastMagnitude (fft_buffer [i]);
 	   mbuf [i] = lbuf [i];
 	   sum	+= lbuf [i];
 	}

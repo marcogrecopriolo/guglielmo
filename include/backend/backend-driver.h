@@ -33,7 +33,7 @@ class	frameProcessor;
 class	backendDriver {
 public:
 	backendDriver	(RadioInterface *,
-	                 descriptorType *,
+	                 serviceDescriptor *,
 	                 RingBuffer<int16_t> *,
 	                 RingBuffer<uint8_t> *,
 	                 RingBuffer<uint8_t> *);

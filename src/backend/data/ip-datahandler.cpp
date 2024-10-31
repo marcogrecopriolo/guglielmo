@@ -21,6 +21,7 @@
  *
  */
 #include	"ip-datahandler.h"
+#include	"bits-helper.h"
 #include	"radio.h"
 
 	ip_dataHandler::ip_dataHandler (RadioInterface *mr,

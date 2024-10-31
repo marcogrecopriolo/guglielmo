@@ -34,6 +34,7 @@
 #include	"charsets.h"
 #include	"dab-config.h"
 #include	"fib-table.h"
+#include	"bits-helper.h"
 #include	"logging.h"
 //
 //

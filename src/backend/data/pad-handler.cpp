@@ -24,6 +24,7 @@
 #include	"radio.h"
 #include	"charsets.h"
 #include	"mot-object.h"
+#include	"bits-helper.h"
 #include	"logging.h"
 
 /**

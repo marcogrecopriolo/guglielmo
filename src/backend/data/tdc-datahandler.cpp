@@ -23,6 +23,7 @@
 #include	"constants.h"
 #include	"tdc-datahandler.h"
 #include	"radio.h"
+#include	"bits-helper.h"
 #include	"logging.h"
 
 	tdc_dataHandler::tdc_dataHandler (RadioInterface *mr,

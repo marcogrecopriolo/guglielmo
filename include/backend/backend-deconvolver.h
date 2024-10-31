@@ -23,11 +23,12 @@
 #define	__BACKEND_DECONVOLVER__
 
 #include	"constants.h"
+#include	"services.h"
 class	protection;
 
 class	backendDeconvolver {
 public:
-	backendDeconvolver (descriptorType *d);
+	backendDeconvolver (serviceDescriptor *d);
 	~backendDeconvolver();
 void	deconvolve	(int16_t	*rawBits_in,
 	                 int32_t	length,

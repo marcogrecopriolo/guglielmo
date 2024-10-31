@@ -37,6 +37,7 @@
 #include	"charsets.h"
 #include	"pad-handler.h"
 #include	"bitWriter.h"
+#include	"bits-helper.h"
 #include	"logging.h"
 
 //

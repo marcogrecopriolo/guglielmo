@@ -27,6 +27,7 @@
 #include	"mot-handler.h"
 #include	"journaline-datahandler.h"
 #include	"tdc-datahandler.h"
+#include	"bits-helper.h"
 #include	"logging.h"
 
 //	\class dataProcessor

@@ -334,7 +334,7 @@ SyncOnPhase:
 	      ccc = 0;
 
 	      // FIXME consistent strength measure
-	      showStrength((get_db(myReader. get_sLevel(), 128)-get_db(0, 128))*100);
+	      showStrength((getDb(myReader. get_sLevel(), 128)-getDb(0, 128))*100);
 	   }
 /*
  *	The TII data is encoded in the null period of the
@@ -480,7 +480,7 @@ void	dabProcessor::reset_Services	() {
 	   my_mscHandler. reset_Channel ();
 }
 
-void	dabProcessor::stopService (descriptorType *d) {
+void	dabProcessor::stopService (serviceDescriptor *d) {
 	if (!scanMode)
 	   my_mscHandler. stopService (d);
 }

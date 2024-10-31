@@ -860,7 +860,7 @@ void RadioInterface::setDevice(int d) {
 	settingsUi.agcComboBox->setCurrentIndex(0);
     }
     if (deviceUiControls & IF_GAIN) {
-	ifGain = settings->value(DEV_IF_GAIN, minIfGain).toInt();
+	ifGain = settings->value(DEV_IF_GAIN, (minIfGain + maxIfGain) / 2).toInt();
 	checkIfGain();
 	inputDevice->setIfGain(ifGain);
 	settingsUi.gainSpinBox->setMinimum(minIfGain);

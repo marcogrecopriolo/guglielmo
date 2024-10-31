@@ -146,7 +146,7 @@ int	currentBlock	= 0;
 
                     std::complex<float>  r1 = fft_buffer [index] *
                                        conj (phaseReference [index]);
-                    float ab1    = jan_abs (r1);
+                    float ab1    = fastMagnitude (r1);
 //      Recall:  the viterbi decoder wants 127 max pos, - 127 max neg
 //      we make the bits into softbits in the range -127 .. 127
                     ibits [i]            =  - real (r1) / ab1 * 1023.0;
@@ -184,7 +184,7 @@ void	mscHandler::process_Msc	(std::complex<float> *b, int blkno) {
 	         index += params. get_T_u();
 	      std::complex<float>  r1 = fft_buffer [index] *
 	                                conj (phaseReference [index]);
-	      float ab1    = jan_abs (r1);
+	      float ab1    = fastMagnitude (r1);
 //      Recall:  the viterbi decoder wants 127 max pos, - 127 max neg
 //      we make the bits into softbits in the range -127 .. 127
 	      ibits [i]            =  - real (r1) / ab1 * 256.0;
@@ -227,7 +227,7 @@ void	mscHandler::reset_Channel () {
 	locker. unlock ();
 }
 
-void	mscHandler::stopService	(descriptorType *d) {
+void	mscHandler::stopService	(serviceDescriptor *d) {
 	locker. lock ();
 	for (int i = 0; i < theBackends. size (); i ++) {
 	   Backend *b = theBackends. at (i);
@@ -244,7 +244,7 @@ void	mscHandler::stopService	(descriptorType *d) {
 	locker. unlock ();
 }
 
-bool	mscHandler::set_Channel (descriptorType *d,
+bool	mscHandler::set_Channel (serviceDescriptor *d,
 	                         RingBuffer<int16_t> *audioBuffer,
 	                         RingBuffer<uint8_t> *dataBuffer) {
 	locker. lock();

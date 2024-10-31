@@ -25,6 +25,7 @@
 #include	"radio.h"
 #include	"protTables.h"
 #include	"dab-params.h"
+#include	"bits-helper.h"
 #include	"logging.h"
 //
 //	The 3072 bits of the serial motherword shall be split into

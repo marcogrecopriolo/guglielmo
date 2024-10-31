@@ -25,7 +25,7 @@
 #include        "uep-protection.h"
 
 
-	backendDeconvolver::backendDeconvolver (descriptorType *d) {
+	backendDeconvolver::backendDeconvolver (serviceDescriptor *d) {
         if (d -> shortForm)
            protectionHandler    = new uep_protection (d -> bitRate,
                                                       d -> protLevel);

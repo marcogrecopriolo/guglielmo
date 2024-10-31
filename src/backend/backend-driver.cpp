@@ -29,19 +29,18 @@
 //	separate class makes the "Backend" class simpler.
 
 	backendDriver::backendDriver (RadioInterface *mr,
-	                              descriptorType *d,
+	                              serviceDescriptor *d,
 	                              RingBuffer<int16_t> *audioBuffer,
 	                              RingBuffer<uint8_t> *dataBuffer,
 	                              RingBuffer<uint8_t> *frameBuffer) {
 	if (d -> type == AUDIO_SERVICE) {
-	   if (((audiodata *)d) -> ASCTy != 077) {
+	   if (!((audiodata *)d) -> isDABplus ()) {
               theProcessor = new mp2Processor (mr,
 	                                       d -> bitRate,
                                                audioBuffer,
 	                                       frameBuffer);
 	   }
-           else
-           if (((audiodata *)d) -> ASCTy == 077) {
+           else {
               theProcessor = new mp4Processor (mr,
 	                                       d -> bitRate,
                                                audioBuffer,

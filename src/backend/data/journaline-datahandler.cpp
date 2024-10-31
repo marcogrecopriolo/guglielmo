@@ -22,6 +22,7 @@
  */
 #include	"constants.h"
 #include	"journaline-datahandler.h"
+#include	"bits-helper.h"
 #include	"dabdatagroupdecoder.h"
 
 

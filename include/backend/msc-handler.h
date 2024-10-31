@@ -36,6 +36,7 @@
 #include	<cstdio>
 #include	<vector>
 #include	"constants.h"
+#include	"services.h"
 #include	"dab-params.h"
 #include        "fft-handler.h"
 #include        "ringbuffer.h"
@@ -57,13 +58,13 @@ public:
 			~mscHandler();
 	void		processBlock_0		(std::complex<float> *);
 	void		process_Msc		(std::complex<float> *, int);
-	bool		set_Channel		(descriptorType *,
+	bool		set_Channel		(serviceDescriptor *,
 	                                           RingBuffer<int16_t> *,
 	                                           RingBuffer<uint8_t> *);
 //
 //	
 	void		reset_Channel		();
-	void		stopService		(descriptorType *);
+	void		stopService		(serviceDescriptor *);
 	void		reset_Buffers		();
 private:
 	void		process_mscBlock	(std::vector<int16_t>, int16_t);

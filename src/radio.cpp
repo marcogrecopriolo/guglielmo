@@ -64,11 +64,15 @@
 #define BAD_SERVICE	"cannot run this service"
 #define BAD_PRESET	"this preset is not valid"
 
-// // Some software AGC constants
+// Some software AGC constants
 #define SIGNAL_MIN_THRESHOLD 70
 #define SIGNAL_MAX_THRESHOLD 90
 #define SW_AGC_SKIP_COUNT 8
 #define SW_AGC_BYTES 65536
+
+// Text buffers
+#define INFOBUFLEN 100
+
 
 // most buffer not used locally, but within the DAB processor
 RadioInterface::RadioInterface(QSettings *Si, QWidget	 *parent):
@@ -594,7 +598,7 @@ void RadioInterface::findDevices() {
 	inputDevice->getIfRange(&minIfGain, &maxIfGain);
 	inputDevice->getLnaRange(&minLnaGain, &maxLnaGain);
 	agc = settings->value(DEV_AGC, DEV_DEF_AGC).toInt();
-	ifGain = settings->value(DEV_IF_GAIN, minIfGain).toInt();
+	ifGain = settings->value(DEV_IF_GAIN, (minIfGain + maxIfGain) / 2).toInt();
 	lnaGain = settings->value(DEV_LNA_GAIN, minLnaGain).toInt();
 	settings->endGroup();
 
@@ -1200,6 +1204,7 @@ void RadioInterface::stopDABService() {
 	setPlaying();
 	setRecording();
     }
+    stereoLabel->setToolTip("");
     currentService.valid = false;
     cleanScreen();
 #ifdef HAVE_MPRIS
@@ -1267,6 +1272,7 @@ void RadioInterface::startDABService(dabService *s) {
 	QString itemText = ensembleModel.index(i, 0).data(Qt::DisplayRole).toString();
 	if (itemText == serviceName) {
 	    audiodata ad;
+	    char buf[INFOBUFLEN];
 
 	    ensembleDisplay->setCurrentIndex(ensembleModel.index(i, 0));
 	    serviceLabel->setStyleSheet("QLabel {color: black}");
@@ -1279,6 +1285,8 @@ void RadioInterface::startDABService(dabService *s) {
 		    ad.procMode = __ONLY_SOUND;
 	 	    DABprocessor->set_audioChannel(&ad, &audioBuffer);
 		    soundOut->restart();
+		    ad.audioInfo((char *) &buf, INFOBUFLEN);
+		    stereoLabel->setToolTip((char *) &buf);
 		}
 		currentService.valid = true;
 		currentService.serviceName = serviceName;

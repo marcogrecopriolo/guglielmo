@@ -32,7 +32,7 @@
 
 //	fragmentsize == Length * CUSize
 	Backend::Backend	(RadioInterface *mr,
-	                         descriptorType	*d,
+	                         serviceDescriptor *d,
 	                         RingBuffer<int16_t> *audiobuffer,
 	                         RingBuffer<uint8_t> *databuffer,	
 	                         RingBuffer<uint8_t> *frameBuffer):

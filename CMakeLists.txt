@@ -239,6 +239,7 @@ endif()
 	     ./include/backend/backend.h
 	     ./include/backend/backend-deconvolver.h
 	     ./include/backend/backend-driver.h
+	     ./include/backend/services.h
 	     ./include/backend/audio/mp4processor.h
 	     ./include/backend/audio/bitWriter.h
 	     ./include/backend/audio/mp2processor.h
@@ -270,6 +271,8 @@ endif()
 	     ./include/support/dab-params.h
 	     ./include/support/band-handler.h
 	     ./include/support/dab-tables.h
+	     ./include/support/bits-helper.h
+	     ./include/support/math-helper.h
 	     ./include/support/viterbi-spiral/viterbi-spiral.h
 	     ./include/radio.h
 	     ./devices/device-handler.h

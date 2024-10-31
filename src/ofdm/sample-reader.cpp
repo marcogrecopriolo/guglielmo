@@ -116,7 +116,7 @@ std::complex<float> temp;
 	currentPhase	= (currentPhase + INPUT_RATE) % INPUT_RATE;
 
 	temp		*= oscillatorTable [currentPhase];
-	sLevel		= 0.00001 * jan_abs (temp) + (1 - 0.00001) * sLevel;
+	sLevel		= 0.00001 * fastMagnitude (temp) + (1 - 0.00001) * sLevel;
 #define	N	5
 	if (++ sampleCount > INPUT_RATE / N) {
 	   show_Corrector	(corrector);
@@ -176,7 +176,7 @@ int32_t		i;
 	   if (localCounter < bufferSize)
 	      localBuffer [localCounter ++]     = v [i];
 	   v [i]	*= oscillatorTable [currentPhase];
-	   sLevel	= 0.00001 * jan_abs (v [i]) + (1 - 0.00001) * sLevel;
+	   sLevel	= 0.00001 * fastMagnitude (v [i]) + (1 - 0.00001) * sLevel;
 	}
 
 	sampleCount	+= n;

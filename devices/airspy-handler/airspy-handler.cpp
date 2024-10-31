@@ -36,7 +36,7 @@
 
 #include	"airspy-handler.h"
 #include	"airspyfilter.h"
-#include 	"constants.h"
+#include 	"math-helper.h"
 #include	"logging.h"
 
 #define DEV_AIRSPY LOG_DEV

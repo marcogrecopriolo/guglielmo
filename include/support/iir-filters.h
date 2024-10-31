@@ -27,6 +27,7 @@
 #ifndef 	__IIR_FILTER
 #define		__IIR_FILTER
 #include	"constants.h"
+#include	"math-helper.h"
 #include	"fft.h"
 
 #define	S_CHEBYSHEV	0100

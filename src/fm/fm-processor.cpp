@@ -402,9 +402,9 @@ void fmProcessor::run(void) {
 		    signalFft->do_FFT();
 		    DSPFLOAT signal = getLevel(signalBuffer, signalMinBin, signalMaxBin);
 		    DSPFLOAT noise = getLevel(signalBuffer, noiseMinBin, noiseMaxBin);
-		    if (get_db(signal, 256)-get_db(noise, 256) > threshold) {
+		    if (getDb(signal, 256)-getDb(noise, 256) > threshold) {
 		        log(LOG_FM, LOG_MIN, "signal found %f %f",
-		                get_db(signal, 256), get_db(noise, 256));
+		                getDb(signal, 256), getDb(noise, 256));
 		        scanning = false;
 			scanresult();
 	            }
@@ -445,7 +445,7 @@ void fmProcessor::run(void) {
 		    signalFft -> do_FFT ();
 	            DSPFLOAT noise	= getLevel (signalBuffer, noiseMinBin, noiseMaxBin);
 	            DSPFLOAT pilot	= getLevel (signalBuffer, pilotMinBin, pilotMaxBin);
-		    DSPFLOAT pilotDb = get_db(pilot, 256) - get_db(noise, 256);
+		    DSPFLOAT pilotDb = getDb(pilot, 256) - getDb(noise, 256);
 		    totPilotSnr += pilotDb;
 		    if (pilotDb >= PILOT_THRESHOLD) {
 			noPilot = false;
@@ -564,7 +564,7 @@ void fmProcessor::run(void) {
 
 		// in reality the peak level is as good a signal measurement as getting the signal
 		// after a FFT on the samples buffer, much like we did for rds and noise
-	        showStrength (2*(get_db(peakLevel, 128)-get_db(0, 128)));
+	        showStrength (2*(getDb(peakLevel, 128)-getDb(0, 128)));
 		showSoundMode(stereoCount > 0);
 		stereoCount = 0;
 		log(LOG_FM, LOG_CHATTY, "signal strength %f audio gain %f", peakLevel, audioGain);

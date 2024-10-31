@@ -45,7 +45,7 @@ class	Backend {
 #endif
 public:
 		Backend	(RadioInterface	*mr,
-	                 descriptorType	*d,
+	                 serviceDescriptor *d,
 	                 RingBuffer<int16_t> *,
 	                 RingBuffer<uint8_t> *,
 	                 RingBuffer<uint8_t> *);

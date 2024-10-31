@@ -20,6 +20,7 @@
  *    along with Qt-DAB; if not, write to the Free Software
  *    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
+#include	"math-helper.h"
 #include	"timesyncer.h"
 #include	"sample-reader.h"
 
@@ -42,7 +43,7 @@ int	i;
 	syncBufferIndex = 0;
 	for (i = 0; i < C_LEVEL_SIZE; i ++) {
 	   std::complex<float> sample        = myReader -> getSample (0);
-	   envBuffer [syncBufferIndex]       = jan_abs (sample);
+	   envBuffer [syncBufferIndex]       = fastMagnitude (sample);
 	   cLevel                            += envBuffer [syncBufferIndex];
 	   syncBufferIndex ++;
 	}
@@ -52,7 +53,7 @@ int	i;
 	   std::complex<float> sample        =
 	         myReader -> getSample (0);
 //	         myReader. getSample (coarseOffset + fineCorrector);
-	   envBuffer [syncBufferIndex] = jan_abs (sample);
+	   envBuffer [syncBufferIndex] = fastMagnitude (sample);
 //      update the levels
 	   cLevel += envBuffer [syncBufferIndex] -
 	        envBuffer [(syncBufferIndex - C_LEVEL_SIZE) & syncBufferMask];
@@ -71,7 +72,7 @@ int	i;
 	 while (cLevel / C_LEVEL_SIZE < 0.75 * myReader -> get_sLevel()) {
 	   std::complex<float> sample =
 	           myReader -> getSample (0);
-	   envBuffer [syncBufferIndex] = jan_abs (sample);
+	   envBuffer [syncBufferIndex] = fastMagnitude (sample);
 //      update the levels
 	   cLevel += envBuffer [syncBufferIndex] -
 	         envBuffer [(syncBufferIndex - C_LEVEL_SIZE) & syncBufferMask];

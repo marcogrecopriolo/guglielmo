@@ -24,6 +24,7 @@
 #include	"mot-handler.h"
 #include	"mot-object.h"
 #include	"mot-dir.h"
+#include	"bits-helper.h"
 #include	"radio.h"
 //
 //	we "cache" the most recent single motSlides (not those in a directory)
