@@ -102,7 +102,7 @@ fmProcessor::fmProcessor(deviceHandler *device, RadioInterface *radioInterface, 
     DSPFLOAT Delta_F = 0.95*fmRate/2;
     DSPFLOAT B_FM = 2*(Delta_F+F_G);
     DSPFLOAT K_FM = B_FM*M_PI/F_G;
-    fmDemodulator = new fm_Demodulator(fmRate, fastTrigTabs, K_FM);
+    demodulator = new fmDemodulator(fmRate, fastTrigTabs, K_FM);
 
     rdsDataDecoder = new rdsDecoder(radioInterface, fmRate / RDS_DECIMATOR, fastTrigTabs);
     rdsLowPassFilter = new fftFilter(FFT_SIZE, RDS_LOWPASS_SIZE);
@@ -147,7 +147,7 @@ fmProcessor::~fmProcessor(void) {
 	    radioInterface, SLOT(showSoundMode(bool)));
     delete fmBandFilter;
     delete signalFft;
-    delete fmDemodulator;
+    delete demodulator;
     delete rdsPllDecoder;
     delete pilotPllFilter;
     delete rdsHilbertFilter;
@@ -206,7 +206,7 @@ void fmProcessor::setFMMode(bool m) {
 }
 
 void fmProcessor::setFMDecoder(int8_t d) {
-    fmDemodulator->setDecoder(d);
+    demodulator->setDecoder(d);
 }
 
 // Deemphasis	= 50 usec (3183 Hz, Europe)
@@ -460,7 +460,7 @@ void fmProcessor::run(void) {
 	    }
 
 	    // demodulate and output
-	    DSPFLOAT demod = fmDemodulator->demodulate(v);
+	    DSPFLOAT demod = demodulator->demodulate(v);
 	    if (fmMode == FM_STEREO) {
 		DSPFLOAT currentPilotPhase = pilotPllFilter->doPll(5*pilotBandFilter->Pass(5*demod));
 		DSPFLOAT phaseForLRDiff	= 2*(currentPilotPhase+pilotDelay);

@@ -450,7 +450,7 @@ void RadioInterface::makeFMprocessor() {
     FMprocessor->setFMMode(true);
     FMprocessor->setBandwidth(FMfilter);
     FMprocessor->setBandFilterDegree(FMdegree);
-    FMprocessor->setFMDecoder(fm_Demodulator::fm_demod(FMdecoder));
+    FMprocessor->setFMDecoder(fmDemodulator::fm_demod(FMdecoder));
     FMprocessor->setDeemphasis(deemphasis);
     FMprocessor->setAudioBandwidth(lowPassFilter);
     FMprocessor->setAudioGain(FMaudioGain);

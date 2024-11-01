@@ -733,7 +733,7 @@ void RadioInterface::setDecoder(int index) {
     QString decoder = settingsUi.decoderComboBox->itemText(index);
 
     log(LOG_UI, LOG_MIN, "fm decoder %i %s", index, qPrintable(decoder));
-    FMprocessor->setFMDecoder(fm_Demodulator::fm_demod(index));
+    FMprocessor->setFMDecoder(fmDemodulator::fm_demod(index));
     FMdecoder = index;
 }
 

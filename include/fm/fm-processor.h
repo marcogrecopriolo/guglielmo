@@ -24,11 +24,9 @@
  *    Lazy Chair Programming
  */
 
-#ifndef	__FM_PROCESSOR_H__
-#define	__FM_PROCESSOR_H__
+#ifndef	FM_PROCESSOR_H
+#define	FM_PROCESSOR_H
 
-#include <QThread>
-#include <QObject>
 #include <sndfile.h>
 #include "constants.h"
 #include "fir-filters.h"
@@ -40,7 +38,7 @@
 
 class deviceHandler;
 class RadioInterface;
-class fm_Demodulator;
+class fmDemodulator;
 class audioBase;
 class newConverter;
 
@@ -66,6 +64,7 @@ public:
 	       int32_t,  // audioRate,
 	       int16_t); // threshold scanning
     ~fmProcessor(void);
+
     void stop(void);
     void setFMMode(bool);
     void setFMDecoder(int8_t);
@@ -119,7 +118,7 @@ private:
 
     uint8_t fmMode;
     uint8_t soundSelector;
-    fm_Demodulator *fmDemodulator;
+    fmDemodulator *demodulator;
 
     bool initRDS;
     rdsDecoder *rdsDataDecoder;
