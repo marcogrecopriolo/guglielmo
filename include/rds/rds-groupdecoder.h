@@ -33,71 +33,69 @@
  *    Last changed    : 09.03.2010
  */
 
-#ifndef	__RDS_GROUP_DECODER
-#define	__RDS_GROUP_DECODER
+#ifndef RDS_GROUP_DECODER_H
+#define RDS_GROUP_DECODER_H
 
-#include	<QObject>
-#include	"constants.h"
-#include	"rds-group.h"
+#include "constants.h"
+#include "rds-group.h"
+#include <QObject>
 
-class	RadioInterface;
+class RadioInterface;
 
-class	rdsGroupDecoder : public QObject {
-Q_OBJECT
+class rdsGroupDecoder: public QObject {
+    Q_OBJECT
+
 public:
-	rdsGroupDecoder		(RadioInterface *);
-	~rdsGroupDecoder	(void);
-bool	decode			(RDSGroup *);
-void	reset			(void);
+    rdsGroupDecoder(RadioInterface*);
+    ~rdsGroupDecoder(void);
+    bool decode(RDSGroup*);
+    void reset(void);
 
-//	group 1 constants
-//
-static const uint32_t NUMBER_OF_NAME_SEGMENTS	= 4;
-static const uint32_t STATION_LABEL_SEGMENT_SIZE = 2;
-static const uint32_t STATION_LABEL_LENGTH =
-          NUMBER_OF_NAME_SEGMENTS * STATION_LABEL_SEGMENT_SIZE;
+    // group 1 constants
+    static const uint32_t NUMBER_OF_NAME_SEGMENTS = 4;
+    static const uint32_t STATION_LABEL_SEGMENT_SIZE = 2;
+    static const uint32_t STATION_LABEL_LENGTH = NUMBER_OF_NAME_SEGMENTS * STATION_LABEL_SEGMENT_SIZE;
 
-//	Group 2 constants 
-static const uint32_t CHARS_PER_RTXT_SEGMENT		= 4;
-static const uint32_t NUMBER_OF_TEXT_SEGMENTS		= 16;
-static const uint32_t RADIOTEXT_LENGTH = 
-	        CHARS_PER_RTXT_SEGMENT * NUMBER_OF_TEXT_SEGMENTS;
+    // group 2 constants
+    static const uint32_t CHARS_PER_RTXT_SEGMENT = 4;
+    static const uint32_t NUMBER_OF_TEXT_SEGMENTS = 16;
+    static const uint32_t RADIOTEXT_LENGTH = CHARS_PER_RTXT_SEGMENT * NUMBER_OF_TEXT_SEGMENTS;
 
-static const char END_OF_RADIO_TEXT		= 0x0D;
+    static const char END_OF_RADIO_TEXT = 0x0D;
 
 private:
-	RadioInterface	*MyRadioInterface;
+    RadioInterface* MyRadioInterface;
 
-	void		Handle_Basic_Tuning_and_Switching (RDSGroup *);
-	void		Handle_RadioText		  (RDSGroup *);
-	void		Handle_Time_and_Date		  (RDSGroup *);
-	void		addtoStationLabel	(uint32_t, uint32_t);
-	void		additionalFrequencies	(uint16_t);
-	void		addtoRadioText		(uint16_t, uint16_t, uint16_t);
-	QString		prepareText		(char *, int16_t);
-	uint32_t	m_piCode;
-	uint16_t	*alphabet;
-	bool		alphabetSwitcher	(uint8_t, uint8_t);
-	uint16_t	*setAlphabetTo		(uint8_t, uint8_t);
+    void Handle_Basic_Tuning_and_Switching(RDSGroup*);
+    void Handle_RadioText(RDSGroup*);
+    void Handle_Time_and_Date(RDSGroup*);
+    void addtoStationLabel(uint32_t, uint32_t);
+    void additionalFrequencies(uint16_t);
+    void addtoRadioText(uint16_t, uint16_t, uint16_t);
+    QString prepareText(char*, int16_t);
+    uint32_t m_piCode;
+    uint16_t* alphabet;
+    bool alphabetSwitcher(uint8_t, uint8_t);
+    uint16_t* setAlphabetTo(uint8_t, uint8_t);
 
-//	Group 1 members
-	char   stationLabel [STATION_LABEL_LENGTH];
-	int8_t   m_grp1_diCode;
-	uint32_t stationNameSegmentRegister;
+    // group 1 members
+    char stationLabel[STATION_LABEL_LENGTH];
+    int8_t m_grp1_diCode;
+    uint32_t stationNameSegmentRegister;
 
-//	Group 2 members 
-	uint32_t textSegmentRegister;
-	int32_t  textABflag;
-	char   textBuffer [RADIOTEXT_LENGTH];
+    // group 2 members
+    uint32_t textSegmentRegister;
+    int32_t textABflag;
+    char textBuffer[RADIOTEXT_LENGTH];
+
 signals:
-	void	setGroup		(int);
-	void	setPTYCode		(int);
-	void	setMusicSpeechFlag	(int);
-	void	clearMusicSpeechFlag	(void);
-	void	setPiCode		(int);
-	void	setStationLabel		(const QString &);
-	void	setRadioText		(const QString &);
-	void	setAFDisplay		(int);
+    void setGroup(int);
+    void setPTYCode(int);
+    void setMusicSpeechFlag(int);
+    void clearMusicSpeechFlag(void);
+    void setPiCode(int);
+    void setStationLabel(const QString&);
+    void setRadioText(const QString&);
+    void setAFDisplay(int);
 };
-
 #endif

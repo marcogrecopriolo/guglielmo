@@ -19,7 +19,7 @@
  *
  *    Taken from sdr-j-fm, with bug fixes and enhancements.
  *
- *    Copyright (C) 2014, 2011, 2012
+ *    Copyright (C) 2014
  *    Jan van Katwijk (J.vanKatwijk@gmail.com)
  *    Lazy Chair Programming
  */
