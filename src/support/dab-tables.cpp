@@ -1,4 +1,3 @@
-#
 /*
  *    Copyright (C) 2018
  *    Hayati Ayguen (h_ayguen@web.de)
@@ -669,4 +668,3 @@ int h = protLevel;
 	else
 	   return uep_rates [h - 1];     // UEP
 }
-

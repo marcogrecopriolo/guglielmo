@@ -32,15 +32,15 @@
 #define _TRIGTABS_H
 
 #include "constants.h"
-#include <math.h>
-#include <stdio.h>
-#include <stdint.h>
 #include <cstdlib>
 #include <limits>
+#include <math.h>
+#include <stdint.h>
+#include <stdio.h>
 
 DSPFLOAT toBaseRadians(DSPFLOAT phase);
 
-class	trigTabs {
+class trigTabs {
 public:
     trigTabs(int32_t);
     ~trigTabs(void);
@@ -48,20 +48,20 @@ public:
     DSPFLOAT getCos(DSPFLOAT);
     float atan2(float, float);
     float argX(DSPCOMPLEX);
-	
+
 private:
     int32_t fromPhasetoIndex(DSPFLOAT);
-    DSPCOMPLEX *table;
+    DSPCOMPLEX* table;
     int32_t rate;
     double C;
-    float *ATAN2_TABLE_PPY;
-    float *ATAN2_TABLE_PPX;
-    float *ATAN2_TABLE_PNY;
-    float *ATAN2_TABLE_PNX;
-    float *ATAN2_TABLE_NPY;
-    float *ATAN2_TABLE_NPX;
-    float *ATAN2_TABLE_NNY;
-    float *ATAN2_TABLE_NNX;
+    float* ATAN2_TABLE_PPY;
+    float* ATAN2_TABLE_PPX;
+    float* ATAN2_TABLE_PNY;
+    float* ATAN2_TABLE_PNX;
+    float* ATAN2_TABLE_NPY;
+    float* ATAN2_TABLE_NPX;
+    float* ATAN2_TABLE_NNY;
+    float* ATAN2_TABLE_NNX;
     float stretch;
 };
 

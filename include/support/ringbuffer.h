@@ -1,4 +1,3 @@
-#
 /*
  * $Id: pa_ringbuffer.c 1738 2011-08-18 11:47:28Z rossb $
  * Portable Audio I/O Library
@@ -65,12 +64,12 @@
  *    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#ifndef __RINGBUFFER__
-#define	__RINGBUFFER__
-#include	<cstdlib>
-#include	<cstdio>
-#include	<cstring>
-#include	<cstdint>
+#ifndef RINGBUFFER_H
+#define RINGBUFFER_H
+#include <cstdint>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
 /*
  *	a simple ringbuffer, lockfree, however only for a
  *	single reader and a single writer.
@@ -82,142 +81,149 @@
 #include <atomic>
 #endif
 #
-    /* Mac OS X only provides
+/* Mac OS X only provides
        full memory barriers, so the three types of barriers are the same,
        however, these barriers are superior to compiler-based ones. */
 
 inline void Apple_MemoryBarrier() {
 #ifdef OSATOMIC_DEPRECATED
-  std::atomic_thread_fence(std::memory_order_seq_cst);
+    std::atomic_thread_fence(std::memory_order_seq_cst);
 #else
-  OSMemoryBarrier();
-#endif  
+    OSMemoryBarrier();
+#endif
 }
-#   define PaUtil_FullMemoryBarrier()  Apple_MemoryBarrier()
-#   define PaUtil_ReadMemoryBarrier()  Apple_MemoryBarrier()
-#   define PaUtil_WriteMemoryBarrier() Apple_MemoryBarrier()
+#define PaUtil_FullMemoryBarrier() Apple_MemoryBarrier()
+#define PaUtil_ReadMemoryBarrier() Apple_MemoryBarrier()
+#define PaUtil_WriteMemoryBarrier() Apple_MemoryBarrier()
 #elif defined(__GNUC__)
-    /* GCC >= 4.1 has built-in intrinsics. We'll use those */
-#   if (__GNUC__ > 4) || (__GNUC__ == 4 && __GNUC_MINOR__ >= 1)
-# define PaUtil_FullMemoryBarrier()  __sync_synchronize()
-# define PaUtil_ReadMemoryBarrier()  __sync_synchronize()
-# define PaUtil_WriteMemoryBarrier() __sync_synchronize()
-    /* as a fallback, GCC understands volatile asm and "memory" to mean it
+/* GCC >= 4.1 has built-in intrinsics. We'll use those */
+#if (__GNUC__ > 4) || (__GNUC__ == 4 && __GNUC_MINOR__ >= 1)
+#define PaUtil_FullMemoryBarrier() __sync_synchronize()
+#define PaUtil_ReadMemoryBarrier() __sync_synchronize()
+#define PaUtil_WriteMemoryBarrier() __sync_synchronize()
+/* as a fallback, GCC understands volatile asm and "memory" to mean it
      * should not reorder memory read/writes */
-#   elif defined( __PPC__ )
-#      define PaUtil_FullMemoryBarrier()  asm volatile("sync":::"memory")
-#      define PaUtil_ReadMemoryBarrier()  asm volatile("sync":::"memory")
-#      define PaUtil_WriteMemoryBarrier() asm volatile("sync":::"memory")
-#   elif defined( __i386__ ) || defined( __i486__ ) || defined( __i586__ ) || defined( __i686__ ) || defined( __x86_64__ )
-#      define PaUtil_FullMemoryBarrier()  asm volatile("mfence":::"memory")
-#      define PaUtil_ReadMemoryBarrier()  asm volatile("lfence":::"memory")
-#      define PaUtil_WriteMemoryBarrier() asm volatile("sfence":::"memory")
-#   else
-#      ifdef ALLOW_SMP_DANGERS
-#         warning Memory barriers not defined on this system or system unknown
-#         warning For SMP safety, you should fix this.
-#         define PaUtil_FullMemoryBarrier()
-#         define PaUtil_ReadMemoryBarrier()
-#         define PaUtil_WriteMemoryBarrier()
-#      else
-#         error Memory barriers are not defined on this system. You can still compile by defining ALLOW_SMP_DANGERS, but SMP safety will not be guaranteed.
-#      endif
-#   endif
-#elif (_MSC_VER >= 1400) && !defined(_WIN32_WCE)
-#   include <intrin.h>
-#   pragma intrinsic(_ReadWriteBarrier)
-#   pragma intrinsic(_ReadBarrier)
-#   pragma intrinsic(_WriteBarrier)
-/* note that MSVC intrinsics _ReadWriteBarrier(), _ReadBarrier(), _WriteBarrier() are just compiler barriers *not* memory barriers */
-#   define PaUtil_FullMemoryBarrier()  _ReadWriteBarrier()
-#   define PaUtil_ReadMemoryBarrier()  _ReadBarrier()
-#   define PaUtil_WriteMemoryBarrier() _WriteBarrier()
-#elif defined(_WIN32_WCE)
-#   define PaUtil_FullMemoryBarrier()
-#   define PaUtil_ReadMemoryBarrier()
-#   define PaUtil_WriteMemoryBarrier()
-#elif defined(_MSC_VER) || defined(__BORLANDC__)
-#   define PaUtil_FullMemoryBarrier()  _asm { lock add    [esp], 0 }
-#   define PaUtil_ReadMemoryBarrier()  _asm { lock add    [esp], 0 }
-#   define PaUtil_WriteMemoryBarrier() _asm { lock add    [esp], 0 }
+#elif defined(__PPC__)
+#define PaUtil_FullMemoryBarrier() asm volatile("sync" :: \
+                                                    : "memory")
+#define PaUtil_ReadMemoryBarrier() asm volatile("sync" :: \
+                                                    : "memory")
+#define PaUtil_WriteMemoryBarrier() asm volatile("sync" :: \
+                                                     : "memory")
+#elif defined(__i386__) || defined(__i486__) || defined(__i586__) || defined(__i686__) || defined(__x86_64__)
+#define PaUtil_FullMemoryBarrier() asm volatile("mfence" :: \
+                                                    : "memory")
+#define PaUtil_ReadMemoryBarrier() asm volatile("lfence" :: \
+                                                    : "memory")
+#define PaUtil_WriteMemoryBarrier() asm volatile("sfence" :: \
+                                                     : "memory")
 #else
-#   ifdef ALLOW_SMP_DANGERS
-#      warning Memory barriers not defined on this system or system unknown
-#      warning For SMP safety, you should fix this.
-#      define PaUtil_FullMemoryBarrier()
-#      define PaUtil_ReadMemoryBarrier()
-#      define PaUtil_WriteMemoryBarrier()
-#   else
-#      error Memory barriers are not defined on this system. You can still compile by defining ALLOW_SMP_DANGERS, but SMP safety will not be guaranteed.
-#   endif
+#ifdef ALLOW_SMP_DANGERS
+#warning Memory barriers not defined on this system or system unknown
+#warning For SMP safety, you should fix this.
+#define PaUtil_FullMemoryBarrier()
+#define PaUtil_ReadMemoryBarrier()
+#define PaUtil_WriteMemoryBarrier()
+#else
+#error Memory barriers are not defined on this system. You can still compile by defining ALLOW_SMP_DANGERS, but SMP safety will not be guaranteed.
+#endif
+#endif
+#elif (_MSC_VER >= 1400) && !defined(_WIN32_WCE)
+#include <intrin.h>
+#pragma intrinsic(_ReadWriteBarrier)
+#pragma intrinsic(_ReadBarrier)
+#pragma intrinsic(_WriteBarrier)
+/* note that MSVC intrinsics _ReadWriteBarrier(), _ReadBarrier(), _WriteBarrier() are just compiler barriers *not* memory barriers */
+#define PaUtil_FullMemoryBarrier() _ReadWriteBarrier()
+#define PaUtil_ReadMemoryBarrier() _ReadBarrier()
+#define PaUtil_WriteMemoryBarrier() _WriteBarrier()
+#elif defined(_WIN32_WCE)
+#define PaUtil_FullMemoryBarrier()
+#define PaUtil_ReadMemoryBarrier()
+#define PaUtil_WriteMemoryBarrier()
+#elif defined(_MSC_VER) || defined(__BORLANDC__)
+#define PaUtil_FullMemoryBarrier() _asm { lock add    [esp], 0 }
+#define PaUtil_ReadMemoryBarrier() _asm { lock add    [esp], 0 }
+#define PaUtil_WriteMemoryBarrier() _asm { lock add    [esp], 0 }
+#else
+#ifdef ALLOW_SMP_DANGERS
+#warning Memory barriers not defined on this system or system unknown
+#warning For SMP safety, you should fix this.
+#define PaUtil_FullMemoryBarrier()
+#define PaUtil_ReadMemoryBarrier()
+#define PaUtil_WriteMemoryBarrier()
+#else
+#error Memory barriers are not defined on this system. You can still compile by defining ALLOW_SMP_DANGERS, but SMP safety will not be guaranteed.
+#endif
 #endif
 
 template <class elementtype>
 class RingBuffer {
 private:
-		uint32_t	bufferSize;
-volatile	uint32_t	writeIndex;
-volatile	uint32_t	readIndex;
-		uint32_t	bigMask;
-	        uint32_t	smallMask;
-		char		*buffer;
-public:
-	RingBuffer (uint32_t elementCount) {
-	if (((elementCount - 1) & elementCount) != 0)	
-	    elementCount = 64 * 16384;	/* default	*/
+    uint32_t bufferSize;
+    volatile uint32_t writeIndex;
+    volatile uint32_t readIndex;
+    uint32_t bigMask;
+    uint32_t smallMask;
+    char* buffer;
 
-	bufferSize	= elementCount;
-	buffer		= new char [2 * bufferSize * sizeof (elementtype)];
-	writeIndex	= 0;
-	readIndex	= 0;
-	smallMask	= (elementCount)- 1;
-	bigMask		= (elementCount * 2) - 1;
-}
+public:
+    RingBuffer(uint32_t elementCount) {
+        if (((elementCount - 1) & elementCount) != 0)
+            elementCount = 64 * 16384; /* default	*/
+
+        bufferSize = elementCount;
+        buffer = new char[2 * bufferSize * sizeof(elementtype)];
+        writeIndex = 0;
+        readIndex = 0;
+        smallMask = (elementCount)-1;
+        bigMask = (elementCount * 2) - 1;
+    }
 
     ~RingBuffer() {
-	   delete[]	 buffer;
-}
+        delete[] buffer;
+    }
 
 /*
  * 	functions for checking available data for reading and space
  * 	for writing
  */
-int32_t	GetRingBufferReadAvailable() {
-	return (writeIndex - readIndex) & bigMask;
-}
+    int32_t GetRingBufferReadAvailable() {
+        return (writeIndex - readIndex) & bigMask;
+    }
 
-int32_t	ReadSpace(){
-    return GetRingBufferReadAvailable();
-}
+    int32_t ReadSpace() {
+        return GetRingBufferReadAvailable();
+    }
 
-int32_t	GetRingBufferWriteAvailable() {
-    return  bufferSize - GetRingBufferReadAvailable();
-}
+    int32_t GetRingBufferWriteAvailable() {
+        return bufferSize - GetRingBufferReadAvailable();
+    }
 
-int32_t	WriteSpace() {
-    return GetRingBufferWriteAvailable();
-}
+    int32_t WriteSpace() {
+        return GetRingBufferWriteAvailable();
+    }
 
-void	FlushRingBuffer() {
-	writeIndex	= 0;
-	readIndex	= 0;
-}
+    void FlushRingBuffer() {
+        writeIndex = 0;
+        readIndex = 0;
+    }
 /* ensure that previous writes are seen before we update the write index 
-   (write after write)
+ * (write after write)
  */
-int32_t AdvanceRingBufferWriteIndex (int32_t elementCount) {
-	PaUtil_WriteMemoryBarrier();
-	return writeIndex = (writeIndex + elementCount) & bigMask;
-}
+    int32_t AdvanceRingBufferWriteIndex(int32_t elementCount) {
+        PaUtil_WriteMemoryBarrier();
+        return writeIndex = (writeIndex + elementCount) & bigMask;
+    }
 
 /* ensure that previous reads (copies out of the ring buffer) are
  * always completed before updating (writing) the read index. 
  * (write-after-read) => full barrier
  */
-int32_t AdvanceRingBufferReadIndex (int32_t elementCount) {
-    PaUtil_FullMemoryBarrier();
-    return readIndex = (readIndex + elementCount) & bigMask;
-}
+    int32_t AdvanceRingBufferReadIndex(int32_t elementCount) {
+        PaUtil_FullMemoryBarrier();
+        return readIndex = (readIndex + elementCount) & bigMask;
+    }
 
 /***************************************************************************
 ** Get address of region(s) to which we can write data.
@@ -225,37 +231,36 @@ int32_t AdvanceRingBufferReadIndex (int32_t elementCount) {
 ** If non-contiguous, size2 will be the size of second region.
 ** Returns room available to be written or elementCount, whichever is smaller.
 */
-int32_t GetRingBufferWriteRegions (uint32_t elementCount,
-                                   void **dataPtr1, int32_t *sizePtr1,
-                                   void **dataPtr2, int32_t *sizePtr2 ) {
-uint32_t   index;
-uint32_t   available = GetRingBufferWriteAvailable();
+    int32_t GetRingBufferWriteRegions(uint32_t elementCount,
+        void** dataPtr1, int32_t* sizePtr1,
+        void** dataPtr2, int32_t* sizePtr2) {
+        uint32_t index;
+        uint32_t available = GetRingBufferWriteAvailable();
 
-	if (elementCount > available)
-	   elementCount = available;
+        if (elementCount > available)
+            elementCount = available;
 
-/* Check to see if write is not contiguous. */
-	index = writeIndex & smallMask;
-	if ((index + elementCount) > bufferSize ) {
-        /* Write data in two blocks that wrap the buffer. */
-           int32_t   firstHalf = bufferSize - index;
-           *dataPtr1	= &buffer[index * sizeof(elementtype)];
-	   *sizePtr1	= firstHalf;
-	   *dataPtr2	= &buffer [0];
-	   *sizePtr2	= elementCount - firstHalf;
-	}
-	else {		// fits
-	   *dataPtr1	= &buffer [index * sizeof(elementtype)];
-	   *sizePtr1	= elementCount;
-	   *dataPtr2	= nullptr;
-	   *sizePtr2	= 0;
-	}
+        /* Check to see if write is not contiguous. */
+        index = writeIndex & smallMask;
+        if ((index + elementCount) > bufferSize) {
+            /* Write data in two blocks that wrap the buffer. */
+            int32_t firstHalf = bufferSize - index;
+            *dataPtr1 = &buffer[index * sizeof(elementtype)];
+            *sizePtr1 = firstHalf;
+            *dataPtr2 = &buffer[0];
+            *sizePtr2 = elementCount - firstHalf;
+        } else { // fits
+            *dataPtr1 = &buffer[index * sizeof(elementtype)];
+            *sizePtr1 = elementCount;
+            *dataPtr2 = nullptr;
+            *sizePtr2 = 0;
+        }
 
-	if (available > 0)
-           PaUtil_FullMemoryBarrier(); /* (write-after-read) => full barrier */
+        if (available > 0)
+            PaUtil_FullMemoryBarrier(); /* (write-after-read) => full barrier */
 
-	return elementCount;
-}
+        return elementCount;
+    }
 
 /***************************************************************************
 ** Get address of region(s) from which we can read data.
@@ -263,87 +268,82 @@ uint32_t   available = GetRingBufferWriteAvailable();
 ** If non-contiguous, size2 will be the size of second region.
 ** Returns room available to be read or elementCount, whichever is smaller.
 */
-int32_t GetRingBufferReadRegions (uint32_t elementCount,
-	                          void **dataPtr1, int32_t *sizePtr1,
-	                          void **dataPtr2, int32_t *sizePtr2) {
-uint32_t   index;
-uint32_t   available = GetRingBufferReadAvailable(); /* doesn't use memory barrier */
+    int32_t GetRingBufferReadRegions(uint32_t elementCount,
+        void** dataPtr1, int32_t* sizePtr1,
+        void** dataPtr2, int32_t* sizePtr2) {
+        uint32_t index;
+        uint32_t available = GetRingBufferReadAvailable(); /* doesn't use memory barrier */
 
-	if (elementCount > available)
-	   elementCount = available;
+        if (elementCount > available)
+            elementCount = available;
 
-/* Check to see if read is not contiguous. */
-	index = readIndex & smallMask;
-	if ((index + elementCount) > bufferSize) {
-        /* Write data in two blocks that wrap the buffer. */
-           int32_t firstHalf = bufferSize - index;
-	   *dataPtr1 = &buffer [index * sizeof(elementtype)];
-	   *sizePtr1 = firstHalf;
-	   *dataPtr2 = &buffer [0];
-	   *sizePtr2 = elementCount - firstHalf;
-	}
-	else {
-	   *dataPtr1 = &buffer [index * sizeof(elementtype)];
-	   *sizePtr1 = elementCount;
-	   *dataPtr2 = nullptr;
-	   *sizePtr2 = 0;
-	}
-    
-	if (available)
-           PaUtil_ReadMemoryBarrier(); /* (read-after-read) => read barrier */
+        /* Check to see if read is not contiguous. */
+        index = readIndex & smallMask;
+        if ((index + elementCount) > bufferSize) {
+            /* Write data in two blocks that wrap the buffer. */
+            int32_t firstHalf = bufferSize - index;
+            *dataPtr1 = &buffer[index * sizeof(elementtype)];
+            *sizePtr1 = firstHalf;
+            *dataPtr2 = &buffer[0];
+            *sizePtr2 = elementCount - firstHalf;
+        } else {
+            *dataPtr1 = &buffer[index * sizeof(elementtype)];
+            *sizePtr1 = elementCount;
+            *dataPtr2 = nullptr;
+            *sizePtr2 = 0;
+        }
 
-	return elementCount;
-}
+        if (available)
+            PaUtil_ReadMemoryBarrier(); /* (read-after-read) => read barrier */
 
-int32_t	putDataIntoBuffer (const void *data, int32_t elementCount) {
-int32_t size1, size2, numWritten;
-void	*data1;
-void	*data2;
+        return elementCount;
+    }
 
-	numWritten = GetRingBufferWriteRegions (elementCount,
-	                                        &data1, &size1,
-	                                        &data2, &size2 );
-	if (size2 > 0) {
-           memcpy (data1, data, size1 * sizeof(elementtype));
-	   data = ((char *)data) + size1 * sizeof(elementtype);
-	   memcpy (data2, data, size2 * sizeof(elementtype));
-	}
-	else 
-	   memcpy (data1, data, size1 * sizeof(elementtype));
+    int32_t putDataIntoBuffer(const void* data, int32_t elementCount) {
+        int32_t size1, size2, numWritten;
+        void* data1;
+        void* data2;
 
-	AdvanceRingBufferWriteIndex (numWritten );
-	return numWritten;
-}
+        numWritten = GetRingBufferWriteRegions(elementCount,
+            &data1, &size1,
+            &data2, &size2);
+        if (size2 > 0) {
+            memcpy(data1, data, size1 * sizeof(elementtype));
+            data = ((char*)data) + size1 * sizeof(elementtype);
+            memcpy(data2, data, size2 * sizeof(elementtype));
+        } else
+            memcpy(data1, data, size1 * sizeof(elementtype));
 
-int32_t getDataFromBuffer (void *data, int32_t elementCount ) {
-int32_t	size1, size2, numRead;
-void	*data1;
-void	*data2;
+        AdvanceRingBufferWriteIndex(numWritten);
+        return numWritten;
+    }
 
-	numRead = GetRingBufferReadRegions (elementCount,
-	                                    &data1, &size1,
-	                                    &data2, &size2 );
-	if (size2 > 0) {
-	   memcpy (data, data1, size1 * sizeof(elementtype));
-	   data = ((char *)data) + size1 *  sizeof(elementtype);
-	   memcpy (data, data2, size2 * sizeof(elementtype));
-	}
-	else
-           memcpy (data, data1, size1 * sizeof(elementtype));
+    int32_t getDataFromBuffer(void* data, int32_t elementCount) {
+        int32_t size1, size2, numRead;
+        void* data1;
+        void* data2;
 
-	AdvanceRingBufferReadIndex (numRead );
-	return numRead;
-}
+        numRead = GetRingBufferReadRegions(elementCount,
+            &data1, &size1,
+            &data2, &size2);
+        if (size2 > 0) {
+            memcpy(data, data1, size1 * sizeof(elementtype));
+            data = ((char*)data) + size1 * sizeof(elementtype);
+            memcpy(data, data2, size2 * sizeof(elementtype));
+        } else
+            memcpy(data, data1, size1 * sizeof(elementtype));
 
-int32_t	skipDataInBuffer (uint32_t n_values) {
-//	ensure that we have the correct read and write indices
-    PaUtil_FullMemoryBarrier();
-    if ((int)n_values > GetRingBufferReadAvailable())
-       n_values = GetRingBufferReadAvailable();
-	AdvanceRingBufferReadIndex (n_values);
-	return n_values;
-}
+        AdvanceRingBufferReadIndex(numRead);
+        return numRead;
+    }
 
+    int32_t skipDataInBuffer(uint32_t n_values) {
+        // ensure that we have the correct read and write indices
+        PaUtil_FullMemoryBarrier();
+        if ((int)n_values > GetRingBufferReadAvailable())
+            n_values = GetRingBufferReadAvailable();
+        AdvanceRingBufferReadIndex(n_values);
+        return n_values;
+    }
 };
 #endif
-
