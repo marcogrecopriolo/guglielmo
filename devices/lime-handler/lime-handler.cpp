@@ -55,20 +55,15 @@ limeHandler::limeHandler()
 
     libraryLoaded = true;
     if (!load_limeFunctions()) {
-#if IS_WINDOWS
-        FreeLibrary(Handle);
-#else
-        dlclose(Handle);
-#endif
+        CLOSE_LIBRARY(Handle);
         throw(21);
     }
 
     log(DEV_LIME, LOG_MIN, "Lime library available");
 
-    // From here we have a library available
-
     int ndevs = LMS_GetDeviceList(limedevices);
     if (ndevs == 0) { // no devices found
+        CLOSE_LIBRARY(Handle);
         throw(21);
     }
 
@@ -77,18 +72,21 @@ limeHandler::limeHandler()
 
     int res = LMS_Open(&theDevice, nullptr, nullptr);
     if (res < 0) { // some error
+        CLOSE_LIBRARY(Handle);
         throw(22);
     }
 
     res = LMS_Init(theDevice);
     if (res < 0) { // some error
         LMS_Close(&theDevice);
+        CLOSE_LIBRARY(Handle);
         throw(23);
     }
 
     res = LMS_GetNumChannels(theDevice, LMS_CH_RX);
     if (res < 0) { // some error
         LMS_Close(&theDevice);
+        CLOSE_LIBRARY(Handle);
         throw(24);
     }
 
@@ -97,12 +95,14 @@ limeHandler::limeHandler()
     res = LMS_EnableChannel(theDevice, LMS_CH_RX, 0, true);
     if (res < 0) { // some error
         LMS_Close(theDevice);
+        CLOSE_LIBRARY(Handle);
         throw(24);
     }
 
     res = LMS_SetSampleRate(theDevice, 2048000.0, 0);
     if (res < 0) {
         LMS_Close(theDevice);
+        CLOSE_LIBRARY(Handle);
         throw(25);
     }
 
@@ -128,6 +128,7 @@ limeHandler::limeHandler()
         0, 220000000.0);
     if (res < 0) {
         LMS_Close(theDevice);
+        CLOSE_LIBRARY(Handle);
         throw(26);
     }
 
@@ -135,6 +136,7 @@ limeHandler::limeHandler()
         0, 1536000.0);
     if (res < 0) {
         LMS_Close(theDevice);
+        CLOSE_LIBRARY(Handle);
         throw(27);
     }
 
@@ -152,6 +154,7 @@ limeHandler::~limeHandler() {
     while (isRunning())
         usleep(100);
     LMS_Close(theDevice);
+    CLOSE_LIBRARY(Handle);
 }
 
 void limeHandler::setIfGain(int g) {
@@ -196,6 +199,8 @@ int limeHandler::getSamples(std::complex<float>* V, int32_t size, agcStats* stat
     std::complex<int16_t> temp[size];
     int i;
     int amount = _I_Buffer.getDataFromBuffer(temp, size);
+    (void) stats;
+
     for (i = 0; i < amount; i++)
         V[i] = std::complex<float>(real(temp[i]) / 2048.0,
             imag(temp[i]) / 2048.0);
@@ -223,7 +228,6 @@ void limeHandler::run() {
     lms_stream_status_t streamStatus;
     int underruns = 0;
     int overruns = 0;
-    int dropped = 0;
     int amountRead = 0;
 
     running.store(true);
@@ -246,7 +250,6 @@ void limeHandler::run() {
 }
 
 bool limeHandler::load_limeFunctions() {
-
     this->LMS_GetDeviceList = (pfn_LMS_GetDeviceList)
         GETPROCADDRESS(Handle, "LMS_GetDeviceList");
     if (this->LMS_GetDeviceList == nullptr) {

@@ -79,12 +79,7 @@ airspyHandler::airspyHandler() {
 
     if (!load_airspyFunctions()) {
         log(DEV_AIRSPY, LOG_MIN, "problem in loading functions");
-#if IS_WINDOWS
-        FreeLibrary(Handle);
-#else
-        dlclose(Handle);
-
-#endif
+        CLOSE_LIBRARY(Handle);
     }
     //
     strcpy(serial, "");
@@ -92,11 +87,7 @@ airspyHandler::airspyHandler() {
     if (result != AIRSPY_SUCCESS) {
         log(DEV_AIRSPY, LOG_MIN, "my_airspy_init () failed: %s (%d)",
             my_airspy_error_name((airspy_error)result), result);
-#if IS_WINDOWS
-        FreeLibrary(Handle);
-#else
-        dlclose(Handle);
-#endif
+        CLOSE_LIBRARY(Handle);
         throw(21);
     }
 
@@ -104,11 +95,7 @@ airspyHandler::airspyHandler() {
     if (result != AIRSPY_SUCCESS) {
         log(DEV_AIRSPY, LOG_MIN, "my_airpsy_open () failed: %s (%d)",
             my_airspy_error_name((airspy_error)result), result);
-#if IS_WINDOWS
-        FreeLibrary(Handle);
-#else
-        dlclose(Handle);
-#endif
+        CLOSE_LIBRARY(Handle);
         throw(22);
     }
 
@@ -132,11 +119,7 @@ airspyHandler::airspyHandler() {
 
     if (selectedRate == 0) {
         log(DEV_AIRSPY, LOG_MIN, "no sample rate selected");
-#if IS_WINDOWS
-        FreeLibrary(Handle);
-#else
-        dlclose(Handle);
-#endif
+        CLOSE_LIBRARY(Handle);
         throw(23);
     } else
         log(DEV_AIRSPY, LOG_MIN, "selected samplerate = %d", selectedRate);
@@ -145,11 +128,7 @@ airspyHandler::airspyHandler() {
     if (result != AIRSPY_SUCCESS) {
         log(DEV_AIRSPY, LOG_MIN, "airspy_set_samplerate() failed: %s (%d)",
             my_airspy_error_name((enum airspy_error)result), result);
-#if IS_WINDOWS
-        FreeLibrary(Handle);
-#else
-        dlclose(Handle);
-#endif
+        CLOSE_LIBRARY(Handle);
         throw(24);
     }
 
@@ -200,20 +179,15 @@ airspyHandler::~airspyHandler(void) {
         return; // nothing achieved earlier
     }
     my_airspy_exit();
-#if IS_WINDOWS
-    FreeLibrary(Handle);
-#else
-    dlclose(Handle);
-#endif
+    CLOSE_LIBRARY(Handle);
 
-err:
     if (theBuffer != NULL)
         delete theBuffer;
 }
 
 bool airspyHandler::restartReader(int32_t frequency) {
     int result;
-    int32_t bufSize = EXTIO_NS * EXTIO_BASE_TYPE_SIZE * 2;
+
     if (running.load())
         return true;
 
@@ -370,6 +344,8 @@ int32_t airspyHandler::getRate(void) {
 }
 
 int32_t airspyHandler::getSamples(std::complex<float>* v, int32_t size, agcStats* stats) {
+    (void) stats;
+
     return theBuffer->getDataFromBuffer(v, size);
 }
 

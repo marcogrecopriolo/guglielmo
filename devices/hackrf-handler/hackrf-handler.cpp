@@ -36,7 +36,6 @@
 
 hackrfHandler::hackrfHandler()
     : _I_Buffer(4 * 1024 * 1024) {
-    int err;
     int res;
     vgaGain = DEFAULT_GAIN;
     lnaGain = 0;
@@ -61,54 +60,47 @@ hackrfHandler::hackrfHandler()
 
     libraryLoaded = true;
     if (!load_hackrfFunctions()) {
-#if IS_WINDOWS
-        FreeLibrary(Handle);
-#else
-        dlclose(Handle);
-#endif
+        CLOSE_LIBRARY(Handle);
         throw(21);
     }
-    //
+
     res = hackrf_init();
     if (res != HACKRF_SUCCESS) {
         log(DEV_HACKRF, LOG_MIN, "Problem with hackrf_init: %s ", hackrf_error_name(hackrf_error(res)));
+        CLOSE_LIBRARY(Handle);
         throw(21);
     }
 
     res = hackrf_open(&theDevice);
     if (res != HACKRF_SUCCESS) {
         log(DEV_HACKRF, LOG_MIN, "Problem with hackrf_open: %s ", hackrf_error_name(hackrf_error(res)));
+        CLOSE_LIBRARY(Handle);
         throw(22);
     }
 
     res = hackrf_set_sample_rate(theDevice, 2048000.0);
     if (res != HACKRF_SUCCESS) {
         log(DEV_HACKRF, LOG_MIN, "Problem with hackrf_set_samplerate: %s ", hackrf_error_name(hackrf_error(res)));
+        CLOSE_LIBRARY(Handle);
         throw(23);
     }
 
     res = hackrf_set_baseband_filter_bandwidth(theDevice, 2000000);
     if (res != HACKRF_SUCCESS) {
         log(DEV_HACKRF, LOG_MIN, "Problem with hackrf_set_bw: %s ", hackrf_error_name(hackrf_error(res)));
+        CLOSE_LIBRARY(Handle);
         throw(24);
     }
 
     res = hackrf_set_freq(theDevice, 220000000);
     if (res != HACKRF_SUCCESS) {
         log(DEV_HACKRF, LOG_MIN, "Problem with hackrf_set_freq: %s ", hackrf_error_name(hackrf_error(res)));
+        CLOSE_LIBRARY(Handle);
         throw(25);
     }
 
     hackrf_set_lna_gain(theDevice, lnaGain);
     hackrf_set_vga_gain(theDevice, vgaGain);
-
-    hackrf_device_list_t* deviceList = hackrf_device_list();
-    if (deviceList != NULL) {
-        char* serial = deviceList->serial_numbers[0];
-        //	   serial_number_display -> setText (serial);
-        enum hackrf_usb_board_id board_id = deviceList->usb_board_ids[0];
-        //	   usb_board_id_display -> setText (hackrf_usb_board_id_name (board_id));
-    }
 
     running.store(false);
 }
@@ -117,8 +109,8 @@ hackrfHandler::~hackrfHandler(void) {
     stopReader();
     this->hackrf_close(theDevice);
     this->hackrf_exit();
+    CLOSE_LIBRARY(Handle);
 }
-//
 
 void hackrfHandler::getIfRange(int* min, int* max) {
     *min = 0;
@@ -164,7 +156,8 @@ static std::complex<float> buffer[32 * 32768];
 static int callback(hackrf_transfer* transfer) {
     hackrfHandler* ctx = static_cast<hackrfHandler*>(transfer->rx_ctx);
     int i;
-    //std::complex<float> buffer [transfer -> buffer_length / 2];
+
+    // std::complex<float> buffer [transfer -> buffer_length / 2];
     uint8_t* p = transfer->buffer;
     RingBuffer<std::complex<float>>* q = &(ctx->_I_Buffer);
 
@@ -180,8 +173,8 @@ static int callback(hackrf_transfer* transfer) {
 bool hackrfHandler::restartReader(int32_t frequency) {
     int res;
 
-    //	if (hackrf_is_streaming (theDevice))
-    //	   return true;
+    // if (hackrf_is_streaming(theDevice))
+    //     return true;
 
     vfoFrequency = frequency;
     hackrf_set_lna_gain(theDevice, lnaGain);
@@ -212,10 +205,9 @@ void hackrfHandler::stopReader(void) {
     running.store(false);
 }
 
-//
-//	The brave old getSamples. For the hackrf, we get
-//	size still in I/Q pairs
 int32_t hackrfHandler::getSamples(std::complex<float>* V, int32_t size, agcStats* stats) {
+    (void) stats;
+
     return _I_Buffer.getDataFromBuffer(V, size);
 }
 
@@ -236,8 +228,6 @@ int32_t hackrfHandler::getRate(void) {
 }
 
 bool hackrfHandler::load_hackrfFunctions(void) {
-    //
-    //	link the required procedures
     this->hackrf_init = (pfn_hackrf_init)
         GETPROCADDRESS(Handle, "hackrf_init");
     if (this->hackrf_init == nullptr) {
