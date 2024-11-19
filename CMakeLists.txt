@@ -481,14 +481,12 @@ endif()
 	   set ($(PROJECT_NAME)_HDRS
 	        ${${PROJECT_NAME}_HDRS}
 	        ./devices/airspy-handler/airspy-handler.h
-	        ./devices/airspy-handler/airspyfilter.h
 	        ./devices/airspy-handler/libairspy/airspy.h
 	   )
 
 	   set (${PROJECT_NAME}_SRCS
 	        ${${PROJECT_NAME}_SRCS}
 	        ./devices/airspy-handler/airspy-handler.cpp
-	        ./devices/airspy-handler/airspyfilter.cpp
 	   )
 
 	   add_definitions (-DHAVE_AIRSPY)

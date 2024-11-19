@@ -35,7 +35,6 @@
  */
 
 #include "airspy-handler.h"
-#include "airspyfilter.h"
 #include "logging.h"
 #include "math-helper.h"
 
@@ -44,17 +43,18 @@
 static const int EXTIO_NS = 8192;
 static const int EXTIO_BASE_TYPE_SIZE = sizeof(float);
 static const int MAX_GAIN = 21;
+static const float AMPLITUDE = 2048;
+static const int BUF_SIZE = 2048;
 
 airspyHandler::airspyHandler() {
     int result, i;
-    int distance = 10000000;
+    int distance = INT_MAX;
     std::vector<uint32_t> sampleRates;
     uint32_t samplerateCount;
     char* samplerateString;
 
     agcControl = false;
-    ifGain = 50;
-    filter = NULL;
+    ifGain = MAX_GAIN / 2;
     device = 0;
     serialNumber = 0;
     theBuffer = NULL;
@@ -93,7 +93,7 @@ airspyHandler::airspyHandler() {
 
     result = my_airspy_open(&device);
     if (result != AIRSPY_SUCCESS) {
-        log(DEV_AIRSPY, LOG_MIN, "my_airpsy_open () failed: %s (%d)",
+        log(DEV_AIRSPY, LOG_MIN, "my_airspy_open () failed: %s (%d)",
             my_airspy_error_name((airspy_error)result), result);
         CLOSE_LIBRARY(Handle);
         throw(22);
@@ -106,12 +106,13 @@ airspyHandler::airspyHandler() {
         sampleRates.data(), samplerateCount);
 
     selectedRate = 0;
+    inputRate = INPUT_RATE;
     samplerateString = new char[samplerateCount * 10 + 1];
     *samplerateString = '\0';
     for (i = 0; i < (int)samplerateCount; i++) {
         sprintf(samplerateString + strlen(samplerateString), "%d ", sampleRates[i]);
-        if (abs((int)sampleRates[i] - 2048000) < distance) {
-            distance = abs((int)sampleRates[i] - 2048000);
+        if (abs((int)sampleRates[i] - inputRate) < distance) {
+            distance = abs((int)sampleRates[i] - inputRate);
             selectedRate = sampleRates[i];
         }
     }
@@ -132,30 +133,22 @@ airspyHandler::airspyHandler() {
         throw(24);
     }
 
-    filtering = 0;
-    int filterDegree = 9;
-
-    // if we apply filtering it is using a symmetric lowpass filter
-    filter = new airspyFilter(filterDegree,
-        1024000, selectedRate);
-
     // The sizes of the mapTables follow from the input and output rate
-    // (selectedRate / 1000) vs (2048000 / 1000)
     // so we end up with buffers with 1 msec content
-    convBufferSize = selectedRate / 1000;
-    for (i = 0; i < 2048; i++) {
-        float inVal = float(selectedRate / 1000);
-        mapTable_int[i] = int(floor(i * (inVal / 2048.0)));
-        mapTable_float[i] = i * (inVal / 2048.0) - mapTable_int[i];
+    convBufferSize = selectedRate / MAP_RATIO;
+    float inputConv = INPUT_RATE / MAP_RATIO;
+    float inVal = float(selectedRate / MAP_RATIO);
+    for (i = 0; i < INPUT_RATE / MAP_RATIO; i++) {
+        mapTable_int[i] = int(floor(i * (inVal / inputConv)));
+        mapTable_float[i] = i * (inVal / inputConv) - mapTable_int[i];
     }
     convIndex = 0;
-    convBuffer.resize(convBufferSize + 1);
+    convBuffer.resize(convBufferSize);
 
-    theBuffer = new RingBuffer<std::complex<float>>(256 * 1024);
-    my_airspy_set_sensitivity_gain(device,
-        ifGain * MAX_GAIN / GAIN_SCALE);
+    theBuffer = new RingBuffer<std::complex<float>>(4 * 1024 * 1024);
+    my_airspy_set_sensitivity_gain(device, ifGain);
 
-    my_airspy_set_mixer_agc(device, agcControl ? 1 : 0);
+    my_airspy_set_mixer_agc(device, agcControl? 1 : 0);
 }
 
 airspyHandler::~airspyHandler(void) {
@@ -173,8 +166,6 @@ airspyHandler::~airspyHandler(void) {
         }
     }
 
-    if (filter != NULL)
-        delete filter;
     if (Handle == NULL) {
         return; // nothing achieved earlier
     }
@@ -203,8 +194,7 @@ bool airspyHandler::restartReader(int32_t frequency) {
     }
 
     my_airspy_set_freq(device, frequency);
-    my_airspy_set_sensitivity_gain(device,
-        ifGain * MAX_GAIN / GAIN_SCALE);
+    my_airspy_set_sensitivity_gain(device, ifGain);
     result = my_airspy_set_mixer_agc(device,
         agcControl ? 1 : 0);
 
@@ -256,49 +246,24 @@ int airspyHandler::callback(airspy_transfer* transfer) {
 int airspyHandler::data_available(void* buf, int buf_size) {
     int16_t* sbuf = (int16_t*)buf;
     int nSamples = buf_size / (sizeof(int16_t) * 2);
-    std::complex<float> temp[2048];
+    std::complex<float> temp[BUF_SIZE];
     int32_t i, j;
 
-    if (filtering) {
-        for (i = 0; i < nSamples; i++) {
-            convBuffer[convIndex++] = filter->Pass(
-                sbuf[2 * i] / (float)2048,
-                sbuf[2 * i + 1] / (float)2048);
-            if (convIndex > convBufferSize) {
-                for (j = 0; j < 2048; j++) {
-                    int16_t inpBase = mapTable_int[j];
-                    float inpRatio = mapTable_float[j];
-                    temp[j] = cmul(convBuffer[inpBase + 1], inpRatio) + cmul(convBuffer[inpBase], 1 - inpRatio);
-                }
-
-                theBuffer->putDataIntoBuffer(temp, 2048);
-
-                // shift the sample at the end to the beginning, it is needed
-                // as the starting sample for the next time
-                convBuffer[0] = convBuffer[convBufferSize];
-                convIndex = 1;
+    for (i = 0; i < nSamples; i++) {
+        convBuffer[convIndex++] = std::complex<float>(
+            sbuf[2 * i] / AMPLITUDE,
+            sbuf[2 * i + 1] / AMPLITUDE);
+        if (convIndex == convBufferSize) {
+            for (j = 0; j < BUF_SIZE; j++) {
+                int16_t inpBase = mapTable_int[j];
+                float inpRatio = mapTable_float[j];
+                temp[j] = cmul(convBuffer[inpBase + 1], inpRatio) + cmul(convBuffer[inpBase], 1 - inpRatio);
             }
-        }
-    } else
-        for (i = 0; i < nSamples; i++) {
-            convBuffer[convIndex++] = std::complex<float>(
-                sbuf[2 * i] / (float)2048,
-                sbuf[2 * i + 1] / (float)2048);
-            if (convIndex > convBufferSize) {
-                for (j = 0; j < 2048; j++) {
-                    int16_t inpBase = mapTable_int[j];
-                    float inpRatio = mapTable_float[j];
-                    temp[j] = cmul(convBuffer[inpBase + 1], inpRatio) + cmul(convBuffer[inpBase], 1 - inpRatio);
-                }
 
-                theBuffer->putDataIntoBuffer(temp, 2048);
-
-                // shift the sample at the end to the beginning, it is needed
-                // as the starting sample for the next time
-                convBuffer[0] = convBuffer[convBufferSize];
-                convIndex = 1;
-            }
+            theBuffer->putDataIntoBuffer(temp, BUF_SIZE);
+            convIndex = 0;
         }
+    }
     return 0;
 }
 
@@ -318,19 +283,6 @@ const char* airspyHandler::getSerial(void) {
     return serial;
 }
 
-// not used here
-int airspyHandler::open(void) {
-    int result = my_airspy_open(&device);
-
-    if (result != AIRSPY_SUCCESS) {
-        log(DEV_AIRSPY, LOG_MIN, "airspy_open() failed: %s (%d)",
-            my_airspy_error_name((airspy_error)result), result);
-        return -1;
-    } else {
-        return 0;
-    }
-}
-
 void airspyHandler::resetBuffer(void) {
     theBuffer->FlushRingBuffer();
 }
@@ -342,10 +294,13 @@ int16_t airspyHandler::bitDepth(void) {
 int32_t airspyHandler::getRate(void) {
     return inputRate;
 }
+void airspyHandler::getIfRange(int *min, int *max) {
+    *min = 0;
+    *max = MAX_GAIN;
+}
 
 int32_t airspyHandler::getSamples(std::complex<float>* v, int32_t size, agcStats* stats) {
-    (void) stats;
-
+    memset(stats, 0, sizeof(agcStats));
     return theBuffer->getDataFromBuffer(v, size);
 }
 
@@ -354,13 +309,14 @@ int32_t airspyHandler::Samples(void) {
 }
 
 void airspyHandler::setIfGain(int theGain) {
-    int result = my_airspy_set_sensitivity_gain(device, theGain * MAX_GAIN / GAIN_SCALE);
+    int result = my_airspy_set_sensitivity_gain(device, theGain);
     if (result != AIRSPY_SUCCESS) {
         log(DEV_AIRSPY, LOG_MIN, "airspy_set_mixer_gain() failed: %s (%d)",
             my_airspy_error_name((airspy_error)result), result);
         return;
     }
     ifGain = theGain;
+    log(DEV_AIRSPY, LOG_MIN, "IF gain will be set to %d", ifGain);
 }
 
 // Parameter value:
@@ -373,8 +329,10 @@ void airspyHandler::setAgcControl(int b) {
         log(DEV_AIRSPY, LOG_MIN, "airspy_set_mixer_agc () failed: %s (%d)",
             my_airspy_error_name((airspy_error)result), result);
         return;
-    } else
+    } else {
         agcControl = (b != 0);
+	log(DEV_AIRSPY, LOG_MIN, "agc will be set to %d", agcControl);
+    }
 }
 
 const char* airspyHandler::board_id_name(void) {

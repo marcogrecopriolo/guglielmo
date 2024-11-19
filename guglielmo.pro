@@ -453,10 +453,8 @@ airspy {
 	INCLUDEPATH	+= ./devices/airspy-handler \
 	                   ./devices/airspy-handler/libairspy
 	HEADERS		+= ./devices/airspy-handler/airspy-handler.h \
-	                   ./devices/airspy-handler/airspyfilter.h \
 	                   ./devices/airspy-handler/libairspy/airspy.h
-	SOURCES		+= ./devices/airspy-handler/airspy-handler.cpp \
-	                   ./devices/airspy-handler/airspyfilter.cpp
+	SOURCES		+= ./devices/airspy-handler/airspy-handler.cpp
 }
 
 hackrf {

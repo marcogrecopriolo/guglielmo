@@ -379,9 +379,9 @@ void fmProcessor::run(void) {
 
 	// collect samples and process
 	agcStats stats;
-	int32_t amount = device -> getSamples(dataBuffer, BUFFER_SIZE, &stats);
-	radioInterface -> processGain(&stats, amount);
-	for (int i = 0; i < amount; i ++) {
+	int32_t amount = device->getSamples(dataBuffer, BUFFER_SIZE, &stats);
+	radioInterface->processGain(&stats, amount);
+	for (int i = 0; i < amount; i++) {
 	    DSPCOMPLEX v = cmul(dataBuffer[i], signalGain);
 
 	    // decimate if necessary

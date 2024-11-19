@@ -42,8 +42,8 @@
 #include "ringbuffer.h"
 #include <atomic>
 #include <vector>
-
-class airspyFilter;
+#define INPUT_RATE 2048000
+#define MAP_RATIO 1000
 
 extern "C" {
 typedef int (*pfn_airspy_init)(void);
@@ -106,6 +106,7 @@ public:
     int16_t bitDepth(void);
     int16_t currentTab;
     int32_t getRate(void);
+    void getIfRange(int *, int *);
 
 public slots:
     void setIfGain(int);
@@ -154,12 +155,10 @@ private:
     int16_t convBufferSize;
     int16_t convIndex;
     std::vector<complex<float>> convBuffer;
-    int16_t mapTable_int[4 * 512];
-    float mapTable_float[4 * 512];
+    int16_t mapTable_int[INPUT_RATE / MAP_RATIO];
+    float mapTable_float[INPUT_RATE / MAP_RATIO];
     RingBuffer<std::complex<float>>* theBuffer;
     int32_t inputRate;
-    airspyFilter* filter;
-    bool filtering;
     struct airspy_device* device;
     uint64_t serialNumber;
     char serial[128];
