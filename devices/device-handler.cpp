@@ -23,12 +23,14 @@
  *    Jan van Katwijk (J.vanKatwijk@gmail.com)
  *    Lazy Chair Computing
  */
+#include "constants.h"
 #include "device-handler.h"
 
 deviceHandler::deviceHandler(void) {
-    vfoFrequency = 100000;
 }
 
-int32_t deviceHandler::amplitude(void) {
-    return pow(2, this->bitDepth());
+void deviceHandler::getSwAGCRange(int32_t *min, int32_t *max) {
+    int amplitude = pow(2, this->bitDepth());
+    *min = amplitude * MIN_AGC_AMPLITUDE / 100;
+    *max = amplitude * MAX_AGC_AMPLITUDE / 100;
 }

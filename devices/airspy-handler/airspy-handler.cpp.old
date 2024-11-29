@@ -34,29 +34,29 @@
  *	Lazy Chair Computing
  */
 
-#include "constants.h"
 #include "airspy-handler.h"
 #include "logging.h"
 #include "math-helper.h"
 
 #define DEV_AIRSPY LOG_DEV
 
+static const int EXTIO_NS = 8192;
+static const int EXTIO_BASE_TYPE_SIZE = sizeof(float);
 static const int MAX_GAIN = 21;
-
-// we sample 2 signed 16 bits ints, but after averaging,
-// we consider overflow anything above 15 bits
-// also, empirically, neither the mini nor the R2 get anywhere
-// near 16 bits
-static const int SIGNAL_MAX = 16384;
-static const float AMPLITUDE = SIGNAL_MAX;
+static const float AMPLITUDE = 2048;
+static const int BUF_SIZE = 2048;
 
 airspyHandler::airspyHandler() {
-    uint64_t numId;
-    int result;
+    int result, i;
+    int distance = INT_MAX;
+    std::vector<uint32_t> sampleRates;
+    uint32_t samplerateCount;
+    char* samplerateString;
 
     agcControl = false;
     ifGain = MAX_GAIN / 2;
-    device = NULL;
+    device = 0;
+    serialNumber = 0;
     theBuffer = NULL;
 #if IS_WINDOWS
     const char* libraryString = "airspy.dll";
@@ -81,7 +81,8 @@ airspyHandler::airspyHandler() {
         log(DEV_AIRSPY, LOG_MIN, "problem in loading functions");
         CLOSE_LIBRARY(Handle);
     }
-
+    //
+    strcpy(serial, "");
     result = this->my_airspy_init();
     if (result != AIRSPY_SUCCESS) {
         log(DEV_AIRSPY, LOG_MIN, "my_airspy_init () failed: %s (%d)",
@@ -90,104 +91,89 @@ airspyHandler::airspyHandler() {
         throw(21);
     }
 
-    (void) my_airspy_list_devices(&numId, 1);
-    if (!deviceOpen(numId)) {
+    result = my_airspy_open(&device);
+    if (result != AIRSPY_SUCCESS) {
+        log(DEV_AIRSPY, LOG_MIN, "my_airspy_open () failed: %s (%d)",
+            my_airspy_error_name((airspy_error)result), result);
         CLOSE_LIBRARY(Handle);
         throw(22);
     }
 
-    theBuffer = new RingBuffer<std::complex<int32_t>>(4 * 1024 * 1024);
-    running.store(false);
-    log(DEV_AIRSPY, LOG_MIN, "airspy loaded");
+    (void)my_airspy_set_sample_type(device, AIRSPY_SAMPLE_INT16_IQ);
+    (void)my_airspy_get_samplerates(device, &samplerateCount, 0);
+    sampleRates.resize(samplerateCount);
+    my_airspy_get_samplerates(device,
+        sampleRates.data(), samplerateCount);
+
+    selectedRate = 0;
+    inputRate = INPUT_RATE;
+    samplerateString = new char[samplerateCount * 10 + 1];
+    *samplerateString = '\0';
+    for (i = 0; i < (int)samplerateCount; i++) {
+        sprintf(samplerateString + strlen(samplerateString), "%d ", sampleRates[i]);
+        if (abs((int)sampleRates[i] - inputRate) < distance) {
+            distance = abs((int)sampleRates[i] - inputRate);
+            selectedRate = sampleRates[i];
+        }
+    }
+    log(DEV_AIRSPY, LOG_MIN, "%d samplerates are supported, %s", samplerateCount, samplerateString);
+
+    if (selectedRate == 0) {
+        log(DEV_AIRSPY, LOG_MIN, "no sample rate selected");
+        CLOSE_LIBRARY(Handle);
+        throw(23);
+    } else
+        log(DEV_AIRSPY, LOG_MIN, "selected samplerate = %d", selectedRate);
+
+    result = my_airspy_set_samplerate(device, selectedRate);
+    if (result != AIRSPY_SUCCESS) {
+        log(DEV_AIRSPY, LOG_MIN, "airspy_set_samplerate() failed: %s (%d)",
+            my_airspy_error_name((enum airspy_error)result), result);
+        CLOSE_LIBRARY(Handle);
+        throw(24);
+    }
+
+    // The sizes of the mapTables follow from the input and output rate
+    // so we end up with buffers with 1 msec content
+    convBufferSize = selectedRate / MAP_RATIO;
+    float inputConv = INPUT_RATE / MAP_RATIO;
+    float inVal = float(selectedRate / MAP_RATIO);
+    for (i = 0; i < INPUT_RATE / MAP_RATIO; i++) {
+        mapTable_int[i] = int(floor(i * (inVal / inputConv)));
+        mapTable_float[i] = i * (inVal / inputConv) - mapTable_int[i];
+    }
+    convIndex = 0;
+    convBuffer.resize(convBufferSize);
+
+    theBuffer = new RingBuffer<std::complex<float>>(4 * 1024 * 1024);
+    my_airspy_set_sensitivity_gain(device, ifGain);
+
+    my_airspy_set_mixer_agc(device, agcControl? 1 : 0);
 }
 
 airspyHandler::~airspyHandler(void) {
     if (device != NULL) {
-	int result;
+        int result = my_airspy_stop_rx(device);
+        if (result != AIRSPY_SUCCESS) {
+            log(DEV_AIRSPY, LOG_MIN, "my_airspy_stop_rx () failed: %s (%d)",
+                my_airspy_error_name((airspy_error)result), result);
+        }
 
-        stopReader();
         result = my_airspy_close(device);
         if (result != AIRSPY_SUCCESS) {
             log(DEV_AIRSPY, LOG_MIN, "airspy_close () failed: %s (%d)",
                 my_airspy_error_name((airspy_error)result), result);
         }
-        my_airspy_exit();
     }
 
-    if (Handle != NULL)
-        CLOSE_LIBRARY(Handle);
+    if (Handle == NULL) {
+        return; // nothing achieved earlier
+    }
+    my_airspy_exit();
+    CLOSE_LIBRARY(Handle);
 
     if (theBuffer != NULL)
         delete theBuffer;
-}
-
-int airspyHandler::devices(deviceStrings *devs, int max) {
-    uint64_t deviceList[max];
-
-    int count = my_airspy_list_devices(deviceList, max);
-    if (count <= 0)
-        return 0;
-    for (int i = 0; i < count; i++) {
-        *devs[i].description = '\0';
-        sprintf((char *) &devs[i].name, "%lx", deviceList[i]);
-        sprintf((char *) &devs[i].id, "%lx", deviceList[i]);
-
-	// unlike librtlsdr, libairspy does not provide a device name or
-	// usb strings
-	// airspy usb strings do not distinguish between different products,
-	// so we are just stuck with the serial number
-        log(DEV_AIRSPY, LOG_CHATTY, "found device %i %s", i, (char *) &devs[i].id);
-
-    }
-    log(DEV_AIRSPY, LOG_MIN, "found %i devices", count);
-    return count;
-}
-
-bool airspyHandler::setDevice(const char *id) {
-    uint64_t numId;
-
-    numId = std::strtoull(id, NULL, 16);
-    if (currentId == numId) {
-        log(DEV_AIRSPY, LOG_MIN, "Skipping device switching - same device: %s", id);
-        return true;
-    }
-    if (open) {
-        log(DEV_AIRSPY, LOG_MIN, "stopping old device %lx", currentId);
-        stopReader();
-        my_airspy_close(device);
-        open = false;
-        currentId = 0;
-    }
-    return deviceOpen(numId);
-}
-
-bool airspyHandler::deviceOpen(uint64_t numId) {
-    int err, result;
-
-    err = my_airspy_open_sn(&device, numId);
-    if (err < 0) {
-        log(DEV_AIRSPY, LOG_MIN, "%lx open failed: %i", numId, err);
-        return false;
-    }
-    (void) my_airspy_set_sample_type(device, AIRSPY_SAMPLE_INT16_IQ);
-
-    // Both the Airspy R2 and the mini support rates higher than 2048kbps.
-    // Although, traditionally, people list sample rates and then choose
-    // one of the advertised ones, both devices can set any sample rate.
-    // Empirically, using one of the advertised rates has HW AGC working
-    // much better, but at the extra cost of converting rates.
-    // We choose simplicity, use 4096kbps and decimate by 2.
-    result = my_airspy_set_samplerate(device, INPUT_RATE * 2);
-    if (result != AIRSPY_SUCCESS) {
-        log(DEV_AIRSPY, LOG_MIN, "airspy_set_samplerate() failed: %s (%d)",
-            my_airspy_error_name((enum airspy_error) result), result);
-        my_airspy_close(device);
-	return false;
-    }
-    currentId = numId;
-    open = true;
-    log(DEV_AIRSPY, LOG_MIN, "opened device %lx", numId);
-    return true;
 }
 
 bool airspyHandler::restartReader(int32_t frequency) {
@@ -198,6 +184,15 @@ bool airspyHandler::restartReader(int32_t frequency) {
 
     theBuffer->FlushRingBuffer();
 
+    vfoFrequency = frequency;
+
+    result = my_airspy_set_sample_type(device, AIRSPY_SAMPLE_INT16_IQ);
+    if (result != AIRSPY_SUCCESS) {
+        log(DEV_AIRSPY, LOG_MIN, "my_airspy_set_sample_type () failed: %s (%d)",
+            my_airspy_error_name((airspy_error)result), result);
+        return false;
+    }
+
     my_airspy_set_freq(device, frequency);
     my_airspy_set_sensitivity_gain(device, ifGain);
     result = my_airspy_set_mixer_agc(device,
@@ -206,13 +201,12 @@ bool airspyHandler::restartReader(int32_t frequency) {
     result = my_airspy_start_rx(device,
         (airspy_sample_block_cb_fn)callback, this);
     if (result != AIRSPY_SUCCESS) {
-        log(DEV_AIRSPY, LOG_MIN, "my_airspy_start_rx() failed: %s (%d)",
+        log(DEV_AIRSPY, LOG_MIN, "my_airspy_start_rx () failed: %s (%d)",
             my_airspy_error_name((airspy_error)result), result);
         return false;
     }
 
     running.store(true);
-    log(DEV_AIRSPY, LOG_MIN, "reader stopped");
     return true;
 }
 
@@ -221,44 +215,72 @@ void airspyHandler::stopReader(void) {
 
     if (!running.load())
         return;
-    running.store(false);
     result = my_airspy_stop_rx(device);
 
     if (result != AIRSPY_SUCCESS)
         log(DEV_AIRSPY, LOG_MIN, "my_airspy_stop_rx() failed: %s (%d)",
             my_airspy_error_name((airspy_error)result), result);
 
-    theBuffer->FlushRingBuffer();
-    log(DEV_AIRSPY, LOG_MIN, "reader stopped");
+    running.store(false);
 }
 
+// Directly copied from the airspy extio dll from Andrea Montefusco
 int airspyHandler::callback(airspy_transfer* transfer) {
     airspyHandler* p;
 
     if (!transfer)
         return 0;	// should not happen
     p = static_cast<airspyHandler*>(transfer->ctx);
-    if (!p->running.load())
-        return 0;
 
-    p->data_available((int16_t *) transfer->samples, transfer->sample_count);
+    // we read AIRSPY_SAMPLE_INT16_IQ:
+    int32_t bytes_to_write = transfer->sample_count * sizeof(int16_t) * 2;
+    uint8_t* pt_rx_buffer = (uint8_t*)transfer->samples;
+    p->data_available(pt_rx_buffer, bytes_to_write);
     return 0;
 }
 
-int airspyHandler::data_available(int16_t *sbuf, int nSamples) {
-    int sampleCount = nSamples / 2;
-    int32_t i;
-    _VLA(std::complex<int32_t>, temp, sampleCount);
+// called from AIRSPY data callback
+// 2*2 = 4 bytes for sample, as per AirSpy USB data stream format
+// we do the rate conversion here, read in groups of 2 * xxx samples
+// and transform them into groups of 2 * 512 samples
+int airspyHandler::data_available(void* buf, int buf_size) {
+    int16_t* sbuf = (int16_t*)buf;
+    int nSamples = buf_size / (sizeof(int16_t) * 2);
+    std::complex<float> temp[BUF_SIZE];
+    int32_t i, j;
 
-    for (i = 0; i < sampleCount; i++) {
-        temp[i] = std::complex<int32_t>(
-            sbuf[4 * i] + sbuf[4 * i + 2],
-            sbuf[4 * i + 1] + sbuf[4 * i + 3]);
+    for (i = 0; i < nSamples; i++) {
+        convBuffer[convIndex++] = std::complex<float>(
+            sbuf[2 * i] / AMPLITUDE,
+            sbuf[2 * i + 1] / AMPLITUDE);
+        if (convIndex == convBufferSize) {
+            for (j = 0; j < BUF_SIZE; j++) {
+                int16_t inpBase = mapTable_int[j];
+                float inpRatio = mapTable_float[j];
+                temp[j] = cmul(convBuffer[inpBase + 1], inpRatio) + cmul(convBuffer[inpBase], 1 - inpRatio);
+            }
+
+            theBuffer->putDataIntoBuffer(temp, BUF_SIZE);
+            convIndex = 0;
+        }
     }
-    if (!running.load())
-	return 0;
-    theBuffer->putDataIntoBuffer(temp, sampleCount);
     return 0;
+}
+
+const char* airspyHandler::getSerial(void) {
+    airspy_read_partid_serialno_t read_partid_serialno;
+    int result = my_airspy_board_partid_serialno_read(device,
+        &read_partid_serialno);
+    if (result != AIRSPY_SUCCESS) {
+        log(DEV_AIRSPY, LOG_MIN, "failed: %s (%d)",
+            my_airspy_error_name((airspy_error)result), result);
+        return "UNKNOWN";
+    } else {
+        snprintf(serial, sizeof(serial), "%08X%08X",
+            read_partid_serialno.serial_no[2],
+            read_partid_serialno.serial_no[3]);
+    }
+    return serial;
 }
 
 void airspyHandler::resetBuffer(void) {
@@ -269,42 +291,17 @@ int16_t airspyHandler::bitDepth(void) {
     return 12;
 }
 
-void airspyHandler::getSwAGCRange(int32_t *min, int32_t *max) {
-    int amplitude = 16384;
-    *min = amplitude * MIN_AGC_AMPLITUDE / 100;
-    *max = amplitude * MAX_AGC_AMPLITUDE / 100;
+int32_t airspyHandler::getRate(void) {
+    return inputRate;
 }
-
 void airspyHandler::getIfRange(int *min, int *max) {
     *min = 0;
     *max = MAX_GAIN;
 }
 
 int32_t airspyHandler::getSamples(std::complex<float>* v, int32_t size, agcStats* stats) {
-    _VLA(std::complex<int32_t>,  temp, size);
-    int32_t overflow = 0, minVal = INT_MAX, maxVal = INT_MIN;
-    int i;
-
-    int amount = theBuffer->getDataFromBuffer(temp, size);
-    for (i = 0; i < amount; i++) {
-        int r = real(temp[i]), im = imag(temp[i]);
-
-        if (r <= -SIGNAL_MAX || r >= SIGNAL_MAX-1 || im <= -SIGNAL_MAX || im >= SIGNAL_MAX-1)
-            overflow++;
-        if (r < minVal)
-            minVal = r;
-        if (r > maxVal)
-            maxVal = r;
-        if (im < minVal)
-            minVal = im;
-        if (im > maxVal)
-            maxVal = im;
-        v[i] = std::complex<float>(r / AMPLITUDE, im / AMPLITUDE);
-    }
-    stats->overflows = overflow;
-    stats->min = minVal;
-    stats->max = maxVal;
-    return amount;
+    memset(stats, 0, sizeof(agcStats));
+    return theBuffer->getDataFromBuffer(v, size);
 }
 
 int32_t airspyHandler::Samples(void) {
@@ -322,6 +319,9 @@ void airspyHandler::setIfGain(int theGain) {
     log(DEV_AIRSPY, LOG_MIN, "IF gain will be set to %d", ifGain);
 }
 
+// Parameter value:
+//	0=Disable MIXER Automatic Gain Control
+//	1=Enable MIXER Automatic Gain Control
 void airspyHandler::setAgcControl(int b) {
     int result = my_airspy_set_mixer_agc(device, b);
 
@@ -335,7 +335,18 @@ void airspyHandler::setAgcControl(int b) {
     }
 }
 
+const char* airspyHandler::board_id_name(void) {
+    uint8_t bid;
+
+    if (my_airspy_board_id_read(device, &bid) == AIRSPY_SUCCESS)
+        return my_airspy_board_id_name((airspy_board_id)bid);
+    else
+        return "UNKNOWN";
+}
+
 bool airspyHandler::load_airspyFunctions(void) {
+
+    // link the required procedures
     my_airspy_init = (pfn_airspy_init)
         GETPROCADDRESS(Handle, "airspy_init");
     if (my_airspy_init == NULL) {
@@ -354,13 +365,6 @@ bool airspyHandler::load_airspyFunctions(void) {
         GETPROCADDRESS(Handle, "airspy_open");
     if (my_airspy_open == NULL) {
         log(DEV_AIRSPY, LOG_MIN, "Could not find airspy_open");
-        return false;
-    }
-
-    my_airspy_open_sn = (pfn_airspy_open_sn)
-        GETPROCADDRESS(Handle, "airspy_open_sn");
-    if (my_airspy_open_sn == NULL) {
-        log(DEV_AIRSPY, LOG_MIN, "Could not find airspy_open_sn");
         return false;
     }
 
@@ -487,13 +491,6 @@ bool airspyHandler::load_airspyFunctions(void) {
         GETPROCADDRESS(Handle, "airspy_board_id_name");
     if (my_airspy_board_id_name == NULL) {
         log(DEV_AIRSPY, LOG_MIN, "Could not find airspy_board_id_name");
-        return false;
-    }
-
-    my_airspy_list_devices = (pfn_airspy_list_devices)
-        GETPROCADDRESS(Handle, "airspy_list_devices");
-    if (my_airspy_board_partid_serialno_read == NULL) {
-        log(DEV_AIRSPY, LOG_MIN, "Could not find airspy_list_devices");
         return false;
     }
 

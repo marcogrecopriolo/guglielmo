@@ -48,7 +48,6 @@ public:
     void resetBuffer(void);
     int16_t bitDepth(void);
     int32_t amplitude(void);
-    int32_t getRate(void);
 
     void update_PowerOverload(sdrplay_api_EventParamsT *params);
     void getIfRange(int *, int *);
@@ -77,7 +76,6 @@ private:
     int GRdB;
     int16_t nrBits;
     int	lnaGainMax;
-    int32_t inputRate;
     int lnaState;
     HINSTANCE Handle;
 

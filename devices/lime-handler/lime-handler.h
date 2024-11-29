@@ -101,7 +101,6 @@ public:
     int32_t Samples();
     void resetBuffer();
     int16_t bitDepth();
-    int32_t getRate(void);
 
 public slots:
     void setIfGain(int);

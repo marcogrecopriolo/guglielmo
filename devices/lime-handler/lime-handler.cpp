@@ -219,10 +219,6 @@ int16_t limeHandler::bitDepth() {
     return 12;
 }
 
-int32_t limeHandler::getRate() {
-    return 2048000;
-}
-
 void limeHandler::run() {
     int res;
     lms_stream_status_t streamStatus;

@@ -109,7 +109,6 @@ public:
     void resetBuffer(void);
     int16_t bitDepth(void);
     int16_t currentTab;
-    void getSwAGCRange(int *, int *);
     void getIfRange(int *, int *);
 
 public slots:
@@ -119,7 +118,6 @@ public slots:
 private:
     int ifGain;
     bool agcControl;
-    bool deviceOpen(uint64_t);
     bool load_airspyFunctions(void);
 
     pfn_airspy_init my_airspy_init;

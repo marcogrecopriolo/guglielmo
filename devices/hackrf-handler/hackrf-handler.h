@@ -69,7 +69,6 @@ public:
     int32_t Samples(void);
     void resetBuffer(void);
     int16_t bitDepth(void);
-    int32_t getRate(void);
 
     // The buffer should be visible by the callback function
     RingBuffer<std::complex<float>> _I_Buffer;
@@ -103,7 +102,6 @@ private:
 
     int lnaGain;
     int vgaGain;
-    int32_t inputRate;
     std::atomic<bool> running;
     HINSTANCE Handle;
     bool libraryLoaded;

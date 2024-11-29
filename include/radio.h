@@ -65,13 +65,15 @@ enum deviceControls {
     HW_AGC =	0x01,
     IF_GAIN =	0x02,
     LNA_GAIN =	0x04,
-    SW_AGC =	0x08
+    SW_AGC =	0x08,
+    COMBO_AGC =	0x10
 };
 
 enum agcMode {
     AGC_OFF =		0,
     AGC_ON =		1,
-    AGC_SOFTWARE =	2
+    AGC_SOFTWARE =	2,
+    AGC_COMBINED =	3
 };
 
 class deviceDescriptor {
@@ -106,7 +108,6 @@ private:
 
 // FM
     double FMfreq;
-    int32_t fmRate;
     int32_t workingRate;
     int32_t audioRate;
     int16_t FMthreshold;
@@ -159,6 +160,7 @@ private:
     int agc;
     int swAgc;
     int swAgcSkip;
+    int swAgcAccrue;
     int swAgcAmount;
     agcStats stats;
     int minSignal;

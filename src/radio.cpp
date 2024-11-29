@@ -65,9 +65,7 @@
 #define BAD_PRESET	"this preset is not valid"
 
 // Some software AGC constants
-#define SIGNAL_MIN_THRESHOLD 70
-#define SIGNAL_MAX_THRESHOLD 90
-#define SW_AGC_SKIP_COUNT 8
+#define SW_AGC_SKIP_COUNT 16
 #define SW_AGC_BYTES 65536
 
 // Text buffers
@@ -346,18 +344,13 @@ RadioInterface::~RadioInterface() {
 void RadioInterface::processGain(agcStats *newStats, int amount) {
     int oldAgc = swAgc;
 
-    if ((agc != AGC_SOFTWARE) && !log_active(LOG_AGC, LOG_VERBOSE))
+    if ((agc != AGC_SOFTWARE && agc != AGC_COMBINED) && !log_active(LOG_AGC, LOG_VERBOSE))
 	return;
-    if (newStats->min < stats.min)
-	stats.min = newStats->min;
-    if (newStats->max > stats.max)
-	stats.max = newStats->max;
-    stats.overflows += newStats->overflows;
     swAgcAmount += amount;
     if (swAgcAmount < SW_AGC_BYTES)
 	return;
     log(LOG_AGC, LOG_VERBOSE, "skip %i amount %i min %i max %i overflows %i",
-	swAgcSkip, swAgcAmount, stats.min, stats.max, stats.overflows);
+	swAgcSkip+swAgcAccrue, swAgcAmount, stats.min, stats.max, stats.overflows);
 
     // we most likely already have data in the buffer, which will not be yet
     // affected by our gain change, so skip some buffers before retesting
@@ -367,7 +360,18 @@ void RadioInterface::processGain(agcStats *newStats, int amount) {
 	swAgcSkip--;
 	return;
     }
-    if (agc != AGC_SOFTWARE) {
+    if (newStats->min < stats.min)
+	stats.min = newStats->min;
+    if (newStats->max > stats.max)
+	stats.max = newStats->max;
+    stats.overflows += newStats->overflows;
+
+    if (swAgcAccrue > 0) {
+	swAgcAmount = 0;
+	swAgcAccrue--;
+	return;
+    }
+    if (agc != AGC_SOFTWARE && agc != AGC_COMBINED) {
 	resetAgcStats();
 	return;
     }
@@ -384,14 +388,14 @@ void RadioInterface::processGain(agcStats *newStats, int amount) {
 	log(LOG_AGC, LOG_MIN, "switching gain to %i (min %i max %i overflows %i)",
 			swAgc, stats.min, stats.max, stats.overflows);
 	inputDevice->setIfGain(swAgc);
-	swAgcSkip = SW_AGC_SKIP_COUNT;
+        swAgcSkip = SW_AGC_SKIP_COUNT;
     }
     resetAgcStats();
 }
 
 void RadioInterface::resetAgcStats() {
     swAgcAmount = 0;
-    swAgcSkip = SW_AGC_SKIP_COUNT;
+    swAgcAccrue = SW_AGC_SKIP_COUNT;
     stats.min = INT_MAX;;
     stats.max = 0;
     stats.overflows = 0;
@@ -399,8 +403,13 @@ void RadioInterface::resetAgcStats() {
 
 void RadioInterface::resetSwAgc() {
     swAgc = ifGain;
-    minSignal = inputDevice? (SIGNAL_MIN_THRESHOLD * inputDevice->amplitude()) / 100 - 1: 0;
-    maxSignal = inputDevice? (SIGNAL_MAX_THRESHOLD * inputDevice->amplitude()) / 100 - 1: 0;
+    swAgcSkip = SW_AGC_SKIP_COUNT;
+    if (inputDevice)
+	 inputDevice->getSwAGCRange(&minSignal, &maxSignal);
+    else {
+	minSignal = 0;
+	maxSignal = 0;
+    }
 }
 
 void RadioInterface::makeDABprocessor() {
@@ -434,15 +443,14 @@ int32_t mapRates(int32_t inputRate) {
 }
 
 void RadioInterface::makeFMprocessor() {
-    int32_t inputRate;
+    int32_t fmRate;
 
     if (inputDevice == nullptr)
 	return;
-    inputRate = inputDevice->getRate();
-    fmRate = mapRates(inputRate);
+    fmRate = mapRates(INPUT_RATE);
     if (FMfilter <= 0)
 	FMfilter = 0.95*fmRate;
-    FMprocessor = new fmProcessor(inputDevice, this, inputRate, fmRate,
+    FMprocessor = new fmProcessor(inputDevice, this, INPUT_RATE, fmRate,
 				  workingRate, audioRate, FMthreshold);
     FMprocessor->setSink(soundOut);
     FMprocessor->setFMRDSSelector(rdsDecoder::RDS2);
@@ -522,7 +530,7 @@ void RadioInterface::findDevices() {
     try {
 	    discoveredDevice.device = new rtlsdrHandler();
 	    discoveredDevice.deviceType = "RtlSdr";
-	    discoveredDevice.controls = SW_AGC|HW_AGC|IF_GAIN;
+	    discoveredDevice.controls = SW_AGC|HW_AGC|COMBO_AGC|IF_GAIN;
 	    deviceList.push_back(discoveredDevice);
     } catch (int e) {}
 #endif
@@ -531,7 +539,7 @@ void RadioInterface::findDevices() {
     try {
 	    discoveredDevice.device = new airspyHandler();
 	    discoveredDevice.deviceType = "AirSpy";
-	    discoveredDevice.controls = HW_AGC|IF_GAIN;
+	    discoveredDevice.controls = SW_AGC|HW_AGC|IF_GAIN;
 	    deviceList.push_back(discoveredDevice);
     } catch (int e) {}
 #endif
@@ -558,7 +566,7 @@ void RadioInterface::findDevices() {
     try {
 	    discoveredDevice.device = new hackrfHandler();
 	    discoveredDevice.deviceType = "HackRF";
-	    discoveredDevice.controls =IF_GAIN|LNA_GAIN;
+	    discoveredDevice.controls = IF_GAIN|LNA_GAIN;
 	    deviceList.push_back(discoveredDevice);
     } catch (int e) {}
 #endif
@@ -602,8 +610,8 @@ void RadioInterface::findDevices() {
 	lnaGain = settings->value(DEV_LNA_GAIN, minLnaGain).toInt();
 	settings->endGroup();
 
-	if (deviceUiControls & (HW_AGC | SW_AGC)) {
-	    inputDevice->setAgcControl(agc == AGC_ON);
+	if (deviceUiControls & (HW_AGC | SW_AGC | COMBO_AGC)) {
+	    inputDevice->setAgcControl((agc == AGC_ON || agc == AGC_COMBINED));
 	}
 	if (deviceUiControls & IF_GAIN) {
 	    checkIfGain();

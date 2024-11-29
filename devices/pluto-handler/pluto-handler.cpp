@@ -442,7 +442,3 @@ void plutoHandler::resetBuffer() {
 int16_t plutoHandler::bitDepth() {
     return 12;
 }
-
-int32_t plutoHandler::getRate() {
-    return PLUTO_RATE;
-}

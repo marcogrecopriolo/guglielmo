@@ -40,7 +40,6 @@ sdrplayHandler::sdrplayHandler(): _I_Buffer (4 * 1024 * 1024) {
     this-> GRdB	= MIN_GAIN;
     this-> lnaGain = 0;
     this-> agcMode = false;
-    this-> inputRate = Khz (2048);
     libraryLoaded = false;
 
 #if IS_WINDOWS
@@ -373,10 +372,9 @@ bool sdrplayHandler::restartReader(int32_t frequency) {
     if (running.load())
 	return true;
 
-    vfoFrequency = frequency;
     err	= my_mir_sdr_StreamInit(&GRdB,
-				double (inputRate) / MHz (1),
-				double (frequency) / Mhz (1),
+				double (INPUT_RATE) / MHz(1),
+				double (frequency) / Mhz(1),
 				mir_sdr_BW_1_536,
 				mir_sdr_IF_Zero,
 				lnaGain,
@@ -446,10 +444,6 @@ void sdrplayHandler::resetBuffer(void) {
 
 int16_t	sdrplayHandler::bitDepth(void) {
     return nrBits;
-}
-
-int32_t sdrplayHandler::getRate(void) {
-    return inputRate;
 }
 
 bool sdrplayHandler::loadFunctions(void) {

@@ -141,6 +141,9 @@ typedef std::complex<DSPFLOAT> DSPCOMPLEX;
 
 // Common
 
+#define MIN_AGC_AMPLITUDE 60
+#define MAX_AGC_AMPLITUDE 90
+
 #define Hz(x) (x)
 #define Khz(x) (x * 1000)
 #define KHz(x) (x * 1000)

@@ -40,7 +40,7 @@
 // this is the user-side call back function
 // ctx is the calling task
 static
-void RTLSDRCallBack (uint8_t *buf, uint32_t len, void *ctx) {
+void RTLSDRCallBack(uint8_t *buf, uint32_t len, void *ctx) {
     rtlsdrHandler *theStick = (rtlsdrHandler *) ctx;
 
     if ((theStick == NULL) || (len != READLEN_DEFAULT))
@@ -76,16 +76,13 @@ private:
 
 rtlsdrHandler::rtlsdrHandler(): _I_Buffer (4 * 1024 * 1024) {
     int	i;
-    char *gainsString;
 
     currentId[0] = '\0';
     agcControl = false;
     ifGain = 50;
-    inputRate = 2048000;
     libraryLoaded = false;
     open = false;
     workerHandle = NULL;
-    vfoFrequency = KHz(22000);
     gains = NULL;
 
 #if IS_WINDOWS
@@ -114,41 +111,17 @@ rtlsdrHandler::rtlsdrHandler(): _I_Buffer (4 * 1024 * 1024) {
 	CLOSE_LIBRARY(Handle);
 	throw(22);
     }
-    if (this->rtlsdr_open(&device, 0) < 0) {
-	log(DEV_RTLSDR, LOG_MIN, "opening device failed");
-	CLOSE_LIBRARY(Handle);
-	throw(23);
-    }
-
-    open = true;
-    if (this -> rtlsdr_set_sample_rate(device, inputRate) < 0) {
-	log(DEV_RTLSDR, LOG_MIN, "setting samplerate failed");
-	rtlsdr_close(device);
-	CLOSE_LIBRARY(Handle);
-	throw(24);
-    }
-
-    log(DEV_RTLSDR, LOG_MIN, "samplerate set to %d", this->rtlsdr_get_sample_rate(device));
-
-    gainsCount = rtlsdr_get_tuner_gains(device, NULL);
-    gains = new int[gainsCount];
-    gainsString = new char[gainsCount*5+1];
-    *gainsString = '\0';
-    gainsCount = rtlsdr_get_tuner_gains(device, gains);
-    for (i = gainsCount; i > 0; i--) {
-	sprintf(gainsString + strlen(gainsString), "%.1f ", gains[i-1]/10.0);
-    }
-    log(DEV_RTLSDR, LOG_MIN, "supported gain values (%d): %s", gainsCount, gainsString);
-    delete gainsString;
-
-    rtlsdr_set_agc_mode(device, agcControl != 0);
-    rtlsdr_set_tuner_gain_mode(device, 1);
-    rtlsdr_set_tuner_gain(device, gains[ifGain*gainsCount/GAIN_SCALE]);
 
     // rather than doing floating point divisions at all times
     // we just have a table of possible float values
     for (i = 0; i <= UCHAR_MAX; i++)
 	convTable[i] = (CHAR_MIN+i)/float(-CHAR_MIN);
+
+    if (!deviceOpen(0)) {
+	log(DEV_RTLSDR, LOG_MIN, "opening device failed");
+	CLOSE_LIBRARY(Handle);
+	throw(23);
+    }
 }
 
 rtlsdrHandler::~rtlsdrHandler(void) {
@@ -161,7 +134,42 @@ rtlsdrHandler::~rtlsdrHandler(void) {
     }
     CLOSE_LIBRARY(Handle);
     if (gains != NULL)
-	delete []gains;
+	delete gains;
+}
+
+
+bool rtlsdrHandler::deviceOpen(int devNo) {
+    char *devName;
+    int err, i;
+
+    log(DEV_RTLSDR, LOG_CHATTY, "opening device %i", devNo);
+    err = this->rtlsdr_open(&device, devNo);
+    if (err < 0) {
+        log(DEV_RTLSDR, LOG_MIN, "device %i open failed: %i", devNo, err);
+	return false;
+    }
+    err = this->rtlsdr_set_sample_rate(device, INPUT_RATE);
+    if (err < 0) {
+	log(DEV_RTLSDR, LOG_MIN, "setting samplerate failed: %i", err);
+	rtlsdr_close(device);
+	return false;
+    }
+    open = true;
+    log(DEV_RTLSDR, LOG_CHATTY, "samplerate set to %d", INPUT_RATE);
+
+    gainsCount = rtlsdr_get_tuner_gains(device, NULL);
+    gains = new int[gainsCount];
+    gainsCount = rtlsdr_get_tuner_gains(device, gains);
+    for (i = 0; i < gainsCount; i++)
+        log(DEV_RTLSDR, LOG_CHATTY, "found gain %i", gains[i]);
+    devName = this->rtlsdr_get_device_name(i);
+    sprintf((char *) currentId, "%s-%i", devName, 0);
+
+    rtlsdr_set_agc_mode(device, agcControl != 0);
+    rtlsdr_set_tuner_gain_mode(device, 1);
+    rtlsdr_set_tuner_gain(device, gains[ifGain*gainsCount/GAIN_SCALE]);
+    log(DEV_RTLSDR, LOG_CHATTY, "opened %s (%i)", currentId, devNo);
+    return true;
 }
 
 int rtlsdrHandler::devices(deviceStrings *devs, int max) {
@@ -200,7 +208,7 @@ int rtlsdrHandler::devices(deviceStrings *devs, int max) {
 }
 
 bool rtlsdrHandler::setDevice(const char *id) {
-    int devNo, count, err;
+    int devNo, count;
     char buf[DEV_SHORT];
 
     if (strcmp(id, currentId) == 0) {
@@ -223,24 +231,12 @@ bool rtlsdrHandler::setDevice(const char *id) {
 	log(DEV_RTLSDR, LOG_MIN, "stopping old device %s", currentId);
 	stopReader();
 	this->rtlsdr_close(device);
+	if (gains != NULL)
+	    delete gains;
 	open = false;
 	currentId[0] = '\0';
     }
-    err = this->rtlsdr_open(&device, devNo);
-    if (err < 0) {
-        log(DEV_RTLSDR, LOG_MIN, "%s (%d) open failed: %i", id, devNo, err);
-	return false;
-    }
-    strncpy((char *) currentId, id, DEV_SHORT);
-    if (agcControl)
-	rtlsdr_set_agc_mode(device, 1);
-    else
-	rtlsdr_set_agc_mode(device, 0);
-    rtlsdr_set_tuner_gain_mode(device, 1);
-    rtlsdr_set_tuner_gain(device, gains [(int) (ifGain*gainsCount/GAIN_SCALE)]);
-    log(DEV_RTLSDR, LOG_MIN, "switched to device %s (%i)", id, devNo);
-    open = true;
-    return true;
+    return deviceOpen(devNo);
 }
 
 bool rtlsdrHandler::restartReader(int32_t frequency) {
@@ -251,7 +247,6 @@ bool rtlsdrHandler::restartReader(int32_t frequency) {
     if (this->rtlsdr_reset_buffer(device) < 0)
 	return false;
 
-    vfoFrequency = frequency;
     this->rtlsdr_set_center_freq(device, frequency);
     workerHandle = new dllDriver(this);
     rtlsdr_set_agc_mode(device, agcControl);
@@ -290,7 +285,7 @@ void rtlsdrHandler::setAgcControl(int v) {
 int32_t	rtlsdrHandler::getSamples(std::complex<float> *V, int32_t size, agcStats *stats) {
     int32_t amount, in, out;
     int32_t overflow = 0, minVal = UCHAR_MAX, maxVal = 0;
-    uint8_t *tempBuffer = (uint8_t *) alloca(2*size*sizeof(uint8_t));
+    _VLA(uint8_t, tempBuffer, 2*size*sizeof(uint8_t));
 
     amount = _I_Buffer.getDataFromBuffer(tempBuffer, 2*size);
     for (in = 0, out = 0; in < amount; out++) {
@@ -443,8 +438,4 @@ void rtlsdrHandler::resetBuffer(void) {
 
 int16_t	rtlsdrHandler::bitDepth(void) {
     return CHAR_BIT;
-}
-
-int32_t rtlsdrHandler::getRate(void) {
-    return inputRate;
 }

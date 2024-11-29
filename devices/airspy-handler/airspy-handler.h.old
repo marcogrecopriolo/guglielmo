@@ -42,13 +42,13 @@
 #include "ringbuffer.h"
 #include <atomic>
 #include <vector>
+#define INPUT_RATE 2048000
 #define MAP_RATIO 1000
 
 extern "C" {
 typedef int (*pfn_airspy_init)(void);
 typedef int (*pfn_airspy_exit)(void);
 typedef int (*pfn_airspy_open)(struct airspy_device**);
-typedef int (*pfn_airspy_open_sn)(struct airspy_device**, uint64_t);
 typedef int (*pfn_airspy_close)(struct airspy_device*);
 typedef int (*pfn_airspy_get_samplerates)(struct airspy_device* device,
     uint32_t* buffer,
@@ -89,8 +89,6 @@ typedef int (*pfn_airspy_board_partid_serialno_read)(struct airspy_device* devic
 
 typedef int (*pfn_airspy_set_linearity_gain)(struct airspy_device* device, uint8_t value);
 typedef int (*pfn_airspy_set_sensitivity_gain)(struct airspy_device* device, uint8_t value);
-
-typedef int (*pfn_airspy_list_devices)(uint64_t *, int);
 }
 
 class airspyHandler : public deviceHandler {
@@ -98,18 +96,16 @@ class airspyHandler : public deviceHandler {
 public:
     airspyHandler(void);
     ~airspyHandler(void);
-    int32_t devices(deviceStrings *, int);
-    bool setDevice(const char *);
     bool restartReader(int32_t);
     void stopReader(void);
-    int32_t getSamples(std::complex<float> *v,
+    int32_t getSamples(std::complex<float>* v,
         int32_t size,
         agcStats* stats);
     int32_t Samples(void);
     void resetBuffer(void);
     int16_t bitDepth(void);
     int16_t currentTab;
-    void getSwAGCRange(int *, int *);
+    int32_t getRate(void);
     void getIfRange(int *, int *);
 
 public slots:
@@ -119,15 +115,12 @@ public slots:
 private:
     int ifGain;
     bool agcControl;
-    bool deviceOpen(uint64_t);
     bool load_airspyFunctions(void);
-
+    //	The functions to be extracted from the dll/.so file
     pfn_airspy_init my_airspy_init;
     pfn_airspy_exit my_airspy_exit;
     pfn_airspy_error_name my_airspy_error_name;
-    pfn_airspy_list_devices my_airspy_list_devices;
     pfn_airspy_open my_airspy_open;
-    pfn_airspy_open_sn my_airspy_open_sn;
     pfn_airspy_close my_airspy_close;
     pfn_airspy_get_samplerates my_airspy_get_samplerates;
     pfn_airspy_set_samplerate my_airspy_set_samplerate;
@@ -147,17 +140,31 @@ private:
     pfn_airspy_board_id_name my_airspy_board_id_name;
     pfn_airspy_board_partid_serialno_read
         my_airspy_board_partid_serialno_read;
-
+    //
     HINSTANCE Handle_usb;
     HINSTANCE Handle;
     bool libraryLoaded;
+    bool success;
     std::atomic<bool> running;
-    bool open;
-    uint64_t currentId;
+    bool lna_agc;
+    bool mixer_agc;
+    bool rf_bias;
+    const char* board_id_name(void);
 
-    RingBuffer<std::complex<int32_t>> *theBuffer;
+    int32_t selectedRate;
+    int16_t convBufferSize;
+    int16_t convIndex;
+    std::vector<complex<float>> convBuffer;
+    int16_t mapTable_int[INPUT_RATE / MAP_RATIO];
+    float mapTable_float[INPUT_RATE / MAP_RATIO];
+    RingBuffer<std::complex<float>>* theBuffer;
+    int32_t inputRate;
     struct airspy_device* device;
+    uint64_t serialNumber;
+    char serial[128];
     static int callback(airspy_transfer_t*);
-    int data_available(int16_t *, int);
+    int data_available(void* buf, int buf_size);
+    const char* getSerial(void);
+    int open(void);
 };
 #endif

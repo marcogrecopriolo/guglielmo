@@ -74,7 +74,6 @@ public:
     int32_t Samples(void);
     void resetBuffer(void);
     int16_t bitDepth(void);
-    int32_t getRate(void);
     void setIfGain(int);
     void setAgcControl(int);
  
@@ -84,12 +83,12 @@ public:
     struct rtlsdr_dev *device;
 
 private:
+    bool deviceOpen(int);
     bool load_rtlFunctions(void);
 
     char currentId[DEV_SHORT];
     bool agcControl;
     int	 ifGain;
-    int32_t inputRate;
     HINSTANCE Handle;
     dllDriver *workerHandle;
     bool libraryLoaded;

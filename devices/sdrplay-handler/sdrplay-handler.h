@@ -101,7 +101,6 @@ public:
     int32_t Samples(void);
     void resetBuffer(void);
     int16_t bitDepth(void);
-    int32_t getRate(void);
 
     void getIfRange(int *, int *);
     void getLnaRange(int *, int *);
@@ -125,7 +124,6 @@ private:
     int	 lnaGain;
     int	 lnaGainMax;
     bool agcMode;
-    int32_t inputRate;
     int16_t nrBits;
     bool libraryLoaded;
     HINSTANCE Handle;

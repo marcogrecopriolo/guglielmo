@@ -39,7 +39,6 @@ hackrfHandler::hackrfHandler()
     int res;
     vgaGain = DEFAULT_GAIN;
     lnaGain = 0;
-    this->inputRate = Khz(2048);
 
 #if IS_WINDOWS
     const char* libraryString = "libhackrf.dll";
@@ -176,7 +175,6 @@ bool hackrfHandler::restartReader(int32_t frequency) {
     // if (hackrf_is_streaming(theDevice))
     //     return true;
 
-    vfoFrequency = frequency;
     hackrf_set_lna_gain(theDevice, lnaGain);
     hackrf_set_vga_gain(theDevice, vgaGain);
 
@@ -221,10 +219,6 @@ void hackrfHandler::resetBuffer(void) {
 
 int16_t hackrfHandler::bitDepth(void) {
     return 8;
-}
-
-int32_t hackrfHandler::getRate(void) {
-    return inputRate;
 }
 
 bool hackrfHandler::load_hackrfFunctions(void) {

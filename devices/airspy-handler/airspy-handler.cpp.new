@@ -51,7 +51,6 @@ static const int SIGNAL_MAX = 16384;
 static const float AMPLITUDE = SIGNAL_MAX;
 
 airspyHandler::airspyHandler() {
-    uint64_t numId;
     int result;
 
     agcControl = false;
@@ -90,14 +89,34 @@ airspyHandler::airspyHandler() {
         throw(21);
     }
 
-    (void) my_airspy_list_devices(&numId, 1);
-    if (!deviceOpen(numId)) {
+    result = my_airspy_open(&device);
+    if (result != AIRSPY_SUCCESS) {
+        log(DEV_AIRSPY, LOG_MIN, "my_airspy_open () failed: %s (%d)",
+            my_airspy_error_name((airspy_error)result), result);
         CLOSE_LIBRARY(Handle);
         throw(22);
     }
 
+    (void) my_airspy_set_sample_type(device, AIRSPY_SAMPLE_INT16_IQ);
+
+    // Both the Airspy R2 and the mini support rates higher than 2048kbps.
+    // Although, traditionally, people list sample rates and then choose
+    // one of the advertised ones, both devices can set any sample rate.
+    // Empirically, using one of the advertised rates has HW AGC working
+    // much better, but at the extra cost of converting rates.
+    // We choose simplicity, use 4096kbps and decimate by 2.
+    result = my_airspy_set_samplerate(device, INPUT_RATE * 2);
+    if (result != AIRSPY_SUCCESS) {
+        log(DEV_AIRSPY, LOG_MIN, "airspy_set_samplerate() failed: %s (%d)",
+            my_airspy_error_name((enum airspy_error) result), result);
+        CLOSE_LIBRARY(Handle);
+        throw(24);
+    }
+
     theBuffer = new RingBuffer<std::complex<int32_t>>(4 * 1024 * 1024);
     running.store(false);
+    currentId = 0;
+    open = true;
     log(DEV_AIRSPY, LOG_MIN, "airspy loaded");
 }
 
@@ -144,6 +163,7 @@ int airspyHandler::devices(deviceStrings *devs, int max) {
 }
 
 bool airspyHandler::setDevice(const char *id) {
+    int err, result;
     uint64_t numId;
 
     numId = std::strtoull(id, NULL, 16);
@@ -158,35 +178,23 @@ bool airspyHandler::setDevice(const char *id) {
         open = false;
         currentId = 0;
     }
-    return deviceOpen(numId);
-}
-
-bool airspyHandler::deviceOpen(uint64_t numId) {
-    int err, result;
-
     err = my_airspy_open_sn(&device, numId);
     if (err < 0) {
-        log(DEV_AIRSPY, LOG_MIN, "%lx open failed: %i", numId, err);
+        log(DEV_AIRSPY, LOG_MIN, "%s open failed: %i", id, err);
         return false;
     }
     (void) my_airspy_set_sample_type(device, AIRSPY_SAMPLE_INT16_IQ);
-
-    // Both the Airspy R2 and the mini support rates higher than 2048kbps.
-    // Although, traditionally, people list sample rates and then choose
-    // one of the advertised ones, both devices can set any sample rate.
-    // Empirically, using one of the advertised rates has HW AGC working
-    // much better, but at the extra cost of converting rates.
-    // We choose simplicity, use 4096kbps and decimate by 2.
+    currentId = numId;
+    open = true;
     result = my_airspy_set_samplerate(device, INPUT_RATE * 2);
     if (result != AIRSPY_SUCCESS) {
         log(DEV_AIRSPY, LOG_MIN, "airspy_set_samplerate() failed: %s (%d)",
             my_airspy_error_name((enum airspy_error) result), result);
-        my_airspy_close(device);
 	return false;
     }
     currentId = numId;
     open = true;
-    log(DEV_AIRSPY, LOG_MIN, "opened device %lx", numId);
+    log(DEV_AIRSPY, LOG_MIN, "switched to device %s", id);
     return true;
 }
 
@@ -197,6 +205,8 @@ bool airspyHandler::restartReader(int32_t frequency) {
         return true;
 
     theBuffer->FlushRingBuffer();
+
+    vfoFrequency = frequency;
 
     my_airspy_set_freq(device, frequency);
     my_airspy_set_sensitivity_gain(device, ifGain);
@@ -248,7 +258,7 @@ int airspyHandler::callback(airspy_transfer* transfer) {
 int airspyHandler::data_available(int16_t *sbuf, int nSamples) {
     int sampleCount = nSamples / 2;
     int32_t i;
-    _VLA(std::complex<int32_t>, temp, sampleCount);
+    _VLA(std::complex<int32_t>, temp, nSamples);
 
     for (i = 0; i < sampleCount; i++) {
         temp[i] = std::complex<int32_t>(
@@ -266,13 +276,7 @@ void airspyHandler::resetBuffer(void) {
 }
 
 int16_t airspyHandler::bitDepth(void) {
-    return 12;
-}
-
-void airspyHandler::getSwAGCRange(int32_t *min, int32_t *max) {
-    int amplitude = 16384;
-    *min = amplitude * MIN_AGC_AMPLITUDE / 100;
-    *max = amplitude * MAX_AGC_AMPLITUDE / 100;
+    return 15;
 }
 
 void airspyHandler::getIfRange(int *min, int *max) {

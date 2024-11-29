@@ -76,15 +76,13 @@ class deviceHandler: public QThread {
     virtual int32_t Samples(void) { return 0; }
     virtual void resetBuffer(void) {}
     virtual int16_t bitDepth(void) { return 10; }
-    virtual int32_t amplitude(void);
-    virtual int32_t getRate(void) { return 192000; }
     virtual void getIfRange(int32_t *min, int32_t *max) { *min = 0, *max = GAIN_SCALE - 1; }
     virtual void getLnaRange(int32_t *min, int32_t *max) { *min = 0, *max = 0; }
+    virtual void getSwAGCRange(int32_t *min, int32_t *max);
     virtual void setIfGain(int) {}
     virtual void setLnaGain(int) {}
     virtual void setAgcControl(int) {}
 
     protected:
-    int32_t vfoFrequency;
 };
 #endif

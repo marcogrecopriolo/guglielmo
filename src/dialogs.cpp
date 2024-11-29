@@ -238,6 +238,7 @@ void RadioInterface::handleSettingsAction() {
 	if (inputDevice != nullptr) {
 	    qobject_cast<QListView*> (settingsUi.agcComboBox->view())->setRowHidden(AGC_ON, !(deviceUiControls & HW_AGC));
 	    qobject_cast<QListView*> (settingsUi.agcComboBox->view())->setRowHidden(AGC_SOFTWARE, !(deviceUiControls & SW_AGC));
+	    qobject_cast<QListView*> (settingsUi.agcComboBox->view())->setRowHidden(AGC_COMBINED, !(deviceUiControls & COMBO_AGC));
 	    if (qobject_cast<QListView*> (settingsUi.agcComboBox->view())->isRowHidden(agc)) {
 		inputDevice->setAgcControl(false);
 		settingsUi.agcComboBox->setCurrentIndex(0);
@@ -823,6 +824,7 @@ void RadioInterface::setDevice(int d) {
     agc = settings->value(DEV_AGC, DEV_DEF_AGC).toInt();
     qobject_cast<QListView*> (settingsUi.agcComboBox->view())->setRowHidden(AGC_ON, !(deviceUiControls & HW_AGC));
     qobject_cast<QListView*> (settingsUi.agcComboBox->view())->setRowHidden(AGC_SOFTWARE, !(deviceUiControls & SW_AGC));
+    qobject_cast<QListView*> (settingsUi.agcComboBox->view())->setRowHidden(AGC_COMBINED, !(deviceUiControls & COMBO_AGC));
     if (qobject_cast<QListView*> (settingsUi.agcComboBox->view())->isRowHidden(agc)) {
 	inputDevice->setAgcControl(false);
 	settingsUi.agcComboBox->setCurrentIndex(0);
@@ -886,6 +888,11 @@ void RadioInterface::setDevice(int d) {
     // reset software agc
     resetSwAgc();
     resetAgcStats();
+
+    makeDABprocessor();
+    makeFMprocessor();
+    if (!isFM)
+	startDAB(channelSelector->currentText());
 }
 
 void RadioInterface::setDeviceName(int d) {
@@ -936,9 +943,9 @@ void RadioInterface::setAgcControl(int newAgc) {
     log(LOG_UI, LOG_MIN, "AGC %i", newAgc);
     if (newAgc != agc) {
 	if (inputDevice != NULL)
-	    inputDevice->setAgcControl(newAgc == AGC_ON);
+	    inputDevice->setAgcControl((newAgc == AGC_ON || newAgc == AGC_COMBINED));
 	agc = newAgc;
-	if (oldAgc == AGC_SOFTWARE)
+	if (oldAgc == AGC_SOFTWARE || oldAgc == AGC_COMBINED)
 	    inputDevice->setIfGain(ifGain);
 	else
 	    swAgc = ifGain;

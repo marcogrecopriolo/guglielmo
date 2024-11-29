@@ -99,11 +99,9 @@ sdrplayHandler_v3::sdrplayHandler_v3(): _I_Buffer(4 * 1024 * 1024) {
     signalMin = -2048;
     signalMax = -signalMin-1;
     signalAmplitude = -signalMin;
-    vfoFrequency = MHz(220);
     GRdB = MIN_GAIN;
     lnaState = 0;
     agcMode = true;
-    inputRate = 2048000;
 
     chosenDevice = NULL;
     deviceParams = NULL;
@@ -202,10 +200,9 @@ bool sdrplayHandler_v3::configDevice(sdrplay_api_DeviceT *devDesc) {
     }
 
     chParams = deviceParams->rxChannelA;
-    deviceParams->devParams->fsFreq.fsHz = inputRate;
+    deviceParams->devParams->fsFreq.fsHz = INPUT_RATE;
     chParams->tunerParams.bwType = sdrplay_api_BW_1_536;
     chParams->tunerParams.ifType = sdrplay_api_IF_Zero;
-    chParams->tunerParams.rfFreq.rfHz = vfoFrequency;
     chParams->tunerParams.gain.gRdB = GRdB;
     chParams->tunerParams.gain.LNAstate = lnaState;
     chParams->ctrlParams.agc.enable = sdrplay_api_AGC_DISABLE;
@@ -352,8 +349,7 @@ bool sdrplayHandler_v3::restartReader(int32_t newFreq) {
 	return false;
     }
 
-    vfoFrequency = newFreq;
-    chParams->tunerParams.rfFreq.rfHz = vfoFrequency;
+    chParams->tunerParams.rfFreq.rfHz = newFreq;
     err = sdrplay_api_Update(chosenDevice->dev, chosenDevice->tuner,
 			     sdrplay_api_Update_Tuner_Frf,
 			     sdrplay_api_Update_Ext1_None);
@@ -425,10 +421,6 @@ int16_t sdrplayHandler_v3::bitDepth() {
 
 int32_t sdrplayHandler_v3::amplitude(void) {
     return signalMax*2+2;
-}
-
-int32_t sdrplayHandler_v3::getRate(void) {
-    return inputRate;
 }
 
 void sdrplayHandler_v3::getIfRange(int *min, int *max) {
