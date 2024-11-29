@@ -59,6 +59,7 @@ public:
     int SCIds;
     bool valid;
     bool fromEnd;
+    void setValid() { valid = (serviceName != ""); }
 };
 
 enum deviceControls {

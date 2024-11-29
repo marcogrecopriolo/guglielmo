@@ -893,6 +893,7 @@ void RadioInterface::setDevice(int d) {
     makeFMprocessor();
     if (!isFM)
 	startDAB(channelSelector->currentText());
+    currentService.setValid();
 }
 
 void RadioInterface::setDeviceName(int d) {
@@ -931,10 +932,16 @@ void RadioInterface::setDeviceName(int d) {
 	settingsUi.lnaSpinBox->setValue(lnaGain);
     }
     settings->endGroup();
+ 
+    // reset software agc
+    resetSwAgc();
+    resetAgcStats();
+
     makeDABprocessor();
     makeFMprocessor();
     if (!isFM)
 	startDAB(channelSelector->currentText());
+    currentService.setValid();
 }
 
 void RadioInterface::setAgcControl(int newAgc) {

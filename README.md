@@ -132,10 +132,18 @@ This tab offers a combo box selecting any of the available devices, and for each
 - Device gain
 - LNA gain (if the device is equipped with a low noise amplifier)
 
-The gains range from 0 to 100 and are remapped internally to suit each device.
+AGC has up to four supported modes: Off, On, Software and Combined.
+The supported modes are device dependent.
+
+Off and On are self explanatory, while Software and Combined turn on software based AGC.
+For devices that support it, Combined uses both Hardware and Software AGC at the same time.
+
+The gains range depends on the device, and may either be in percentiles (with the actual device
+gains remapped) or the actual device gains.
 The defaults are mid range.
 
-Note that when AGC is selected, any change to the IF gain will only take place after AGC is turned off.
+Note that when AGC is selected, depending on the device, any change to the IF gain may only take
+place after AGC is turned off.
 
 ## MPRIS control
 
@@ -200,10 +208,11 @@ Currently supported devices are
 
 The binary supplied with each version supports all available devices except for PLUTO.
 
-At this moment in time, the only devices tested are the RTL SDR stick (both V3 and V4) and the SDRplay RSP1a.
+At this moment in time, the only devices tested are the RTL SDR stick (both V3 and V4), the SDRplay RSP1a, 
+and the AirSpy Mini and R2..
 
 The RTL SDR stick has been successfully tested on Linux (OpenSuse Leap 15.2 and 15.5, Ubutu 22.04, macOS High
-Sierra x86_64, Windows 11), the RSP1a with Linux and Windows.
+Sierra x86_64, Windows 11), the RSP1a with Linux and Windows, and the AirSpys so far on Linux only.
 
 Windows does build with Visual Studio, and Mingw plus Msys or Msys2, but the process needs a fair
 amount of manual intervention.
@@ -224,8 +233,8 @@ I have written the interface, integrated the two processors, rewritten the devic
 against the guglielmo interface and fixed several bugs and improved several things, most
 notably the FM and RDS subsystem.
 
-Carl Laufer at rtl-sdr.com and Jon Hudson at sdrplay.com deserve a special mention for
-having provided hardware that I have used to develop the drivers.
+Carl Laufer at rtl-sdr.com, Jon Hudson at sdrplay.com and Youssef Touil at AirSpy deserve
+a special mention for having provided hardware that I have used to develop the drivers.
 
 The few icons not included in the Qt default style have been taken from freesvg.org.
 

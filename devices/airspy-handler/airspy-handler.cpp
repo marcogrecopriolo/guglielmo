@@ -269,10 +269,12 @@ int16_t airspyHandler::bitDepth(void) {
     return 12;
 }
 
+#define MAX_SIGNAL 16384
+
+// the airspy requires a rather large acceptable signal window
 void airspyHandler::getSwAGCRange(int32_t *min, int32_t *max) {
-    int amplitude = 16384;
-    *min = amplitude * MIN_AGC_AMPLITUDE / 100;
-    *max = amplitude * MAX_AGC_AMPLITUDE / 100;
+    *min = MAX_SIGNAL / 2;
+    *max = MAX_SIGNAL;
 }
 
 void airspyHandler::getIfRange(int *min, int *max) {
