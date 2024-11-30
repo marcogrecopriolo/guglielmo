@@ -27,6 +27,7 @@
 #define _PLL_H
 
 #include "constants.h"
+#include "math-helper.h"
 #include "trigtabs.h"
 
 class pll {

@@ -32,6 +32,7 @@
 #define _TRIGTABS_H
 
 #include "constants.h"
+#include "math-helper.h"
 #include <cstdlib>
 #include <limits>
 #include <math.h>

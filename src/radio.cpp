@@ -588,7 +588,7 @@ void RadioInterface::findDevices() {
 		    deviceType = deviceList[i].deviceType;
 		    break;
 		}
-	
+        log(LOG_UI, LOG_CHATTY, "using device %s", qPrintable(deviceType));
 	settings->beginGroup(deviceType);
 	uint dc = inputDevice->devices((deviceStrings *) &devNames, MAX_DEVICES);
 	bool found = false;
@@ -602,7 +602,9 @@ void RadioInterface::findDevices() {
 	    if (!found)
 		deviceId = devNames[0].id;
 	    inputDevice->setDevice(qPrintable(deviceId));
-	}
+	    log(LOG_UI, LOG_CHATTY, "device %s using %s", qPrintable(deviceType), qPrintable(deviceId));
+	} else
+	    log(LOG_UI, LOG_CHATTY, "device name selection disabled for %s", qPrintable(deviceType));
 	inputDevice->getIfRange(&minIfGain, &maxIfGain);
 	inputDevice->getLnaRange(&minLnaGain, &maxLnaGain);
 	agc = settings->value(DEV_AGC, DEV_DEF_AGC).toInt();

@@ -26,6 +26,7 @@
 #include	<cstdio>
 #include	<cstdint>
 #include	"constants.h"
+#include	"math-helper.h"
 
 struct phasetableElement {
 	int32_t	kmin, kmax;

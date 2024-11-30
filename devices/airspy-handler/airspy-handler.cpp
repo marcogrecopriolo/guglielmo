@@ -38,6 +38,7 @@
 #include "airspy-handler.h"
 #include "logging.h"
 #include "math-helper.h"
+#include <inttypes.h>
 
 #define DEV_AIRSPY LOG_DEV
 
@@ -125,12 +126,14 @@ int airspyHandler::devices(deviceStrings *devs, int max) {
     uint64_t deviceList[max];
 
     int count = my_airspy_list_devices(deviceList, max);
-    if (count <= 0)
+    if (count <= 0) {
+	log(DEV_AIRSPY, LOG_MIN, "airspy_list_devices returned %i", count);
         return 0;
+    }
     for (int i = 0; i < count; i++) {
         *devs[i].description = '\0';
-        sprintf((char *) &devs[i].name, "%lx", deviceList[i]);
-        sprintf((char *) &devs[i].id, "%lx", deviceList[i]);
+        sprintf((char *) &devs[i].name, "%" PRIx64, deviceList[i]);
+        sprintf((char *) &devs[i].id, "%" PRIx64, deviceList[i]);
 
 	// unlike librtlsdr, libairspy does not provide a device name or
 	// usb strings
@@ -152,7 +155,7 @@ bool airspyHandler::setDevice(const char *id) {
         return true;
     }
     if (open) {
-        log(DEV_AIRSPY, LOG_MIN, "stopping old device %lx", currentId);
+        log(DEV_AIRSPY, LOG_MIN, "stopping old device %" PRIx64, currentId);
         stopReader();
         my_airspy_close(device);
         open = false;
@@ -166,7 +169,7 @@ bool airspyHandler::deviceOpen(uint64_t numId) {
 
     err = my_airspy_open_sn(&device, numId);
     if (err < 0) {
-        log(DEV_AIRSPY, LOG_MIN, "%lx open failed: %i", numId, err);
+        log(DEV_AIRSPY, LOG_MIN, "%" PRIx64 "open failed: %i", numId, err);
         return false;
     }
     (void) my_airspy_set_sample_type(device, AIRSPY_SAMPLE_INT16_IQ);
@@ -186,7 +189,7 @@ bool airspyHandler::deviceOpen(uint64_t numId) {
     }
     currentId = numId;
     open = true;
-    log(DEV_AIRSPY, LOG_MIN, "opened device %lx", numId);
+    log(DEV_AIRSPY, LOG_MIN, "opened device %" PRIx64, numId);
     return true;
 }
 
