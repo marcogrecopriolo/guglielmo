@@ -211,8 +211,8 @@ The binary supplied with each version supports all available devices except for 
 At this moment in time, the only devices tested are the RTL SDR stick (both V3 and V4), the SDRplay RSP1a, 
 and the AirSpy Mini and R2..
 
-The RTL SDR stick has been successfully tested on Linux (OpenSuse Leap 15.2 and 15.5, Ubutu 22.04, macOS High
-Sierra x86_64, Windows 11), the RSP1a with Linux and Windows, and the AirSpys so far on Linux only.
+The RTL SDR stick and the Airspy R2 and Mini have been successfully tested on Linux (OpenSuse Leap 15.2
+and 15.5, Ubuntu 22.04), macOS High Sierra x86_64 and Windows 11, and the RSP1a with Linux and Windows.
 
 Windows does build with Visual Studio, and Mingw plus Msys or Msys2, but the process needs a fair
 amount of manual intervention.
