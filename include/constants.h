@@ -60,6 +60,7 @@
 #if IS_WINDOWS
 // #include "iostream.h"
 #include "windows.h"
+#define PRIx64 "llx"
 #define KEY_MODIFIER Qt::ALT
 #else
 #define KEY_MODIFIER Qt::CTRL
