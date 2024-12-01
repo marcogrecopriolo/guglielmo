@@ -1,4 +1,3 @@
-#
 /* -*- c++ -*- */
 /*
  * Copyright 2004,2010 Free Software Foundation, Inc.
@@ -25,22 +24,19 @@
 //	within the DAB/DAB+ sdr-j receiver software
 //	all rights are acknowledged.
 //
-#ifndef	FIRECODE_CHECKER
-#define	FIRECODE_CHECKER
-#include	<cstdint>
-
+#ifndef FIRECODE_CHECKER_H
+#define FIRECODE_CHECKER_H
+#include <cstdint>
 
 class firecode_checker {
-public:
-		firecode_checker();
-		~firecode_checker();
-// error detection. x[0-1] contains parity, x[2-10] contains data
-	bool	check (const uint8_t *x); // return true if firecode check is passed
-private:
-	uint16_t tab[256];
-	uint16_t run8(unsigned char regs[]);
-	static const uint8_t g[16];
+  public:
+    firecode_checker();
+    ~firecode_checker();
+    // error detection. x[0-1] contains parity, x[2-10] contains data
+    bool check(const uint8_t *x); // return true if firecode check is passed
+  private:
+    uint16_t tab[256];
+    uint16_t run8(unsigned char regs[]);
+    static const uint8_t g[16];
 };
-
 #endif
-
