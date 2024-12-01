@@ -1,4 +1,3 @@
-#
 /*
     DABlin - capital DAB experience
     Copyright (C) 2015-2019 Stefan Pöschel
@@ -58,4 +57,3 @@ void BitWriter::WriteAudioMuxLengthBytes() {
 	log (LOG_AUDIO, LOG_VERBOSE, "len %ld bytes %x %x %x",
 	                 len, data [0], data [1] >> 5, data [2]);
 }
-

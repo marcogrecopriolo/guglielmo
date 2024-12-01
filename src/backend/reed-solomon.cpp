@@ -1,4 +1,3 @@
-#
 /* Initialize a RS codec
  *
  * Copyright 2002 Phil Karn, KA9Q
@@ -80,7 +79,6 @@ int i, j, root, iprim;
 	reedSolomon::~reedSolomon() {
 }
 
-//
 //	Basic encoder, returns - in bb - the parity bytes
 void	reedSolomon::encode_rs (const uint8_t *data, uint8_t *bb){
 int i, j;
@@ -127,7 +125,6 @@ int16_t i;
 	   d [codeLength - cutlen - nroots + i] = bb [i];
 }
 
-
 int16_t	reedSolomon::dec (const uint8_t *r, uint8_t *d, int16_t cutlen) {
 _VLA(uint8_t, rf, codeLength);
 int16_t i;
@@ -152,7 +149,7 @@ _VLA(uint8_t, locTable, nroots);
 _VLA(uint8_t, omega, nroots + 1);
 int16_t	rootCount;
 int16_t	i;
-//
+
 //	returning syndromes in poly
 	if (computeSyndromes (data, syndromes))
 	   return 0;
@@ -226,7 +223,7 @@ int16_t	i;
  	}
 	return rootCount;
 }
-//
+
 //	Apply Horner on the input for root "root"
 uint8_t	reedSolomon::getSyndrome (uint8_t *data, uint8_t root) {
 uint8_t	syn	= data [0];
@@ -249,7 +246,7 @@ int16_t j;
 	return syn;
 }
 
-//
+
 //	use Horner to compute the syndromes
 bool	reedSolomon::computeSyndromes (uint8_t *data, uint8_t *syndromes) {
 int16_t i;
@@ -264,10 +261,9 @@ uint16_t syn_error = 0;
 
 	return syn_error == 0;
 }
-//
+
 //	compute Lambda with Berlekamp-Massey
 //	syndromes in poly-form in, Lambda in power form out
-//	
 uint16_t reedSolomon::computeLambda (uint8_t *syndromes, uint8_t *Lambda) {
 uint16_t K = 1, L = 0;
 _VLA(uint8_t, Corrector, nroots);
@@ -278,15 +274,15 @@ int16_t	deg_lambda;
 	   Corrector [i] = Lambda [i] = 0;
 
 	uint8_t	error	= syndromes [0];
-//
+
 //	Initializers: 
 	Lambda	[0]	= 1;
 	Corrector [1]	= 1;
-//
+
 	while (K <= nroots) {
 	   _VLA(uint8_t, oldLambda, nroots);
 	   memcpy (oldLambda, Lambda, nroots * sizeof (Lambda [0]));
-//
+
 //	Compute new lambda
 	   for (i = 0; i < nroots; i ++) 
 	      Lambda [i] = myGalois. add_poly (Lambda [i],
@@ -297,7 +293,7 @@ int16_t	deg_lambda;
 	      for (i = 0; i < nroots; i ++) 
 	         Corrector [i] = myGalois. divide_poly (oldLambda [i], error);
 	   }
-//
+
 //	multiply x * C (x), i.e. shift to the right, the 0-th order term is left
 	   for (i = nroots - 1; i >= 1; i --)
 	      Corrector [i] = Corrector [i - 1];
@@ -320,7 +316,7 @@ int16_t	deg_lambda;
 	}
 	return deg_lambda;
 }
-//
+
 //	Compute the roots of lambda by evaluating the
 //	lambda polynome for all (inverted) powers of the symbols
 //	of the data (Chien search)
@@ -330,10 +326,10 @@ int16_t  reedSolomon::computeErrors (uint8_t *Lambda,
 	                             uint8_t *locTable) {
 int16_t i, j, k;
 int16_t rootCount = 0;
-//
+
 	_VLA(uint8_t, workRegister, nroots + 1);
 	memcpy (&workRegister, Lambda, (nroots + 1) * sizeof (uint8_t));
-//
+
 //	reg is lambda in power notation
 	for (i = 1, k = iprim - 1;
 	     i <= codeLength; i ++, k = (k + iprim)) {
@@ -396,4 +392,3 @@ int16_t	deg_omega = 0;
 	omega [nroots] = codeLength;
 	return deg_omega;
 }
-

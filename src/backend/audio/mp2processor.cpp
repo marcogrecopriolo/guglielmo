@@ -21,11 +21,10 @@
 **      distribution.                                                        **
 ******************************************************************************/
 
-//
 //	Code adapted of the original code:
 //	- it is made into a class for use within the framework
 //	of the sdr-j DAB/DAB+ software
-//
+
 #include	"mp2processor.h"
 #include	"constants.h"
 #include	"radio.h"
@@ -656,4 +655,3 @@ uint8_t	newbyte = (01 << bitnr);
 	   byte |= newbyte;
 	v [nm / 8] = byte;
 }
-

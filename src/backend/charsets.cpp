@@ -1,30 +1,36 @@
-#
 /*
- *    Copyright (C) 2015
- *    Jan van Katwijk (J.vanKatwijk@gmail.com)
- *    Lazy Chair Computing
+ *    Copyright (C) 2021
+ *    Marco Greco <marcogrecopriolo@gmail.com>
  *
- *    This file is part of the Qt-DAB program
- *    Qt-DAB is free software; you can redistribute it and/or modify
+ *    This file is part of the guglielmo FM DAB tuner software package.
+ *
+ *    guglielmo is free software; you can redistribute it and/or modify
  *    it under the terms of the GNU General Public License as published by
- *    the Free Software Foundation; either version 2 of the License, or
- *    (at your option) any later version.
+ *    the Free Software Foundation, version 2 of the License.
  *
- *    Qt-DAB is distributed in the hope that it will be useful,
+ *    guglielmo is distributed in the hope that it will be useful,
  *    but WITHOUT ANY WARRANTY; without even the implied warranty of
  *    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *    GNU General Public License for more details.
  *
  *    You should have received a copy of the GNU General Public License
- *    along with Qt-DAB; if not, write to the Free Software
+ *    along with guglielmo; if not, write to the Free Software
  *    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ *
+ *    Taken from Qt-DAB, with bug fixes and enhancements.
+ *
+ *    Copyright (C) 2015
+ *    Jan van Katwijk (J.vanKatwijk@gmail.com)
+ *    Lazy Chair Computing
  *
  *	This charset handling was kindly added by Przemyslaw Wegrzyn	
  *	all rights acknowledged
  */
+
 #include "charsets.h"
-#include	<cstdint>
-/**
+#include <cstdint>
+
+/*
  * This table maps "EBU Latin" charset to corresponding
  * Unicode (UCS2-encoded) characters.
  * See ETSI TS 101 756 v1.8.1, Annex C
@@ -66,32 +72,28 @@ static const unsigned short ebuLatinToUcs2[] = {
 
 QString toQStringUsingCharset (const char* buffer,
 	                       CharacterSet charset, int size) {
-QString s;
-uint16_t length = 0;
-uint16_t i;
+    QString s;
+    uint16_t length = 0;
+    uint16_t i;
 
-          if(size == -1)
-            length = strlen(buffer);
-          else
-            length = size;
+    if(size == -1)
+	length = strlen(buffer);
+    else
+	length = size;
 
-	switch (charset) {
-	   case UnicodeUcs2:
-	      s = QString::fromUtf16 ((const ushort*) buffer, length);
-	      break;
-
-	   case UnicodeUtf8:
-	      s = QString::fromUtf8 (buffer, length);
-	      break;
-
-	   case EbuLatin:
-	   default:
-	      s = QString();
-	      for (i = 0; i < length; i++) {
-	         s.append(QChar (ebuLatinToUcs2 [((uint8_t*) buffer)[i]]));
-	      }
-	}
-
-	return s;
+     switch (charset) {
+	case UnicodeUcs2:
+	    s = QString::fromUtf16 ((const ushort*) buffer, length);
+	    break;
+	case UnicodeUtf8:
+	    s = QString::fromUtf8 (buffer, length);
+	    break;
+	case EbuLatin:
+	default:
+	    s = QString();
+	    for (i = 0; i < length; i++) {
+		s.append(QChar (ebuLatinToUcs2 [((uint8_t*) buffer)[i]]));
+	    }
+    }
+    return s;
 }
-
