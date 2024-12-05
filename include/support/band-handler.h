@@ -26,27 +26,24 @@
 
 #ifndef BAND_HANDLER_H
 #define BAND_HANDLER_H
-#include <QComboBox>
-#include <QObject>
-#include <QString>
+#include "constants.h"
 
-// a simple convenience class
 typedef struct {
-    QString key;
+    std::string key;
     int fKHz;
-    bool skip;
 } dabFrequencies;
 
-class bandHandler: public QObject {
-    Q_OBJECT
+class bandHandler {
 
 public:
-    bandHandler(const QString&); // , QSettings *);
+    bandHandler();
     ~bandHandler();
-    void setupChannels(QComboBox* s, uint8_t band);
-    int32_t Frequency(QString Channel);
+    void setupChannels(uint8_t band);
+    std::string nextChannel();
+    int32_t frequency(std::string channel);
 
 private:
+    int scanIndex;
     dabFrequencies* selectedBand;
 };
 #endif

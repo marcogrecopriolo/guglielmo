@@ -101,8 +101,6 @@ public:
     int32_t Samples();
     void resetBuffer();
     int16_t bitDepth();
-
-public slots:
     void setIfGain(int);
 
 private:

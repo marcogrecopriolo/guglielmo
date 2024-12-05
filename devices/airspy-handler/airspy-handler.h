@@ -111,8 +111,6 @@ public:
     int16_t currentTab;
     void getSwAGCRange(int *, int *);
     void getIfRange(int *, int *);
-
-public slots:
     void setIfGain(int);
     void setAgcControl(int);
 

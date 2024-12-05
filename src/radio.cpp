@@ -80,7 +80,7 @@ RadioInterface::RadioInterface(QSettings *Si, QWidget	 *parent):
 	responseBuffer(32768),
 	frameBuffer(2 * 32768),
 	audioBuffer(8 * 32768),
-	DABband("") {
+	DABband() {
 
     QString presetName;
     QString channel;
@@ -210,7 +210,14 @@ RadioInterface::RadioInterface(QSettings *Si, QWidget	 *parent):
     deviceType = settings->value(GEN_DEVICE_TYPE, "").toString();
 
     findDevices();
-    DABband.setupChannels(channelSelector, BAND_III);
+    DABband.setupChannels(BAND_III);
+    for (;;) {
+	std::string channel = DABband.nextChannel();
+
+	if (channel.length() == 0)
+	    break;
+	channelSelector->addItem(QString::fromStdString(channel));
+    }
     nextService.valid = false;
     currentService.serviceName = settings->value(GEN_SERVICE_NAME, "").toString();
     currentService.valid = currentService.serviceName != "";
@@ -1315,7 +1322,7 @@ void RadioInterface::startDABService(dabService *s) {
 }
 
 void RadioInterface::startDAB(const QString &channel) {
-    int tunedFrequency = DABband.Frequency(channel);
+    int tunedFrequency = DABband.frequency(channel.toStdString());
 
     if (inputDevice == nullptr || DABprocessor == nullptr)
 	return;

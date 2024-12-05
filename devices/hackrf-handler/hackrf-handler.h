@@ -107,9 +107,5 @@ private:
     bool libraryLoaded;
     void update_gainSettings(int);
     void record_gainSettings(int);
-
-signals:
-    void new_lnaGainValue(int);
-    void new_vgaGainValue(int);
 };
 #endif
