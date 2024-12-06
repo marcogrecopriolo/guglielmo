@@ -433,7 +433,7 @@ void RadioInterface::startFullScan() {
 #endif
 	scanIndex = 0;
 	channelSelector->setCurrentIndex(scanIndex);
-	startDAB(channelSelector->itemText(scanIndex));
+	startDAB();
 	scanTimer->start();
     }
 }
@@ -464,7 +464,7 @@ void RadioInterface::stopFullScan() {
     } else {
 	toDAB();
 	currentService.valid = (currentService.serviceName != "");
-	startDAB(channelSelector->currentText());
+	startDAB();
     }
     setPlaying();
     setRecording();
@@ -507,13 +507,13 @@ void RadioInterface::nextFullDABScan(void) {
     // nothing, either we stop, or move on
     if (serviceList.size() == 0) {
 	if (scanIndex ==  channelSelector->count() - 1) {
-		stopFullScan();
-		return;
+	    stopFullScan();
+	    return;
 	} else {
 	    scanIndex++;
 	    stopDAB();
 	    channelSelector->setCurrentIndex(scanIndex);
-	    startDAB(channelSelector->itemText(scanIndex));
+	    startDAB();
 	}
     }
 
@@ -539,7 +539,7 @@ void RadioInterface::scanEnsembleLoaded(int count) {
 	scanIndex++;
 	stopDAB();
 	channelSelector->setCurrentIndex(scanIndex);
-	startDAB(channelSelector->itemText(scanIndex));
+	startDAB();
 	scanTimer->start();
     }
 }
@@ -892,7 +892,7 @@ void RadioInterface::setDevice(int d) {
     makeDABprocessor();
     makeFMprocessor();
     if (!isFM)
-	startDAB(channelSelector->currentText());
+	startDAB();
     currentService.setValid();
 }
 
@@ -940,7 +940,7 @@ void RadioInterface::setDeviceName(int d) {
     makeDABprocessor();
     makeFMprocessor();
     if (!isFM)
-	startDAB(channelSelector->currentText());
+	startDAB();
     currentService.setValid();
 }
 

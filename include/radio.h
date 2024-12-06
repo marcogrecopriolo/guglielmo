@@ -19,8 +19,8 @@
  *    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#ifndef __RADIO_H__
-#define __RADIO_H__
+#ifndef RADIO_H
+#define RADIO_H
 
 #include <QMainWindow>
 #include <QStringList>
@@ -194,7 +194,7 @@ private:
     void findDevices();
     void makeDABprocessor();
     void makeFMprocessor();
-    void startDAB(const QString &);
+    void startDAB();
     void stopDAB();
     void startDABService(dabService *);
     void stopDABService();
@@ -325,4 +325,4 @@ private slots:
     void mprisClose();
 #endif
 };
-#endif		// __RADIO_H__
+#endif		// RADIO_H

@@ -329,7 +329,7 @@ RadioInterface::RadioInterface(QSettings *Si, QWidget	 *parent):
     ficSuccess = 0;
     ficBlocks = 0;
     if (!isFM)
-	startDAB(channelSelector->currentText());
+	startDAB();
 }
 
 RadioInterface::~RadioInterface() {
@@ -1176,7 +1176,7 @@ void RadioInterface::handlePresetSelector(int index) {
     nextService.SCIds = 0;
 
     // the preset service will be picked up by the addToEnsemble() slot
-    startDAB(channelSelector->currentText());
+    startDAB();
 }
 
 void RadioInterface::handleAddDABPreset() {
@@ -1321,7 +1321,8 @@ void RadioInterface::startDABService(dabService *s) {
     }
 }
 
-void RadioInterface::startDAB(const QString &channel) {
+void RadioInterface::startDAB() {
+    QString channel = channelSelector->currentText();
     int tunedFrequency = DABband.frequency(channel.toStdString());
 
     if (inputDevice == nullptr || DABprocessor == nullptr)
@@ -1377,10 +1378,10 @@ void RadioInterface::handleSelectChannel(int index) {
     if (index < 0 || index >=  channelSelector->count())
 	return;
 
-    channel = channelSelector->itemText(index);
+    channelSelector->setCurrentIndex(index);
     log(LOG_UI, LOG_MIN, "dab channel is %s", qPrintable(channel));
     stopDAB();
-    startDAB(channel);
+    startDAB();
 }
 
 void RadioInterface::handleNextChanButton() {
@@ -1423,7 +1424,7 @@ void RadioInterface::handleNextChanButton() {
     currentService.valid = false;
     nextService.valid = true;
     nextService.fromEnd = false;
-    startDAB(channelSelector->currentText());
+    startDAB();
 }
 
 void RadioInterface::handlePrevChanButton() {
@@ -1466,7 +1467,7 @@ void RadioInterface::handlePrevChanButton() {
     currentService.valid = false;
     nextService.valid = true;
     nextService.fromEnd = true;
-    startDAB(channelSelector->currentText());
+    startDAB();
 }
 
 //	FM ops
@@ -1704,7 +1705,7 @@ void RadioInterface::handleDABButton() {
     scanning = false;
     toDAB();
     currentService.valid = (currentService.serviceName != "");
-    startDAB(channelSelector->currentText());
+    startDAB();
     setPlaying();
     setRecording();
     setScanning();
@@ -1810,7 +1811,7 @@ void RadioInterface::changeStation(int d) {
 		nextService.serviceName = "";
 		nextService.valid = true;
 		nextService.fromEnd = true;
-		startDAB(channelSelector->currentText());
+		startDAB();
 		return;
 	} else if (d > 0 && FMfreq >= MAX_FM) {
 		handleDABButton();
@@ -1818,7 +1819,7 @@ void RadioInterface::changeStation(int d) {
 		nextService.serviceName = "";
 		nextService.valid = true;
 		nextService.fromEnd = false;
-		startDAB(channelSelector->currentText());
+		startDAB();
 		return;
 	}
     } else {
