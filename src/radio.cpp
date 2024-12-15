@@ -169,7 +169,6 @@ RadioInterface::RadioInterface(QSettings *Si, QWidget	 *parent):
     settings->beginGroup(GROUP_FM);
     workingRate = settings->value(FM_WORKING_RATE, FM_DEF_WORKING_RATE).toInt();
     FMthreshold = settings->value(FM_THRESHOLD, FM_DEF_THRESHOLD).toInt();
-    scanInterval = settings->value(FM_SCAN_INTERVAL, FM_DEF_SCAN_INTERVAL).toInt();
 
     FMfilter = settings->value(FM_FILTER, FM_DEF_FILTER).toInt();
     FMdegree = settings->value(FM_DEGREE, FM_DEF_DEGREE).toInt();
@@ -208,6 +207,8 @@ RadioInterface::RadioInterface(QSettings *Si, QWidget	 *parent):
     skipPresetMode = settings->value(GEN_SKIP_PRESET_MODE, true).toBool();
 #endif
     deviceType = settings->value(GEN_DEVICE_TYPE, "").toString();
+    scanInterval = settings->value(GEN_SCAN_INTERVAL, GEN_DEF_SCAN_INTERVAL).toInt();
+    scanRetry = settings->value(GEN_SCAN_RETRY, GEN_DEF_SCAN_RETRY).toInt();
 
     findDevices();
     DABband.setupChannels(BAND_III);
@@ -875,7 +876,9 @@ void RadioInterface::ensembleLoaded(int count) {
 
     // we are loading a scan list, no need to start a service
     if (scanning) {
-	scanEnsembleLoaded(count);
+        if (count >= 0)
+	    log(LOG_EVENT, LOG_MIN, "dab full scan ensemble loaded with %i services", count);
+	scanEnsembleLoaded();
 	return;
     }
     log(LOG_EVENT, LOG_MIN, "ensemble complete with %i services", count);
@@ -896,7 +899,7 @@ void RadioInterface::ensembleLoaded(int count) {
 
 void RadioInterface::showStrength(float strength) {
     log(LOG_EVENT, LOG_VERBOSE, "signal strength %f", strength);
-    if (strength < 50)
+    if (strength < MEDIAN_QUALITY)
 	signalStrength->setFillBrush(QBrush(Qt::red));
     else
 	signalStrength->setFillBrush(QBrush(Qt::green));
@@ -906,14 +909,14 @@ void RadioInterface::showStrength(float strength) {
 void RadioInterface::showQuality(bool b) {
     log(LOG_EVENT, LOG_VERBOSE, "quality %i", b);
     if (b) 
-	ficSuccess++;
-    if (++ficBlocks >= 25) {
-	if (ficSuccess > 12) {
+	ficSuccess += FIC_SUCCESS_INCREMENT;
+    if (++ficBlocks >= FIC_BLOCKS_MAX) {
+	if (ficSuccess > MEDIAN_QUALITY) {
 	    signalQuality->setFillBrush(QBrush(Qt::green));
 	} else {
 	    signalQuality->setFillBrush(QBrush(Qt::red));
 	}
-	signalQuality->setValue(ficSuccess*4);
+	signalQuality->setValue(ficSuccess);
 	ficBlocks = 0;
 	ficSuccess = 0;
     }
@@ -1372,14 +1375,12 @@ void RadioInterface::stopDAB() {
 }
 
 void RadioInterface::handleSelectChannel(int index) {
-    QString channel;
-
     log(LOG_UI, LOG_MIN, "switching to dab channel %i", index);
     if (index < 0 || index >=  channelSelector->count())
 	return;
 
     channelSelector->setCurrentIndex(index);
-    log(LOG_UI, LOG_MIN, "dab channel is %s", qPrintable(channel));
+    log(LOG_UI, LOG_MIN, "dab channel is %s", qPrintable(channelSelector->currentText()));
     stopDAB();
     startDAB();
 }

@@ -81,13 +81,18 @@ typedef void* HINSTANCE;
 #define AUDIO_SCALE 100
 #define GAIN_SCALE 100
 
+#define MIN_SCAN_SIGNAL 40
+#define MEDIAN_QUALITY 50
+#define FIC_BLOCKS_MAX 25
+#define FIC_SUCCESS_INCREMENT 4
+
+#define INPUT_RATE 2048000
+
 // DAB
 
 #define AUDIO_SERVICE 0101
 #define PACKET_SERVICE 0102
 #define UNKNOWN_SERVICE 0100
-
-#define INPUT_RATE 2048000
 
 // 40 and above shows good results
 #define DIFF_LENGTH 60
@@ -118,8 +123,6 @@ public:
 #define __ONLY_DATA 2
 
 // FM
-
-#define QT_STATIC_CONST
 
 #define MIN_FM 87.0
 #define MAX_FM 108.9

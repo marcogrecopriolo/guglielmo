@@ -421,6 +421,9 @@ void RadioInterface::startFullScan() {
 	}
 	connect(scanTimer, SIGNAL(timeout()),
 	    this, SLOT(nextFullDABScan()));
+	connect(this, SIGNAL(advanceScan(int)),
+	    this, SLOT(ensembleLoaded(int)));
+	scanRetryCount = 0;
 	playing = false;
 	scanning = true;
 	cleanScreen();
@@ -453,6 +456,8 @@ void RadioInterface::stopFullScan() {
 	stopDAB();
 	disconnect(scanTimer, SIGNAL(timeout()),
 	    this, SLOT(nextFullDABScan()));
+	disconnect(this, SIGNAL(advanceScan(int)),
+	    this, SLOT(ensembleLoaded(int)));
     }
     isFM = saveIsFM;
     FMfreq = saveFMfreq;
@@ -484,6 +489,7 @@ void RadioInterface::nextFullScanFrequency(void) {
 	frequencyKnob->setValue(double(FMfreq));
 	frequencyLCD->display(int(FMfreq*1000));
 	inputDevice->restartReader(int(FMfreq*1000000));
+	log(LOG_EVENT, LOG_MIN, "fm full scan next frequency %f", FMfreq);
 	FMprocessor->start();
 	FMprocessor->startFullScan();
 	scanTimer->start();
@@ -502,27 +508,33 @@ void RadioInterface::scanFound(void) {
 }
 
 void RadioInterface::nextFullDABScan(void) {
-    log(LOG_EVENT, LOG_MIN, "dab full scan timer signal");
+    log(LOG_EVENT, LOG_CHATTY, "dab full scan timer signal attempt %i", scanRetryCount+1);
 
     // nothing, either we stop, or move on
     if (serviceList.size() == 0) {
-	if (scanIndex ==  channelSelector->count() - 1) {
-	    stopFullScan();
-	    return;
-	} else {
-	    scanIndex++;
-	    stopDAB();
-	    channelSelector->setCurrentIndex(scanIndex);
-	    startDAB();
+	if (signalStrength->value() < MIN_SCAN_SIGNAL || ++scanRetryCount > scanRetry) {
+	    scanRetryCount = 0;
+	    if (scanIndex ==  channelSelector->count() - 1) {
+		stopFullScan();
+		return;
+	    } else {
+		scanIndex++;
+		stopDAB();
+		channelSelector->setCurrentIndex(scanIndex);
+		log(LOG_EVENT, LOG_MIN, "dab full scan next frequency %s", qPrintable(channelSelector->currentText()));
+		startDAB();
+	    }
 	}
+    } else if (++scanRetryCount > scanRetry) {
+        log(LOG_EVENT, LOG_CHATTY, "dab full scan timeout for %s", qPrintable(channelSelector->currentText()));
+	emit advanceScan(-1);
+	return;
     }
-
-    // if still loading, we wait a bit more
     scanTimer->start();
 }
 
-void RadioInterface::scanEnsembleLoaded(int count) {
-    log(LOG_EVENT, LOG_MIN, "dab full scan ensemble loaded with %i services", count);
+void RadioInterface::scanEnsembleLoaded() {
+    scanRetryCount = 0;
     for (const auto &serv: serviceList) {
 	QString station = channelSelector->itemText(scanIndex) + ":" +serv.name;
 
@@ -539,6 +551,7 @@ void RadioInterface::scanEnsembleLoaded(int count) {
 	scanIndex++;
 	stopDAB();
 	channelSelector->setCurrentIndex(scanIndex);
+	log(LOG_EVENT, LOG_MIN, "dab full scan next frequency %s", qPrintable(channelSelector->currentText()));
 	startDAB();
 	scanTimer->start();
     }

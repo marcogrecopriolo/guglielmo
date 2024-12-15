@@ -19,8 +19,8 @@
  *    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#ifndef __SETTINGS_H__
-#define __SETTINGS_H__
+#ifndef SETTINGS_H
+#define SETTINGS_H
 
 // Groups
 
@@ -46,12 +46,16 @@
 #define GEN_LAST_PRESET		"lastPreset"
 #define GEN_DEVICE_TYPE		"deviceType"
 #define GEN_SKIP_PRESET_MODE	"skipPresetMode"
+#define GEN_SCAN_INTERVAL	"scanInterval"
+#define GEN_SCAN_RETRY		"scanRetry"
 
 #define GEN_DEF_VOLUME		"0"
 #define GEN_DEF_SQUELCH		"0"
 #define GEN_DEF_TUNER_MODE	"FM"
 #define GEN_DEF_CHANNEL		"12C"
 #define GEN_DEF_DAB_MODE	"stations"
+#define GEN_DEF_SCAN_INTERVAL	"1000"
+#define GEN_DEF_SCAN_RETRY	"4"
 
 #define GEN_FM			"FM"
 #define GEN_DAB			"DAB"
@@ -81,7 +85,6 @@
 // fm
 #define FM_WORKING_RATE		"workingRate"
 #define FM_THRESHOLD		"threshold"
-#define FM_SCAN_INTERVAL	"scanInterval"
 
 #define FM_FILTER		"filter"
 #define FM_DEGREE		"degree"
@@ -92,7 +95,6 @@
 
 #define FM_DEF_WORKING_RATE	"48000"
 #define FM_DEF_THRESHOLD	"20"
-#define FM_DEF_SCAN_INTERVAL	"1000"
 
 #define FM_DEF_FILTER		"0"
 #define FM_DEF_DEGREE		"15"

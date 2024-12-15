@@ -106,13 +106,13 @@ private:
     processParams DABglobals;
     int serviceOrder;
     int scanIndex;
+    int scanRetryCount;
 
 // FM
     double FMfreq;
     int32_t workingRate;
     int32_t audioRate;
     int16_t FMthreshold;
-    int scanInterval;
 
     int FMdecoder;
     int deemphasis;
@@ -176,6 +176,8 @@ private:
     int16_t ficSuccess;
     QTimer *scanTimer;
     double scanIncrement;
+    int scanInterval;
+    int scanRetry;
 
 // audio
     audioBase *soundOut;
@@ -241,7 +243,7 @@ public slots:
     void newAudio(int, int);
     void scanDone();
     void scanFound();
-    void scanEnsembleLoaded(int);
+    void scanEnsembleLoaded();
     void closeEvent(QCloseEvent *event);
 
 private slots:
@@ -324,5 +326,8 @@ private slots:
     void mprisVolume(double);
     void mprisClose();
 #endif
+
+signals:
+    void advanceScan(int);
 };
 #endif		// RADIO_H
