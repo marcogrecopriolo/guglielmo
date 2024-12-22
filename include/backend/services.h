@@ -27,6 +27,8 @@
 #ifndef SERVICES_H
 #define SERVICES_H
 
+#include "dab-tables.h"
+
 class serviceDescriptor {
 public:
     uint8_t type;
@@ -71,14 +73,28 @@ public:
     int16_t programType;
     int16_t compnr;
     int32_t fmFrequency;
+
     audiodata() {
         type = AUDIO_SERVICE;
     }
+
     bool isDABplus(void) {
         return ASCTy == 077;
     }
+
     void audioInfo(char* buf, int len) {
         snprintf(buf, len, "%s %i kBits/sec", (isDABplus() ? "DAB+" : "DAB"), bitRate);
+    }
+
+    void serviceInfo(char* buf, int len) {
+	if (language != 0 && programType != 0)
+            snprintf(buf, len, "%s - %s", getProgramType_Not_NorthAmerica(programType), getLanguage(language));
+	else if (language != 0)
+            snprintf(buf, len, "%s", getLanguage(language));
+	else if (programType != 0)
+            snprintf(buf, len, "%s", getProgramType_Not_NorthAmerica(programType));
+	else
+            *buf = '\0';
     }
 };
 #endif

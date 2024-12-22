@@ -1225,6 +1225,7 @@ void RadioInterface::stopDABService() {
 	setRecording();
     }
     stereoLabel->setToolTip("");
+    serviceLabel->setToolTip("");
     currentService.valid = false;
     cleanScreen();
 #ifdef HAVE_MPRIS
@@ -1307,6 +1308,8 @@ void RadioInterface::startDABService(dabService *s) {
 		    soundOut->restart();
 		    ad.audioInfo((char *) &buf, INFOBUFLEN);
 		    stereoLabel->setToolTip((char *) &buf);
+		    ad.serviceInfo((char *) &buf, INFOBUFLEN);
+		    serviceLabel->setToolTip((char *) &buf);
 		}
 		currentService.valid = true;
 		currentService.serviceName = serviceName;
