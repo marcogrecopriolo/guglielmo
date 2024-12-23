@@ -40,10 +40,10 @@ class audioBase: public QObject {
 
 public:
     audioBase();
-    virtual ~audioBase();
-    virtual void stop(void);
-    virtual void restart();
-    virtual void setVolume(qreal);
+    virtual ~audioBase() {};
+    virtual void stop(void) {};
+    virtual void restart() {};
+    virtual void setVolume(qreal) {};
 
     void audioOut(int16_t*, int32_t, int);
     int32_t putSample(DSPCOMPLEX v);

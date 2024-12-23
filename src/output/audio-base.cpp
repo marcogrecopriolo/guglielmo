@@ -41,18 +41,6 @@ audioBase::audioBase():
     dumpFile = nullptr;
 }
 
-audioBase::~audioBase() {
-}
-
-void audioBase::restart() {
-}
-
-void audioBase::stop() {
-}
-
-void audioBase::setVolume(qreal v) {
-}
-
 int32_t audioBase::putSample(DSPCOMPLEX v) {
     return putSamples(&v, int32_t(1));
 }

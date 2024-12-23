@@ -90,7 +90,7 @@ void audioSink::setVolume(qreal v) {
 
 bool audioSink::selectDevice(int16_t idx) {
     PaError err;
-    int16_t i, outputDevice;
+    int16_t outputDevice;
 
     if ((idx < 0) || (idx >= numDevices)) {
         log(LOG_SOUND, LOG_MIN, "invalid device %d selected", idx);

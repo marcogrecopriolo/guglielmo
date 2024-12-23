@@ -46,13 +46,13 @@ void Qt_AudioDevice::stop(void) {
 
 // we always return "len" bytes
 qint64 Qt_AudioDevice::readData(char* buffer, qint64 maxSize) {
-    qint64 amount = 0;
+    qint64 amount;
 
     // "maxSize" is the requested size in bytes
     // "amount" is in floats
     amount = Buffer->getDataFromBuffer(buffer, maxSize / sizeof(float));
 
-    if (amount >= 0 && sizeof(float) * amount < maxSize) {
+    if (amount >= 0 && amount * ((int) sizeof(float)) < maxSize) {
         qint64 i;
         for (i = amount * sizeof(float); i < maxSize; i++)
             buffer[i] = 0;
