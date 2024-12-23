@@ -35,7 +35,7 @@
  *	The class inherits from the phaseTable.
  */
 
-phaseReference::phaseReference(RadioInterface *mr, processParams *p)
+phaseReference::phaseReference(processParams *p)
     : phaseTable(p->dabMode), params(p->dabMode), my_fftHandler(p->dabMode) {
     int32_t i;
     float Phi_k;
@@ -177,27 +177,6 @@ phaseReference::estimate_CarrierOffset(std::vector<std::complex<float>> v) {
     if (index_1 != index_2)
         return 100;
     return index_1 - T_u;
-}
-//	An alternative way to compute the small frequency offset
-//	is to look at the phase offset of subsequent carriers
-//	in block 0, compared to the values as computed from the
-//	reference block.
-//	The values are reasonably close to the values computed
-//	on the fly
-#define LLENGTH 100
-float phaseReference::estimate_FrequencyOffset(
-    std::vector<std::complex<float>> v) {
-    int16_t i;
-    float pd = 0;
-
-    for (i = -LLENGTH / 2; i < LLENGTH / 2; i++) {
-        std::complex<float> a1 =
-            refTable[(T_u + i) % T_u] * conj(refTable[(T_u + i + 1) % T_u]);
-        std::complex<float> a2 =
-            fft_buffer[(T_u + i) % T_u] * conj(fft_buffer[(T_u + i + 1) % T_u]);
-        pd += arg(a2) - arg(a1);
-    }
-    return pd / LLENGTH;
 }
 
 float phaseReference::phase(std::vector<complex<float>> v, int Ts) {

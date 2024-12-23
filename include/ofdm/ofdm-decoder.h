@@ -41,7 +41,7 @@ class RadioInterface;
 class ofdmDecoder : public QObject {
     Q_OBJECT
   public:
-    ofdmDecoder(RadioInterface *, uint8_t, int16_t,
+    ofdmDecoder(RadioInterface *, uint8_t,
                 RingBuffer<std::complex<float>> *iqBuffer = nullptr);
     ~ofdmDecoder();
     void processBlock_0(std::vector<std::complex<float>>);

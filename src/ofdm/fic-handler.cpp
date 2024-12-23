@@ -198,7 +198,7 @@ void ficHandler::process_ficInput(int16_t ficno) {
         }
 
         show_ficSuccess(true);
-        fibDecoder::process_FIB(p, ficno);
+        fibDecoder::process_FIB(p);
     }
 }
 

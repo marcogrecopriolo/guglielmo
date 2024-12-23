@@ -40,7 +40,7 @@
  *	will extract the Tu samples, do an FFT and extract the
  *	carriers and map them on (soft) bits
  */
-ofdmDecoder::ofdmDecoder(RadioInterface *mr, uint8_t dabMode, int16_t bitDepth,
+ofdmDecoder::ofdmDecoder(RadioInterface *mr, uint8_t dabMode,
                          RingBuffer<std::complex<float>> *iqBuffer)
     : params(dabMode), my_fftHandler(dabMode), myMapper(dabMode) {
     this->myRadioInterface = mr;

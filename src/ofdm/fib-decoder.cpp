@@ -65,12 +65,11 @@ fibDecoder::~fibDecoder() {
 //	FIB's are segments of 256 bits. When here, we already
 //	passed the crc and we start unpacking into FIGs
 //	This is merely a dispatcher
-void fibDecoder::process_FIB(uint8_t *p, uint16_t fib) {
+void fibDecoder::process_FIB(uint8_t *p) {
     int8_t processedBytes = 0;
     uint8_t *d = p;
 
     fibLocker.lock();
-    (void)fib;
     while (processedBytes < 30) {
 	uint8_t FIGtype = getBits_3(d, 0);
 	uint8_t FIGlength = getBits_5(d, 3);
@@ -220,23 +219,15 @@ void fibDecoder::process_FIG0(uint8_t *d) {
 //	we are not equipped for that, so we just ignore it for the moment
 //	The info is MCI
 void fibDecoder::FIG0Extension0(uint8_t *d) {
-    uint16_t EId;
-    uint8_t changeFlag;
-    uint16_t highpart, lowpart;
-    int16_t occurrenceChange;
-    uint8_t CN_bit = getBits_1(d, 8 + 0);
-    uint8_t alarmFlag;
+//    uint8_t CN_bit = getBits_1(d, 8 + 0);
+//    uint32_t EId = getBits(d, 16, 16);
+    uint8_t changeFlag = getBits_2(d, 16 + 16);;
+//    uint8_t alarmFlag = getBits_1(d, 16 + 16 + 2);
+    uint16_t highpart = getBits_5(d, 16 + 19);
+    uint16_t lowpart = getBits_8(d, 16 + 24);;
+//    int16_t occurrenceChange getBits_8(d, 16 + 32);
     static uint8_t prevChangeFlag = 0;
 
-    (void)CN_bit;
-    EId = getBits(d, 16, 16);
-    (void)EId;
-    changeFlag = getBits_2(d, 16 + 16);
-    alarmFlag = getBits_1(d, 16 + 16 + 2);
-    highpart = getBits_5(d, 16 + 19);
-    lowpart = getBits_8(d, 16 + 24);
-    occurrenceChange = getBits_8(d, 16 + 32);
-    (void)occurrenceChange;
     CIFcount = highpart * 250 + lowpart;
 
     if ((changeFlag == 0) && (prevChangeFlag == 3)) {
@@ -249,7 +240,6 @@ void fibDecoder::FIG0Extension0(uint8_t *d) {
     }
 
     prevChangeFlag = changeFlag;
-    (alarmFlag);
 }
 
 //	Subchannel organization 6.2.1
@@ -260,17 +250,16 @@ void fibDecoder::FIG0Extension1(uint8_t *d) {
     int16_t used = 2; // offset in bytes
     int16_t Length = getBits_5(d, 3);
     uint8_t CN_bit = getBits_1(d, 8 + 0);
-    uint8_t OE_bit = getBits_1(d, 8 + 1);
-    uint8_t PD_bit = getBits_1(d, 8 + 2);
+//    uint8_t OE_bit = getBits_1(d, 8 + 1);
+//    uint8_t PD_bit = getBits_1(d, 8 + 2);
 
     while (used < Length - 1)
-	used = HandleFIG0Extension1(d, used, CN_bit, OE_bit, PD_bit);
+	used = HandleFIG0Extension1(d, used, CN_bit);
 }
 
 //	defining the channels
 int16_t fibDecoder::HandleFIG0Extension1(uint8_t *d, int16_t offset,
-					 uint8_t CN_bit, uint8_t OE_bit,
-					 uint8_t PD_bit) {
+					 uint8_t CN_bit) {
 
     int16_t bitOffset = offset * 8;
     int16_t subChId = getBits_6(d, bitOffset);
@@ -282,8 +271,7 @@ int16_t fibDecoder::HandleFIG0Extension1(uint8_t *d, int16_t offset,
     static int table_1[] = {12, 8, 6, 4};
     static int table_2[] = {27, 21, 18, 15};
 
-    (void)OE_bit;
-    (void)PD_bit;
+    memset(&subChannel, 0, sizeof(subChannel));
     subChannel.startAddr = startAdr;
     subChannel.inUse = true;
 
@@ -337,35 +325,30 @@ void fibDecoder::FIG0Extension2(uint8_t *d) {
     int16_t used = 2; // offset in bytes
     int16_t Length = getBits_5(d, 3);
     uint8_t CN_bit = getBits_1(d, 8 + 0);
-    uint8_t OE_bit = getBits_1(d, 8 + 1);
+//  uint8_t OE_bit = getBits_1(d, 8 + 1);
     uint8_t PD_bit = getBits_1(d, 8 + 2);
 
     while (used < Length) {
-	used = HandleFIG0Extension2(d, used, CN_bit, OE_bit, PD_bit);
+	used = HandleFIG0Extension2(d, used, CN_bit, PD_bit);
     }
 }
 
 int16_t fibDecoder::HandleFIG0Extension2(uint8_t *d, int16_t offset,
-                                         uint8_t CN_bit, uint8_t OE_bit,
-                                         uint8_t PD_bit) {
+                                         uint8_t CN_bit, uint8_t PD_bit) {
     int16_t bitOffset = 8 * offset;
     int16_t i;
-    uint8_t ecc;
-    uint8_t cId;
+//  uint8_t ecc;
+//  uint8_t cId;
     uint32_t SId;
     int16_t numberofComponents;
 
-    (void)OE_bit;
-
     if (PD_bit == 1) { // long Sid, data
-        ecc = getBits_8(d, bitOffset);
-        (void)ecc;
-        cId = getBits_4(d, bitOffset + 1);
+//      ecc = getBits_8(d, bitOffset);
+//      cId = getBits_4(d, bitOffset + 1);
         SId = getLBits(d, bitOffset, 32);
         bitOffset += 32;
     } else {
-        cId = getBits_4(d, bitOffset);
-        (void)cId;
+//      cId = getBits_4(d, bitOffset);
         SId = getBits(d, bitOffset, 16);
         bitOffset += 16;
     }
@@ -387,8 +370,6 @@ int16_t fibDecoder::HandleFIG0Extension2(uint8_t *d, int16_t offset,
             uint8_t CA_flag = getBits_1(d, bitOffset + 15);
             bind_packetService(CN_bit == 0 ? currentConfig : nextConfig, TMid,
                                SId, i, SCId, PS_flag, CA_flag);
-        } else {
-            ;
         }
         bitOffset += 16;
     }
@@ -403,38 +384,32 @@ void fibDecoder::FIG0Extension3(uint8_t *d) {
     int16_t used = 2; // offset in bytes
     int16_t Length = getBits_5(d, 3);
     uint8_t CN_bit = getBits_1(d, 8 + 0);
-    uint8_t OE_bit = getBits_1(d, 8 + 1);
-    uint8_t PD_bit = getBits_1(d, 8 + 2);
+//  uint8_t OE_bit = getBits_1(d, 8 + 1);
+//  uint8_t PD_bit = getBits_1(d, 8 + 2);
 
     while (used < Length)
-        used = HandleFIG0Extension3(d, used, CN_bit, OE_bit, PD_bit);
+        used = HandleFIG0Extension3(d, used, CN_bit);
 }
 
 //	Note that the SCId (Service Component Identifier) is
 //	a unique 12 bit number in the ensemble
 int16_t fibDecoder::HandleFIG0Extension3(uint8_t *d, int16_t used,
-                                         uint8_t CN_bit, uint8_t OE_bit,
-                                         uint8_t PD_bit) {
+                                         uint8_t CN_bit) {
     int16_t SCId = getBits(d, used * 8, 12);
     int16_t CAOrgflag = getBits_1(d, used * 8 + 15);
     int16_t DGflag = getBits_1(d, used * 8 + 16);
     int16_t DSCTy = getBits_6(d, used * 8 + 18);
     int16_t SubChId = getBits_6(d, used * 8 + 24);
     int16_t packetAddress = getBits(d, used * 8 + 30, 10);
-    uint16_t CAOrg = 0;
 
     int serviceCompIndex;
     int serviceIndex;
     dabConfig *localBase = CN_bit == 0 ? currentConfig : nextConfig;
 
-    (void)OE_bit;
-    (void)PD_bit;
-
     if (CAOrgflag == 1) {
-        CAOrg = getBits(d, used * 8 + 40, 16);
+//      CAOrg = getBits(d, used * 8 + 40, 16);
         used += 16 / 8;
     }
-    (void)CAOrg;
     used += 40 / 8;
 
     serviceCompIndex = findServiceComponent(localBase, SCId);
@@ -479,16 +454,15 @@ void fibDecoder::FIG0Extension5(uint8_t *d) {
     int16_t used = 2; // offset in bytes
     int16_t Length = getBits_5(d, 3);
     uint8_t CN_bit = getBits_1(d, 8 + 0);
-    uint8_t OE_bit = getBits_1(d, 8 + 1);
-    uint8_t PD_bit = getBits_1(d, 8 + 2);
+//  uint8_t OE_bit = getBits_1(d, 8 + 1);
+//  uint8_t PD_bit = getBits_1(d, 8 + 2);
 
     while (used < Length) {
-        used = HandleFIG0Extension5(d, CN_bit, OE_bit, PD_bit, used);
+        used = HandleFIG0Extension5(d, CN_bit, used);
     }
 }
 
 int16_t fibDecoder::HandleFIG0Extension5(uint8_t *d, uint8_t CN_bit,
-                                         uint8_t OE_bit, uint8_t PD_bit,
                                          int16_t offset) {
     int16_t bitOffset = offset * 8;
     uint8_t lsFlag = getBits_1(d, bitOffset);
@@ -518,18 +492,15 @@ int16_t fibDecoder::HandleFIG0Extension5(uint8_t *d, uint8_t CN_bit,
 // FIG0/7: Configuration linking information 6.4.2,
 void fibDecoder::FIG0Extension7(uint8_t *d) {
     int16_t used = 2; // offset in bytes
-    int16_t Length = getBits_5(d, 3);
+//  int16_t Length = getBits_5(d, 3);
     uint8_t CN_bit = getBits_1(d, 8 + 0);
-    uint8_t OE_bit = getBits_1(d, 8 + 1);
-    uint8_t PD_bit = getBits_1(d, 8 + 2);
+//  uint8_t OE_bit = getBits_1(d, 8 + 1);
+//  uint8_t PD_bit = getBits_1(d, 8 + 2);
 
     int nrServices = getBits_6(d, used * 8);
     int counter = getBits(d, used * 8 + 6, 10);
     dabConfig *base = (CN_bit == 0 ? currentConfig : nextConfig);
 
-    (void)Length;
-    (void)OE_bit;
-    (void)PD_bit;
     log(LOG_DAB, LOG_VERBOSE, "nrServices %d, count %d\n", nrServices, counter);
     base->reportedCount = nrServices;
 }
@@ -539,17 +510,16 @@ void fibDecoder::FIG0Extension8(uint8_t *d) {
     int16_t used = 2; // offset in bytes
     int16_t Length = getBits_5(d, 3);
     uint8_t CN_bit = getBits_1(d, 8 + 0);
-    uint8_t OE_bit = getBits_1(d, 8 + 1);
+//  uint8_t OE_bit = getBits_1(d, 8 + 1);
     uint8_t PD_bit = getBits_1(d, 8 + 2);
 
     while (used < Length) {
-        used = HandleFIG0Extension8(d, used, CN_bit, OE_bit, PD_bit);
+        used = HandleFIG0Extension8(d, used, CN_bit, PD_bit);
     }
 }
 
 int16_t fibDecoder::HandleFIG0Extension8(uint8_t *d, int16_t used,
-                                         uint8_t CN_bit, uint8_t OE_bit,
-                                         uint8_t PD_bit) {
+                                         uint8_t CN_bit, uint8_t PD_bit) {
     int16_t bitOffset = used * 8;
     uint32_t SId = getLBits(d, bitOffset, PD_bit == 1 ? 32 : 16);
     uint8_t lsFlag;
@@ -557,7 +527,6 @@ int16_t fibDecoder::HandleFIG0Extension8(uint8_t *d, int16_t used,
     uint8_t extensionFlag;
     dabConfig *localBase = CN_bit == 0 ? currentConfig : nextConfig;
 
-    (void)OE_bit;
     bitOffset += PD_bit == 1 ? 32 : 16;
     extensionFlag = getBits_1(d, bitOffset);
     SCIds = getBits_4(d, bitOffset + 4);
@@ -594,16 +563,15 @@ void fibDecoder::FIG0Extension13(uint8_t *d) {
     int16_t used = 2; // offset in bytes
     int16_t Length = getBits_5(d, 3);
     uint8_t CN_bit = getBits_1(d, 8 + 0);
-    uint8_t OE_bit = getBits_1(d, 8 + 1);
+//  uint8_t OE_bit = getBits_1(d, 8 + 1);
     uint8_t PD_bit = getBits_1(d, 8 + 2);
 
     while (used < Length)
-        used = HandleFIG0Extension13(d, used, CN_bit, OE_bit, PD_bit);
+        used = HandleFIG0Extension13(d, used, CN_bit, PD_bit);
 }
 
 int16_t fibDecoder::HandleFIG0Extension13(uint8_t *d, int16_t used,
-                                          uint8_t CN_bit, uint8_t OE_bit,
-                                          uint8_t pdBit) {
+                                          uint8_t CN_bit, uint8_t pdBit) {
     int16_t bitOffset = used * 8;
     uint32_t SId = getLBits(d, bitOffset, pdBit == 1 ? 32 : 16);
     uint16_t SCIds;
@@ -640,13 +608,11 @@ int16_t fibDecoder::HandleFIG0Extension13(uint8_t *d, int16_t used,
 void fibDecoder::FIG0Extension14(uint8_t *d) {
     int16_t Length = getBits_5(d, 3); // in Bytes
     uint8_t CN_bit = getBits_1(d, 8 + 0);
-    uint8_t OE_bit = getBits_1(d, 8 + 1);
-    uint8_t PD_bit = getBits_1(d, 8 + 2);
+//  uint8_t OE_bit = getBits_1(d, 8 + 1);
+//  uint8_t PD_bit = getBits_1(d, 8 + 2);
     int16_t used = 2; // in Bytes
     dabConfig *localBase = CN_bit == 0 ? currentConfig : nextConfig;
 
-    (void)OE_bit;
-    (void)PD_bit;
     while (used < Length) {
         int16_t subChId = getBits_6(d, used * 8);
         uint8_t FEC_scheme = getBits_2(d, used * 8 + 6);
@@ -687,27 +653,21 @@ void fibDecoder::FIG0Extension17(uint8_t *d) {
 
 //	Announcement support 8.1.6.1
 void fibDecoder::FIG0Extension18(uint8_t *d) {
-    (void)d;
     int16_t Length = getBits_5(d, 3); // in Bytes
     uint8_t CN_bit = getBits_1(d, 8 + 0);
-    uint8_t OE_bit = getBits_1(d, 8 + 1);
-    uint8_t PD_bit = getBits_1(d, 8 + 2);
+//  uint8_t OE_bit = getBits_1(d, 8 + 1);
+//  uint8_t PD_bit = getBits_1(d, 8 + 2);
     int16_t used = 2; // in Bytes
     int16_t bitOffset = used * 8;
     dabConfig *localBase = CN_bit == 0 ? currentConfig : nextConfig;
-
-    (void)OE_bit;
-    (void)PD_bit;
 
     while (bitOffset < Length * 8) {
         uint16_t SId = getBits(d, bitOffset, 16);
         int16_t serviceIndex = findService(SId);
         bitOffset += 16;
         uint16_t asuFlags = getBits(d, bitOffset, 16);
-        (void)asuFlags;
         bitOffset += 16;
-        uint8_t Rfa = getBits(d, bitOffset, 5);
-        (void)Rfa;
+//      uint8_t Rfa = getBits(d, bitOffset, 5);
         uint8_t nrClusters = getBits(d, bitOffset + 5, 3);
         bitOffset += 8;
 
@@ -727,22 +687,19 @@ void fibDecoder::FIG0Extension18(uint8_t *d) {
 void fibDecoder::FIG0Extension19(uint8_t *d) {
     int16_t Length = getBits_5(d, 3); // in Bytes
     uint8_t CN_bit = getBits_1(d, 8 + 0);
-    uint8_t OE_bit = getBits_1(d, 8 + 1);
-    uint8_t PD_bit = getBits_1(d, 8 + 2);
+//  uint8_t OE_bit = getBits_1(d, 8 + 1);
+//  uint8_t PD_bit = getBits_1(d, 8 + 2);
     int16_t used = 2; // in Bytes
     int16_t bitOffset = used * 8;
     dabConfig *localBase = CN_bit == 0 ? currentConfig : nextConfig;
 
-    (void)OE_bit;
-    (void)PD_bit;
     while (bitOffset < Length * 8) {
         uint8_t clusterId = getBits(d, bitOffset, 8);
         bitOffset += 8;
         uint16_t AswFlags = getBits(d, bitOffset, 16);
         bitOffset += 16;
 
-        uint8_t newFlag = getBits(d, bitOffset, 1);
-        (void)newFlag;
+//      uint8_t newFlag = getBits(d, bitOffset, 1);
         bitOffset += 1;
         uint8_t regionFlag = getBits(d, bitOffset, 1);
         bitOffset += 1;
@@ -750,9 +707,8 @@ void fibDecoder::FIG0Extension19(uint8_t *d) {
         bitOffset += 6;
         if (regionFlag == 1) {
             bitOffset += 2; // skip Rfa
-            uint8_t regionId = getBits(d, bitOffset, 6);
+//          uint8_t regionId = getBits(d, bitOffset, 6);
             bitOffset += 6;
-            (void)regionId;
         }
 
         if (!syncReached())
@@ -789,30 +745,24 @@ void fibDecoder::FIG0Extension19(uint8_t *d) {
 void fibDecoder::FIG0Extension21(uint8_t *d) {
     int16_t used = 2; // offset in bytes
     int16_t Length = getBits_5(d, 3);
-    uint8_t CN_bit = getBits_1(d, 8 + 0);
-    uint8_t OE_bit = getBits_1(d, 8 + 1);
-    uint8_t PD_bit = getBits_1(d, 8 + 2);
+//  uint8_t CN_bit = getBits_1(d, 8 + 0);
+//  uint8_t OE_bit = getBits_1(d, 8 + 1);
+//  uint8_t PD_bit = getBits_1(d, 8 + 2);
 
     while (used < Length)
-        used = HandleFIG0Extension21(d, CN_bit, OE_bit, PD_bit, used);
+        used = HandleFIG0Extension21(d, used);
 }
 
-int16_t fibDecoder::HandleFIG0Extension21(uint8_t *d, uint8_t CN_bit,
-                                          uint8_t OE_bit, uint8_t PD_bit,
-                                          int16_t offset) {
+int16_t fibDecoder::HandleFIG0Extension21(uint8_t *d, int16_t offset) {
     int16_t l_offset = offset * 8;
     int16_t l = getBits_5(d, l_offset + 11);
     int16_t upperLimit = l_offset + 16 + l * 8;
     int16_t base = l_offset + 16;
 
-    (void)CN_bit;
-    (void)OE_bit, (void)PD_bit;
-
     while (base < upperLimit) {
         uint16_t idField = getBits(d, base, 16);
         uint8_t RandM = getBits_4(d, base + 16);
-        uint8_t continuity = getBits_1(d, base + 20);
-        (void)continuity;
+//      uint8_t continuity = getBits_1(d, base + 20);
         uint8_t length = getBits_3(d, base + 21);
         if (RandM == 0x08) {
             uint16_t fmFrequency_key = getBits(d, base + 24, 8);
@@ -866,21 +816,15 @@ void fibDecoder::process_FIG1(uint8_t *d) {
 
 //	Name of the ensemble
 void fibDecoder::FIG1Extension0(uint8_t *d) {
-    uint8_t charSet, extension;
-    uint8_t Rfu;
-    uint32_t EId = 0;
+    uint8_t charSet = getBits_4(d, 8);
+//  uint8_t Rfu = getBits_1(d, 8 + 4);
+//  uint8_t extension = getBits_3(d, 8 + 5);;
+    uint32_t EId = getBits(d, 16, 16);;
     int16_t offset = 0;
     char label[17];
 
-    //      from byte 1 we deduce:
-    charSet = getBits_4(d, 8);
-    Rfu = getBits_1(d, 8 + 4);
-    extension = getBits_3(d, 8 + 5);
     label[16] = 0x00;
-    (void)Rfu;
-    (void)extension;
 
-    EId = getBits(d, 16, 16);
     offset = 32;
     if ((charSet <= 16)) { // EBU Latin based repertoire
         for (int i = 0; i < 16; i++) {
@@ -901,8 +845,9 @@ void fibDecoder::FIG1Extension0(uint8_t *d) {
 
 //	Name of service
 void fibDecoder::FIG1Extension1(uint8_t *d) {
-    uint8_t charSet, extension;
-    uint8_t Rfu;
+    uint8_t charSet = getBits_4(d, 8);
+//  uint8_t Rfu getBits_1(d, 8 + 4);
+//  uint8_t extension = getBits_3(d, 8 + 5);
     int32_t SId = getBits(d, 16, 16);
     int16_t offset = 32;
     int serviceIndex;
@@ -910,12 +855,7 @@ void fibDecoder::FIG1Extension1(uint8_t *d) {
     char label[17];
 
     //      from byte 1 we deduce:
-    charSet = getBits_4(d, 8);
-    Rfu = getBits_1(d, 8 + 4);
-    extension = getBits_3(d, 8 + 5);
     label[16] = 0x00;
-    (void)Rfu;
-    (void)extension;
     if (charSet > 16) // does not seem right
         return;
 
@@ -934,16 +874,12 @@ void fibDecoder::FIG1Extension1(uint8_t *d) {
 
 // service component label 8.1.14.3
 void fibDecoder::FIG1Extension4(uint8_t *d) {
-    uint8_t PD_bit;
-    uint8_t SCIds;
-    uint8_t Rfu;
+    uint8_t PD_bit = getBits_1(d, 16);
+//  uint8_t Rfu = getBits_3(d, 17);
+    uint8_t SCIds = getBits_4(d, 20);
     uint32_t SId;
     int16_t offset;
 
-    PD_bit = getBits_1(d, 16);
-    Rfu = getBits_3(d, 17);
-    (void)Rfu;
-    SCIds = getBits_4(d, 20);
 
     if (PD_bit) { // 32 bit identifier field for data components
         SId = getLBits(d, 24, 32);
@@ -976,22 +912,16 @@ void fibDecoder::FIG1Extension4(uint8_t *d) {
 
 //	Data service label - 32 bits 8.1.14.2
 void fibDecoder::FIG1Extension5(uint8_t *d) {
-    uint8_t charSet, extension;
-    uint8_t Rfu;
+    uint8_t charSet = getBits_4(d, 8);
+//  uint8_t Rfu = getBits_1(d, 8 + 4);;
+//  uint8_t extension = getBits_3(d, 8 + 5);
     int serviceIndex;
     int16_t i;
     char label[17];
-
     uint32_t SId = getLBits(d, 16, 32);
     int16_t offset = 48;
 
-    //      from byte 1 we deduce:
-    charSet = getBits_4(d, 8);
-    Rfu = getBits_1(d, 8 + 4);
-    extension = getBits_3(d, 8 + 5);
     label[16] = 0x00;
-    (void)Rfu;
-    (void)extension;
 
     serviceIndex = findService(SId);
     if (serviceIndex != -1)
@@ -1011,31 +941,22 @@ void fibDecoder::FIG1Extension5(uint8_t *d) {
 
 //	XPAD label - 8.1.14.4
 void fibDecoder::FIG1Extension6(uint8_t *d) {
-    uint32_t SId = 0;
-    uint8_t Rfu;
-    int16_t offset = 0;
-    uint8_t PD_bit;
-    uint8_t SCIds;
-    uint8_t XPAD_apptype;
+//  uint32_t SId = 0;
+    uint8_t PD_bit = getBits_1(d, 16);
+//  uint8_t Rfu = getBits_3(d, 17);
+//  uint8_t SCIds = getBits_4(d, 20);
+//  int16_t offset = 0;
+//  uint8_t XPAD_apptype;
 
-    PD_bit = getBits_1(d, 16);
-    Rfu = getBits_3(d, 17);
-    (void)Rfu;
-    SCIds = getBits_4(d, 20);
     if (PD_bit) { // 32 bits identifier for XPAD label
-        SId = getLBits(d, 24, 32);
-        XPAD_apptype = getBits_5(d, 59);
-        offset = 64;
+//      SId = getLBits(d, 24, 32);
+//      XPAD_apptype = getBits_5(d, 59);
+//      offset = 64;
     } else { // 16 bit identifier for XPAD label
-        SId = getLBits(d, 24, 16);
-        XPAD_apptype = getBits_5(d, 43);
-        offset = 48;
+//      SId = getLBits(d, 24, 16);
+//      XPAD_apptype = getBits_5(d, 43);
+//      offset = 48;
     }
-
-    (void)SId;
-    (void)SCIds;
-    (void)XPAD_apptype;
-    (void)offset;
 }
 
 //	Programme Type (PTy) 8.1.5
@@ -1341,15 +1262,17 @@ void fibDecoder::clearEnsemble() {
 
 bool fibDecoder::syncReached() { return ensemble->isSynced; }
 
-int fibDecoder::getSubChId(const QString &s, uint32_t dummy_SId) {
+int fibDecoder::getSubChId(const QString &s, uint32_t req_SId) {
     int serviceIndex = findService(s);
     fibLocker.lock();
 
-    int SId = ensemble->services[serviceIndex].SId;
+    uint SId = ensemble->services[serviceIndex].SId;
     int SCIds = ensemble->services[serviceIndex].SCIds;
 
     int compIndex = findServiceComponent(currentConfig, SId, SCIds);
-    if (compIndex == -1) {
+
+    // TODO return decent error
+    if (compIndex == -1 || req_SId != SId) {
         fibLocker.unlock();
         return 2000;
     }
@@ -1476,7 +1399,7 @@ std::vector<serviceId> fibDecoder::insert(std::vector<serviceId> l, serviceId n,
         k.push_back(n);
         return k;
     }
-    int baseN = 0;
+    uint baseN = 0;
     QString baseS = "";
     bool inserted = false;
     for (const auto serv : l) {

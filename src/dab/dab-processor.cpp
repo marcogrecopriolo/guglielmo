@@ -46,9 +46,9 @@ dabProcessor::dabProcessor(RadioInterface *mr, deviceHandler *inputDevice,
                            processParams *p)
     : params(p->dabMode), myReader(mr, inputDevice, p->spectrumBuffer),
       my_ficHandler(mr, p->dabMode),
-      my_mscHandler(mr, p->dabMode, p->frameBuffer), phaseSynchronizer(mr, p),
+      my_mscHandler(mr, p->dabMode, p->frameBuffer), phaseSynchronizer(p),
       my_TII_Detector(p->dabMode, p->tii_depth),
-      my_ofdmDecoder(mr, p->dabMode, inputDevice->bitDepth(), p->iqBuffer) {
+      my_ofdmDecoder(mr, p->dabMode, p->iqBuffer) {
 
     this->myRadioInterface = mr;
     this->inputDevice = inputDevice;

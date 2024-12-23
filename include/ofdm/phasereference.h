@@ -36,18 +36,17 @@
 #include <cstdint>
 #include <cstdio>
 #include <vector>
-class RadioInterface;
 
 class phaseReference : public QObject, public phaseTable {
     Q_OBJECT
   public:
-    phaseReference(RadioInterface *, processParams *);
+    phaseReference(processParams *);
     ~phaseReference();
     int32_t findIndex(std::vector<std::complex<float>>, int);
     int16_t estimate_CarrierOffset(std::vector<std::complex<float>>);
-    float estimate_FrequencyOffset(std::vector<std::complex<float>>);
 
     float phase(std::vector<std::complex<float>>, int);
+
     //	This one is used in the ofdm decoder
     std::vector<std::complex<float>> refTable;
 

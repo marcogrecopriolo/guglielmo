@@ -51,7 +51,7 @@ class fibDecoder : public QObject {
     bool syncReached();
     void dataforAudioService(const QString &, audiodata *);
     void dataforPacketService(const QString &, packetdata *, int16_t);
-    int getSubChId(const QString &, uint32_t);
+    int getSubChId(const QString &,  uint32_t);
     std::vector<serviceId> getServices(int);
 
     QString findService(uint32_t, int);
@@ -67,7 +67,7 @@ class fibDecoder : public QObject {
     std::vector<epgElement> find_epgData(uint32_t);
 
   protected:
-    void process_FIB(uint8_t *, uint16_t);
+    void process_FIB(uint8_t *);
 
   private:
     std::vector<serviceId> insert(std::vector<serviceId> l, serviceId n,
@@ -106,15 +106,13 @@ class fibDecoder : public QObject {
     //	void FIG0Extension25(uint8_t *);
     //	void FIG0Extension26(uint8_t *);
 
-    int16_t HandleFIG0Extension1(uint8_t *, int16_t, uint8_t, uint8_t, uint8_t);
-    int16_t HandleFIG0Extension2(uint8_t *, int16_t, uint8_t, uint8_t, uint8_t);
-    int16_t HandleFIG0Extension3(uint8_t *, int16_t, uint8_t, uint8_t, uint8_t);
-    int16_t HandleFIG0Extension5(uint8_t *, uint8_t, uint8_t, uint8_t, int16_t);
-    int16_t HandleFIG0Extension8(uint8_t *, int16_t, uint8_t, uint8_t, uint8_t);
-    int16_t HandleFIG0Extension13(uint8_t *, int16_t, uint8_t, uint8_t,
-                                  uint8_t);
-    int16_t HandleFIG0Extension21(uint8_t *, uint8_t, uint8_t, uint8_t,
-                                  int16_t);
+    int16_t HandleFIG0Extension1(uint8_t *, int16_t, uint8_t);
+    int16_t HandleFIG0Extension2(uint8_t *, int16_t, uint8_t, uint8_t);
+    int16_t HandleFIG0Extension3(uint8_t *, int16_t, uint8_t);
+    int16_t HandleFIG0Extension5(uint8_t *, uint8_t, int16_t);
+    int16_t HandleFIG0Extension8(uint8_t *, int16_t, uint8_t, uint8_t);
+    int16_t HandleFIG0Extension13(uint8_t *, int16_t, uint8_t, uint8_t);
+    int16_t HandleFIG0Extension21(uint8_t *, int16_t);
 
     void FIG1Extension0(uint8_t *);
     void FIG1Extension1(uint8_t *);
