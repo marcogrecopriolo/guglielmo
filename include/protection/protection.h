@@ -37,8 +37,8 @@ extern uint8_t PI_X[];
 class protection : public viterbiSpiral {
   public:
     protection(int16_t, int16_t);
-    virtual ~protection();
-    virtual bool deconvolve(int16_t *, int32_t, uint8_t *);
+    virtual ~protection() {};
+    virtual bool deconvolve(int16_t *, int32_t, uint8_t *) { return false; };
 
   protected:
     int16_t bitRate;

@@ -148,7 +148,7 @@ bool eep_protection::deconvolve(int16_t *v, int32_t size, uint8_t *outBuffer) {
 
     int16_t i;
     int16_t inputCounter = 0;
-    (void)size; // size was known already
+    (void) size; // size was known already
 
     memset(viterbiBlock.data(), 0, (outSize * 4 + 24) * sizeof(int16_t));
     for (i = 0; i < outSize * 4 + 24; i++)
