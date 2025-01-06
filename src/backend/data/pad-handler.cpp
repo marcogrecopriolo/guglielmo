@@ -266,7 +266,6 @@ void padHandler::handle_variablePAD(uint8_t *b, int16_t last, uint8_t CI_flag) {
 //	A dynamic label is created from a sequence of (dynamic) xpad
 //	fields, starting with CI = 2, continuing with CI = 3
 void padHandler::dynamicLabel(uint8_t *data, int16_t length, uint8_t CI) {
-    static int16_t segmentno = 0;
     static int16_t remainDataLength = 0;
     static bool isLastSegment = false;
     static bool moreXPad = false;
@@ -281,11 +280,9 @@ void padHandler::dynamicLabel(uint8_t *data, int16_t length, uint8_t CI) {
         dataLength = length - 2; // The length with header removed
 
         if (first) {
-            segmentno = 1;
             charSet = (prefix >> 4) & 017;
             dynamicLabelText.clear();
-        } else
-            segmentno = ((prefix >> 4) & 07) + 1;
+        }
 
         if (Cflag) { // special dynamic label command
             // the only specified command is to clear the display
@@ -341,7 +338,7 @@ void padHandler::dynamicLabel(uint8_t *data, int16_t length, uint8_t CI) {
 void padHandler::new_MSC_element(std::vector<uint8_t> data) {
 
     if (mscGroupElement) {
-        if (msc_dataGroupBuffer.size() < dataGroupLength)
+        if (msc_dataGroupBuffer.size() < (uint) dataGroupLength)
             log(LOG_DATA, LOG_VERBOSE, "short ? %ld %d",
                 msc_dataGroupBuffer.size(), dataGroupLength);
         //	   msc_dataGroupBuffer. clear();

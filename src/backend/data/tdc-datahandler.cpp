@@ -33,9 +33,10 @@
 tdc_dataHandler::tdc_dataHandler(RadioInterface *mr,
                                  RingBuffer<uint8_t> *dataBuffer,
                                  int16_t appType) {
+    (void) appType;
     myRadioInterface = mr;
     this->dataBuffer = dataBuffer;
-    //	for the moment we assume appType 4
+    // for the moment we assume appType 4
     connect(this, SIGNAL(bytesOut(int, int)), myRadioInterface,
             SLOT(handle_tdcdata(int, int)));
 }
@@ -175,6 +176,7 @@ bool tdc_dataHandler::serviceComponentFrameheaderCRC(uint8_t *data,
     int16_t size = length < 13 ? length : 13;
     uint16_t crc;
 
+    (void) maxL;
     if (length < 0)
         return false;                     // assumed garbage
     crc = getBits(data, offset + 24, 16); // the crc

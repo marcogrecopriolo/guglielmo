@@ -231,7 +231,7 @@ void mscHandler::reset_Channel() {
 
 void mscHandler::stopService(serviceDescriptor *d) {
     locker.lock();
-    for (int i = 0; i < theBackends.size(); i++) {
+    for (uint i = 0; i < theBackends.size(); i++) {
         Backend *b = theBackends.at(i);
         if (b->subChId == d->subchId) {
             log(LOG_DAB, LOG_MIN,
@@ -251,7 +251,7 @@ bool mscHandler::set_Channel(serviceDescriptor *d,
                              RingBuffer<int16_t> *audioBuffer,
                              RingBuffer<uint8_t> *dataBuffer) {
     locker.lock();
-    for (int i = 0; i < theBackends.size(); i++) {
+    for (uint i = 0; i < theBackends.size(); i++) {
         if (d->SId == theBackends.at(i)->serviceId) {
             log(LOG_DAB, LOG_MIN, "msc backend handler already running");
             locker.unlock();

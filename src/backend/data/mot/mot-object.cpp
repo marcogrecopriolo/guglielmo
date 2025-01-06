@@ -35,6 +35,8 @@ motObject::motObject(RadioInterface *mr, bool dirElement, uint16_t transportId,
     int32_t pointer = 7;
     uint16_t rawContentType = 0;
 
+    (void) segmentSize;
+    (void) lastFlag;
     this->dirElement = dirElement;
     connect(this, SIGNAL(handleMotObject(QByteArray, QString, int, bool)), mr,
             SLOT(handleMotObject(QByteArray, QString, int, bool)));
