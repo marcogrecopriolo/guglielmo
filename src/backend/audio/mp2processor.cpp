@@ -49,12 +49,6 @@
 #include "pad-handler.h"
 #include "radio.h"
 
-#ifdef _MSC_VER
-#define FASTCALL __fastcall
-#else
-#define FASTCALL
-#endif
-
 ////////////////////////////////////////////////////////////////////////////////
 // TABLES AND CONSTANTS                                                       //
 ////////////////////////////////////////////////////////////////////////////////
@@ -587,7 +581,7 @@ void mp2Processor::addtoFrame(std::vector<uint8_t> v) {
     _VLA(uint8_t, help, 24 * bitRate / 8);
     int16_t vLength = 24 * bitRate / 8;
 
-    log(LOG_AUDIO, LOG_VERBOSE, "baudrate  %d, inputsize %ld", baudRate,
+    log(LOG_AUDIO, LOG_VERBOSE, "baudrate  %d, inputsize %zd", baudRate,
         v.size());
     for (i = 0; i < 24 * bitRate / 8; i++) {
         help[i] = 0;

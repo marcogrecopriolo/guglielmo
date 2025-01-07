@@ -50,7 +50,6 @@ public:
 private:
     int32_t fft_size;
     DSPCOMPLEX* vector;
-    DSPCOMPLEX* vector1;
     FFTW_PLAN plan;
     void Scale(DSPCOMPLEX*);
 };

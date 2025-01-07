@@ -526,7 +526,6 @@ BandPassIIR::BandPassIIR(int16_t order,
     element* temp = (element*)alloca(numofQuads * sizeof(element));
     DSPFLOAT Wo, BW;
     int apass = -1; // attenuation 1 db
-    DSPCOMPLEX A, B, C, D, E;
 
     // be aware of incorrect parameters
     if (flow >= fs / 2)

@@ -1402,7 +1402,7 @@ std::vector<serviceId> fibDecoder::insert(std::vector<serviceId> l, serviceId n,
     uint baseN = 0;
     QString baseS = "";
     bool inserted = false;
-    for (const auto serv : l) {
+    for (const auto &serv: l) {
         if (!inserted &&
             (order == ID_BASED ? ((baseN < n.SId) && (n.SId <= serv.SId))
                                : ((baseS < n.name) && (n.name < serv.name)))) {
