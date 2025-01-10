@@ -81,6 +81,7 @@ airspyHandler::airspyHandler() {
     if (!load_airspyFunctions()) {
         log(DEV_AIRSPY, LOG_MIN, "problem in loading functions");
         CLOSE_LIBRARY(Handle);
+        throw(21);
     }
 
     result = this->my_airspy_init();
@@ -497,7 +498,7 @@ bool airspyHandler::load_airspyFunctions(void) {
 
     my_airspy_list_devices = (pfn_airspy_list_devices)
         GETPROCADDRESS(Handle, "airspy_list_devices");
-    if (my_airspy_board_partid_serialno_read == NULL) {
+    if (my_airspy_list_devices == NULL) {
         log(DEV_AIRSPY, LOG_MIN, "Could not find airspy_list_devices");
         return false;
     }
