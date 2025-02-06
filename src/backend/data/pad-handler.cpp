@@ -38,7 +38,7 @@
  */
 padHandler::padHandler(RadioInterface *mr) {
     myRadioInterface = mr;
-    connect(this, SIGNAL(showLabel(QString)), mr, SLOT(showText(QString)));
+    connect(this, SIGNAL(showText(QString)), mr, SLOT(showText(QString)));
     currentSlide = nullptr;
 
     //	mscGroupElement indicates whether we are handling an
@@ -125,7 +125,7 @@ void padHandler::handle_shortPAD(uint8_t *b, int16_t last, uint8_t CIf) {
             if (firstSegment && !lastSegment) {
                 segmentNumber = b[last - 2] >> 4;
                 if (dynamicLabelText.size() > 0)
-                    showLabel(dynamicLabelText);
+                    showText(dynamicLabelText);
                 dynamicLabelText.clear();
             }
             still_to_go = b[last - 1] & 0x0F;
@@ -166,7 +166,7 @@ void padHandler::handle_shortPAD(uint8_t *b, int16_t last, uint8_t CIf) {
             //empty) 	then show it.
             if (!firstSegment && lastSegment) {
                 if (dynamicLabelText.size() > 0)
-                    showLabel(dynamicLabelText);
+                    showText(dynamicLabelText);
                 dynamicLabelText.clear();
             }
         }
@@ -306,7 +306,7 @@ void padHandler::dynamicLabel(uint8_t *data, int16_t length, uint8_t CI) {
             //	if at the end, show the label
             if (last) {
                 if (!moreXPad) {
-                    showLabel(dynamicLabelText);
+                    showText(dynamicLabelText);
 
                 } else
                     isLastSegment = true;
@@ -328,7 +328,7 @@ void padHandler::dynamicLabel(uint8_t *data, int16_t length, uint8_t CI) {
             (const char *)data, (CharacterSet)charSet, dataLength);
         dynamicLabelText.append(segmentText);
         if (!moreXPad && isLastSegment) {
-            showLabel(dynamicLabelText);
+            showText(dynamicLabelText);
         }
     }
 }

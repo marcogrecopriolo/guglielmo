@@ -79,7 +79,7 @@ public:
     }
 
     bool isDABplus(void) {
-        return ASCTy == 077;
+        return ASCTy == SCTDabPlusAudio;
     }
 
     void audioInfo(char* buf, int len) {

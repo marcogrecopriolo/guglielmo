@@ -29,7 +29,7 @@
 #include "fm-processor.h"
 #include "fm-demodulator.h"
 #include "rds-decoder.h"
-#include "mot-content-types.h"
+#include "dab-tables.h"
 #include <iostream>
 #include <numeric>
 #include <vector>
@@ -80,6 +80,9 @@ RadioInterface::RadioInterface(QSettings *Si, QWidget	 *parent):
 	responseBuffer(32768),
 	frameBuffer(2 * 32768),
 	audioBuffer(8 * 32768),
+#ifdef USE_SPI
+	dataBuffer(32768),
+#endif
 	DABband() {
 
     QString presetName;
@@ -220,7 +223,10 @@ RadioInterface::RadioInterface(QSettings *Si, QWidget	 *parent):
 	channelSelector->addItem(QString::fromStdString(channel));
     }
     nextService.valid = false;
+    dataService.valid = false;
     currentService.serviceName = settings->value(GEN_SERVICE_NAME, "").toString();
+
+    // FIXME we don't know that it's valid yet
     currentService.valid = currentService.serviceName != "";
     FMfreq = settings->value(GEN_FM_FREQUENCY, DEF_FM).toDouble();
     if (FMfreq < MIN_FM)
@@ -428,7 +434,7 @@ void RadioInterface::makeDABprocessor() {
     DABglobals.responseBuffer = &responseBuffer;
     DABglobals.tiiBuffer = &tiiBuffer;
 
-    // FIXME frameBuffer is used for the "secondService"
+    // FIXME frameBuffer is used aac frame dumping and is currentlky unused
     DABglobals.frameBuffer = &frameBuffer;
     DABglobals.dabMode = 1;
     DABprocessor = new dabProcessor(this, inputDevice, &DABglobals);
@@ -799,7 +805,7 @@ void RadioInterface::scanDone(void) {
 
 //	slots exercised by the processors
 
-void RadioInterface::addToEnsemble(const QString &serviceName, uint32_t SId) {
+void RadioInterface::addToEnsemble(const QString &serviceName, uint SId) {
     serviceId ed;
     uint32_t lastId = 0;
     QString lastName = "";
@@ -807,8 +813,10 @@ void RadioInterface::addToEnsemble(const QString &serviceName, uint32_t SId) {
     std::vector<serviceId>::iterator i;
 
     log(LOG_EVENT, LOG_MIN, "received service %s %i", qPrintable(serviceName), SId);
-    if (!DABprocessor->is_audioService(serviceName))
+    if (!DABprocessor->is_audioService(serviceName)) {
+	startDataService(serviceName, SId);
 	return;
+    }
     for (const auto &serv: serviceList)
 	if (serv.name == serviceName)
 	    return;
@@ -871,7 +879,6 @@ void RadioInterface::nameOfEnsemble(int id, const QString &v) {
 }
 
 void RadioInterface::ensembleLoaded(int count) {
-    dabService s;
     int i = 0;
 
     // we are loading a scan list, no need to start a service
@@ -886,15 +893,24 @@ void RadioInterface::ensembleLoaded(int count) {
 	if (nextService.fromEnd)
 	    i = serviceList.size() - 1;
 	
-	s.serviceName = serviceList.at(i).name;
-	s.valid = true;
+	currentService.serviceName = serviceList.at(i).name;
+	currentService.valid = true;
+	setPlaying();
+	setRecording();
+	setScanning();
+	if (nextService.autoPlay) {
 #ifdef HAVE_MPRIS
-	mprisLabelAndText("DAB", s.serviceName.trimmed());
+	    mprisLabelAndText("DAB", currentService.serviceName.trimmed());
 #endif
-	startDABService(&s);
+	    startDABService(&currentService);
+	} else {
+	    ensembleDisplay->setCurrentIndex(ensembleModel.index(i, 0));
+	}
     }
     nextService.serviceName = "";
     nextService.valid = false;
+    nextService.fromEnd = false;
+    nextService.autoPlay = false;
 }
 
 void RadioInterface::showStrength(float strength) {
@@ -1008,6 +1024,7 @@ void RadioInterface::handleMotObject(QByteArray result,
 					  QString name,
 					  int contentType, bool dirElement) {
 
+    log(LOG_EVENT, LOG_MIN, "MOT name %s cont %i dir %i", qPrintable(name), getContentBaseType((MOTContentType)contentType), dirElement);
     // currently we only handle images
     switch (getContentBaseType((MOTContentType)contentType)) {
     case MOTBaseTypeImage:
@@ -1299,7 +1316,7 @@ void RadioInterface::startDABService(dabService *s) {
 	    serviceLabel->setStyleSheet("QLabel {color: black}");
 	    showLabel(serviceName);
 	    if (DABprocessor->is_audioService(serviceName)) {
-		DABprocessor->dataforAudioService (serviceName, &ad);
+		DABprocessor->dataforAudioService(serviceName, &ad);
 		if (!ad.defined)
 		    warning(this, tr(BAD_SERVICE));
 		else {
@@ -1342,6 +1359,46 @@ void RadioInterface::startDAB() {
     DABprocessor->start(tunedFrequency);
 }
 
+void RadioInterface::startDataService(QString serviceName, uint SId) {
+#ifdef USE_SPI
+    packetdata pd;
+
+    if (inputDevice == nullptr || DABprocessor == nullptr)
+	return;
+    if (scanning || dataService.valid)
+	return;
+    DABprocessor->dataforPacketService(serviceName, &pd, 0);
+    if (!pd.defined) {
+        log(LOG_SPI, LOG_MIN, "cound not find background service %s %d", qPrintable(serviceName), SId);
+	return;
+    }
+    log(LOG_SPI, LOG_MIN, "starting background service %s %d", qPrintable(serviceName), SId);
+    dataService.serviceName = serviceName;
+    dataService.SId = SId;
+    dataService.valid = true;
+    DABprocessor->set_dataChannel(&pd, &dataBuffer);
+#else
+    (void) serviceName;
+    (void) SId;
+    (void) SCIDs;
+#endif
+}
+
+void RadioInterface::stopDataServices() {
+#ifdef USE_SPI
+    packetdata pd;
+
+    if (inputDevice == nullptr || DABprocessor == nullptr)
+	return;
+    if (scanning || dataService.serviceName == "" || !dataService.valid)
+	return;
+    log(LOG_SPI, LOG_MIN, "stopping background service %s", qPrintable(dataService.serviceName));
+    DABprocessor->dataforPacketService(dataService.serviceName, &pd, 0);
+    DABprocessor->stopService(&pd);
+    dataService.valid = false;
+#endif
+}
+
 void RadioInterface::stopDAB() {
     if (inputDevice == nullptr || DABprocessor == nullptr)
 	return;
@@ -1353,6 +1410,7 @@ void RadioInterface::stopDAB() {
 	usleep(1000);
 	soundOut->stop();
     }
+    stopDataServices();
     playing = false;
     stopRecording();
     setPlaying();
@@ -1366,6 +1424,7 @@ void RadioInterface::stopDAB() {
     inputDevice->stopReader();
     usleep(1000);
     nextService.valid = false;
+    nextService.autoPlay = false;
     serviceList.clear();
     ensembleModel.clear();
     ensembleDisplay->setModel(&ensembleModel);
@@ -1385,6 +1444,14 @@ void RadioInterface::handleSelectChannel(int index) {
     channelSelector->setCurrentIndex(index);
     log(LOG_UI, LOG_MIN, "dab channel is %s", qPrintable(channelSelector->currentText()));
     stopDAB();
+    currentService.valid = false;
+    currentService.serviceName = "";
+    nextService.valid = true;
+    nextService.fromEnd = false;
+    nextService.autoPlay = false;
+    setPlaying();
+    setRecording();
+    setScanning();
     startDAB();
 }
 
@@ -1416,6 +1483,7 @@ void RadioInterface::handleNextChanButton() {
 
     // no dice, switch channel
     log(LOG_UI, LOG_MIN, "switching to next channel");
+    nextService.autoPlay = playing;
     stopDAB();
     currentChannel++;
     if (currentChannel >= channelSelector->count())
@@ -1426,8 +1494,12 @@ void RadioInterface::handleNextChanButton() {
     connect(channelSelector, SIGNAL(activated(int)),
 		this, SLOT(handleSelectChannel(int)));
     currentService.valid = false;
+    currentService.serviceName = "";
     nextService.valid = true;
     nextService.fromEnd = false;
+    setPlaying();
+    setRecording();
+    setScanning();
     startDAB();
 }
 
@@ -1459,6 +1531,7 @@ void RadioInterface::handlePrevChanButton() {
 
     // no dice, switch channel
     log(LOG_UI, LOG_MIN, "switching to previous channel");
+    nextService.autoPlay = playing;
     stopDAB();
     currentChannel--;
     if (currentChannel < 0)
@@ -1469,8 +1542,12 @@ void RadioInterface::handlePrevChanButton() {
     connect(channelSelector, SIGNAL(activated(int)),
 		this, SLOT(handleSelectChannel(int)));
     currentService.valid = false;
+    currentService.serviceName = "";
     nextService.valid = true;
     nextService.fromEnd = true;
+    setPlaying();
+    setRecording();
+    setScanning();
     startDAB();
 }
 
@@ -1815,6 +1892,7 @@ void RadioInterface::changeStation(int d) {
 		nextService.serviceName = "";
 		nextService.valid = true;
 		nextService.fromEnd = true;
+		nextService.autoPlay = false;
 		startDAB();
 		return;
 	} else if (d > 0 && FMfreq >= MAX_FM) {
@@ -1823,6 +1901,7 @@ void RadioInterface::changeStation(int d) {
 		nextService.serviceName = "";
 		nextService.valid = true;
 		nextService.fromEnd = false;
+		nextService.autoPlay = false;
 		startDAB();
 		return;
 	}

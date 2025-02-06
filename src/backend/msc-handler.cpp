@@ -219,7 +219,7 @@ void mscHandler::reset_Buffers() {
 void mscHandler::reset_Channel() {
     //	work_to_be_done. store (false);
     log(LOG_DAB, LOG_MIN,
-        "msc backend hander channel reset: all services will be stopped");
+        "msc backend hander channel reset: all %i services will be stopped", (int) theBackends.size());
     locker.lock();
     for (auto const &b : theBackends) {
         b->stopRunning();
@@ -244,6 +244,7 @@ void mscHandler::stopService(serviceDescriptor *d) {
     }
     //	if (theBackends. size () == 0)
     //	   work_to_be_done. store (false);
+    log(LOG_DAB, LOG_MIN, "backends running: %i", (int) theBackends.size());
     locker.unlock();
 }
 
@@ -252,6 +253,7 @@ bool mscHandler::set_Channel(serviceDescriptor *d,
                              RingBuffer<uint8_t> *dataBuffer) {
     locker.lock();
     for (uint i = 0; i < theBackends.size(); i++) {
+	log(LOG_DAB, LOG_CHATTY, "checking backend %i %i", i, theBackends.at(i)->serviceId);
         if (d->SId == theBackends.at(i)->serviceId) {
             log(LOG_DAB, LOG_MIN, "msc backend handler already running");
             locker.unlock();
@@ -260,11 +262,11 @@ bool mscHandler::set_Channel(serviceDescriptor *d,
     }
     theBackends.push_back(
         new Backend(myRadioInterface, d, audioBuffer, dataBuffer, frameBuffer));
+    log(LOG_DAB, LOG_MIN, "backends running: %i", (int) theBackends.size());
     work_to_be_done.store(true);
     locker.unlock();
     return true;
 }
-
 
 //	add blocks. First is (should be) block 4, last is (should be)
 //	nrBlocks -1.

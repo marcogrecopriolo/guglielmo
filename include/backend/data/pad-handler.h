@@ -71,7 +71,7 @@ class padHandler : public QObject {
     std::vector<uint8_t> msc_dataGroupBuffer;
 
   signals:
-    void showLabel(QString);
+    void showText(QString);
     void show_motHandling(bool);
 };
 #endif

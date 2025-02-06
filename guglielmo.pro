@@ -43,8 +43,7 @@ win32 {
     DEFINES		+= "CURRENT_DATE='\"$$currDate\"'"
 }
 
-#CONFIG	+= try-epg		# do not use
-CONFIG += 
+CONFIG	+= use-spi
 
 linux {
 	DESTDIR		= ./linux-bin
@@ -217,8 +216,8 @@ HEADERS += ./include/radio.h \
 	   ./include/settings.h \
 	   ./include/combobox.h \
 	   ./include/listwidget.h \
-	   ./include/country-codes.h \
 	   ./include/dab/dab-processor.h \
+	   ./include/dab/dab-tables.h \
 	   ./include/fm/fm-demodulator.h \
 	   ./include/fm/fm-processor.h \
 	   ./include/support/squelchClass.h \
@@ -289,7 +288,6 @@ HEADERS += ./include/radio.h \
 	   ./include/support/ringbuffer.h \
 	   ./include/support/dab-params.h \
 	   ./include/support/band-handler.h \
-	   ./include/support/dab-tables.h \
 	   ./include/support/bits-helper.h \
 	   ./include/support/math-helper.h \
 	   ./devices/device-handler.h
@@ -302,6 +300,7 @@ SOURCES += ./src/main.cpp \
 	   ./src/radio.cpp \
 	   ./src/dialogs.cpp \
 	   ./src/dab/dab-processor.cpp \
+	   ./src/dab/dab-tables.cpp \
 	   ./src/fm/fm-demodulator.cpp \
 	   ./src/fm/fm-processor.cpp \
 	   ./src/rds/rds-blocksynchronizer.cpp \
@@ -362,7 +361,6 @@ SOURCES += ./src/main.cpp \
            ./src/support/fft-handler.cpp \
 	   ./src/support/dab-params.cpp \
 	   ./src/support/band-handler.cpp \
-	   ./src/support/dab-tables.cpp \
 	   ./devices/device-handler.cpp
 
 faad	{
@@ -380,8 +378,8 @@ fdk-aac	{
 	LIBS		+= -lfdk-aac
 }
 
-try-epg	{
-	DEFINES		+= TRY_EPG
+use-spi	{
+	DEFINES		+= USE_SPI
 	QT		+= xml
 	DEPENDPATH	+= ./src/backend/data/epg \
 	                   ./include/backend/data/epg 

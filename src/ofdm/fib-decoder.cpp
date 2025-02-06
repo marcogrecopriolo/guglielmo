@@ -358,13 +358,13 @@ int16_t fibDecoder::HandleFIG0Extension2(uint8_t *d, int16_t offset,
 
     for (i = 0; i < numberofComponents; i++) {
         uint8_t TMid = getBits_2(d, bitOffset);
-        if (TMid == 00) { // Audio
+        if (TMid == TMStreamAudio) {
             uint8_t ASCTy = getBits_6(d, bitOffset + 2);
             uint8_t SubChId = getBits_6(d, bitOffset + 8);
             uint8_t PS_flag = getBits_1(d, bitOffset + 14);
             bind_audioService(CN_bit == 0 ? currentConfig : nextConfig, TMid,
                               SId, i, SubChId, PS_flag, ASCTy);
-        } else if (TMid == 3) { // MSC packet data
+        } else if (TMid == TMPacketData) { // MSC packet data
             int16_t SCId = getBits(d, bitOffset + 2, 12);
             uint8_t PS_flag = getBits_1(d, bitOffset + 14);
             uint8_t CA_flag = getBits_1(d, bitOffset + 15);
@@ -435,17 +435,21 @@ int16_t fibDecoder::HandleFIG0Extension3(uint8_t *d, int16_t used,
         return used;
 
     QString serviceName = ensemble->services[serviceIndex].serviceLabel;
+    log(LOG_DAB, LOG_VERBOSE, "Processing Fig0Ext3 for %s SId %d SCT %d", qPrintable(serviceName.trimmed()),
+	ensemble->services[serviceIndex].SId, DSCTy);
 
-    if (!ensemble->services[serviceIndex].is_shown) {
-        localBase->addedCount++;
-        addToEnsemble(serviceName, ensemble->services[serviceIndex].SId);
-    }
-    ensemble->services[serviceIndex].is_shown = true;
     localBase->serviceComps[serviceCompIndex].is_madePublic = true;
     localBase->serviceComps[serviceCompIndex].subchannelId = SubChId;
     localBase->serviceComps[serviceCompIndex].DSCTy = DSCTy;
     localBase->serviceComps[serviceCompIndex].DGflag = DGflag;
     localBase->serviceComps[serviceCompIndex].packetAddress = packetAddress;
+    if (!ensemble->services[serviceIndex].is_shown && localBase->serviceComps[serviceCompIndex].appType != UATUndef) {
+        localBase->addedCount++;
+	log(LOG_DAB, LOG_VERBOSE, "adding to ensemble %s %d", qPrintable(serviceName.trimmed()),
+		ensemble->services[serviceIndex].SId);
+        addToEnsemble(serviceName, ensemble->services[serviceIndex].SId);
+        ensemble->services[serviceIndex].is_shown = true;
+    }
     return used;
 }
 
@@ -578,6 +582,7 @@ int16_t fibDecoder::HandleFIG0Extension13(uint8_t *d, int16_t used,
     int16_t NoApplications;
     int16_t i;
     int16_t appType;
+    bool add = true;
     dabConfig *localBase = CN_bit == 0 ? currentConfig : nextConfig;
 
     bitOffset += pdBit == 1 ? 32 : 16;
@@ -587,19 +592,37 @@ int16_t fibDecoder::HandleFIG0Extension13(uint8_t *d, int16_t used,
 
     int serviceIndex = findService(SId);
 
+    if (serviceIndex == -1)
+	return bitOffset / 8;
+
+    QString serviceName = ensemble->services[serviceIndex].serviceLabel;
+    log(LOG_DAB, LOG_VERBOSE, "Processing Fig0Ext13 for %s SId %d SCIds %d", qPrintable(serviceName.trimmed()),
+	SId, SCIds);
     for (i = 0; i < NoApplications; i++) {
         appType = getBits(d, bitOffset, 11);
         int16_t length = getBits_5(d, bitOffset + 11);
         bitOffset += (11 + 5 + 8 * length);
 
-        if (serviceIndex == -1)
-            continue;
-
+	log(LOG_DAB, LOG_VERBOSE, "processing application %i appType %i", i, appType);
         int compIndex = findServiceComponent(localBase, SId, SCIds);
         if (compIndex != -1) {
-            if (localBase->serviceComps[compIndex].TMid == 3)
+	    log(LOG_DAB, LOG_CHATTY, "service component %i TM %i appType %i",
+		localBase->serviceComps[compIndex].DSCTy, localBase->serviceComps[compIndex].TMid, appType);
+            if (localBase->serviceComps[compIndex].TMid == TMPacketData)
                 localBase->serviceComps[compIndex].appType = appType;
-        }
+            if (localBase->serviceComps[compIndex].DSCTy == SCTUndef)
+		add = false;
+	    else
+		localBase->serviceComps[compIndex].is_madePublic = true;
+        } else
+	    add = false;
+    }
+    if (serviceIndex >= 0 && !ensemble->services[serviceIndex].is_shown && add) {
+	localBase->addedCount++;
+	log(LOG_DAB, LOG_CHATTY, "adding to ensemble %s %d", qPrintable(serviceName.trimmed()),
+		ensemble->services[serviceIndex].SId);
+        addToEnsemble(serviceName, SId);
+	ensemble->services[serviceIndex].is_shown = true;
     }
     return bitOffset / 8;
 }
@@ -901,7 +924,7 @@ void fibDecoder::FIG1Extension4(uint8_t *d) {
     int16_t compIndex = findServiceComponent(currentConfig, SId, SCIds);
     if (compIndex > 0) {
         if (findService(dataName) == -1) {
-            if (currentConfig->serviceComps[compIndex].TMid == 0) {
+            if (currentConfig->serviceComps[compIndex].TMid == TMStreamAudio) {
                 currentConfig->addedCount++;
                 createService(dataName, SId, SCIds);
                 addToEnsemble(dataName, SId);
@@ -1000,8 +1023,8 @@ void fibDecoder::bind_audioService(dabConfig *base, int8_t TMid, uint32_t SId,
                 base->addedCount, base->count);
             if (base->doSignal && ((base->addedCount == base->reportedCount &&
                                     base->reportedCount > 0) ||
-                                   (base->addedCount == ensemble->count &&
-                                    base->count == ensemble->count))) {
+                                   (base->addedCount >= ensemble->count &&
+				    base->addedCount == base->count))) {
                 ensembleLoaded(base->addedCount);
                 base->doSignal = false;
             } else if (!base->serviceComps[i].inUse) {
@@ -1051,7 +1074,7 @@ void fibDecoder::bind_audioService(dabConfig *base, int8_t TMid, uint32_t SId,
 //      bind_packetService is the main processor for - what the name suggests -
 //      connecting the service component defining the service to the SId,
 //	So, here we create a service component. Note however,
-//	that FIG0/3 provides additional data, after that we
+//	that FIG0/3 and FIG0/13 provide additional data, after that we
 //	decide whether it should be visible or not
 void fibDecoder::bind_packetService(dabConfig *base, int8_t TMid, uint32_t SId,
                                     int16_t compnr, int16_t SCId,
@@ -1089,6 +1112,8 @@ void fibDecoder::bind_packetService(dabConfig *base, int8_t TMid, uint32_t SId,
     base->serviceComps[firstFree].componentNr = compnr;
     base->serviceComps[firstFree].PS_flag = ps_flag;
     base->serviceComps[firstFree].CAflag = CAflag;
+    base->serviceComps[firstFree].DSCTy = SCTUndef;
+    base->serviceComps[firstFree].appType = UATUndef;
     base->serviceComps[firstFree].is_madePublic = false;
 }
 
@@ -1264,6 +1289,11 @@ bool fibDecoder::syncReached() { return ensemble->isSynced; }
 
 int fibDecoder::getSubChId(const QString &s, uint32_t req_SId) {
     int serviceIndex = findService(s);
+
+    // FIXME return good error
+    if (serviceIndex < 0)
+	return 2000;
+
     fibLocker.lock();
 
     uint SId = ensemble->services[serviceIndex].SId;
@@ -1271,7 +1301,7 @@ int fibDecoder::getSubChId(const QString &s, uint32_t req_SId) {
 
     int compIndex = findServiceComponent(currentConfig, SId, SCIds);
 
-    // TODO return decent error
+    // FIXME return good error
     if (compIndex == -1 || req_SId != SId) {
         fibLocker.unlock();
         return 2000;

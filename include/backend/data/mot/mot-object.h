@@ -28,7 +28,7 @@
 #define MOT_OBJECT_H
 
 #include "constants.h"
-#include "mot-content-types.h"
+#include "dab-tables.h"
 #include <QByteArray>
 #include <QDir>
 #include <QImage>

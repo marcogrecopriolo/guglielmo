@@ -43,7 +43,7 @@ void	CEPGDecoder::decode (const vector<_BYTE>& vecData,
 //	clear the doc, allowing re-use 
 	doc. setContent (QString (""));
 	tag_length_value tlv (&vecData [0]);
-	log (LOG_EPG, LOGCHATTY, "tag is %d", tlv. tag);
+	log (LOG_EPG, LOG_CHATTY, "tag is %d", tlv. tag);
 	if (tlv. is_epg ()) {
 	   doc. appendChild (element (doc, tlv));
 	   QString test = doc. toString();
@@ -679,7 +679,7 @@ _BYTE* p = tlv.value;
 \******************************************************************************/
 void	CModJulDate::Set(const uint32_t iModJulDate) {
 uint32_t iZ, iA, iAlpha, iB, iC, iD, iE;
-double rJulDate, rF;
+double rJulDate;
 
 	/* Definition of the Modified Julian Date */
 	rJulDate = (double) iModJulDate + 2400000.5;
@@ -689,7 +689,7 @@ double rJulDate, rF;
 //	1. Add .5 to the JD and let Z = integer part of (JD+.5) and F the
 //	fractional part F = (JD+.5)-Z
 	iZ = (uint32_t) (rJulDate + (double) 0.5);
-	rF = (rJulDate + (double) 0.5) - iZ;
+//	rF = (rJulDate + (double) 0.5) - iZ;
 
 //	2. If Z < 2299161, take A = Z
 //	If Z >= 2299161, calculate alpha = INT((Z-1867216.25)/36524.25)

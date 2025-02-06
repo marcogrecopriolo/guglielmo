@@ -51,26 +51,19 @@ dataProcessor::dataProcessor(RadioInterface *mr, packetdata *pd,
     this->FEC_scheme = pd->FEC_scheme;
     this->dataBuffer = dataBuffer;
     this->expectedIndex = 0;
+    log(LOG_DATA, LOG_MIN, "Handling DSCTy %d appType %d", pd->DSCTy, pd->appType);
+
+    // According to ETSI 101756 V2.4.1 only TDC (5) and MOT (60) are valid service component types
+    // Currently only the MOT handler has signals serviced by radio interface slots, so we ignore
+    // everything else
     switch (DSCTy) {
+    case SCTMOT:
+        my_dataHandler = new motHandler(mr);
+        break;
+
     default:
         log(LOG_DATA, LOG_MIN, "DSCTy %d not supported", DSCTy);
         my_dataHandler = new virtual_dataHandler();
-        break;
-
-    case 5:
-        my_dataHandler = new tdc_dataHandler(mr, dataBuffer, appType);
-        break;
-
-    case 44:
-        my_dataHandler = new journaline_dataHandler();
-        break;
-
-    case 59:
-        my_dataHandler = new ip_dataHandler(mr, dataBuffer);
-        break;
-
-    case 60:
-        my_dataHandler = new motHandler(mr);
         break;
     }
 
@@ -133,9 +126,9 @@ void dataProcessor::handlePacket(uint8_t *data) {
 
     if (address == 0)
         return; // padding packet
-                //
-                //	if (packetAddress != address)	// sorry
-                //	   return;
+
+//  if (packetAddress != address)	// sorry
+//	return;
 
     //	assemble the full MSC datagroup
 

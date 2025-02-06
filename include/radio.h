@@ -59,6 +59,7 @@ public:
     int SCIds;
     bool valid;
     bool fromEnd;
+    bool autoPlay;
     void setValid() { valid = (serviceName != ""); }
 };
 
@@ -99,10 +100,16 @@ private:
     RingBuffer<float> responseBuffer;
     RingBuffer<uint8_t> frameBuffer;
     RingBuffer<int16_t> audioBuffer;
+#ifdef USE_SPI
+    RingBuffer<uint8_t> dataBuffer;
+#endif
 
     dabService nextService;
-    dabService currentService;
     bandHandler DABband;
+    dabService currentService;
+
+    // currently we only support one data service
+    dabService dataService;
     processParams DABglobals;
     int serviceOrder;
     int scanIndex;
@@ -200,6 +207,8 @@ private:
     void stopDAB();
     void startDABService(dabService *);
     void stopDABService();
+    void startDataService(QString, uint);
+    void stopDataServices();
     void showSlides(QByteArray data, int contentType, QString pictureName, int dirs);
     void showSlides(QPixmap p);
     void startFM(int32_t);

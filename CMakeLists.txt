@@ -17,7 +17,7 @@ option(FDK_AAC "Use FDK AAC instead of FAAD2, for AAC decoding" OFF)
 option(RPI "Enable Raspberry PI support" OFF)
 option(VITERBI_NEON "Use NEON instructions for the Viterbi decoder (only on ARM)" OFF)
 option(VITERBI_SSE "Use SSE instructions for the Viterbi decoder" ON)
-option(TRY_EPG "Enable EPG support" OFF)
+option(USE_SPI "Enable SPI / EPG  support" ON)
 
 # sigh! add_definitions ignore anything past the variable, so the single and double quotes have to be added to the date format
 execute_process(COMMAND date "+\"%Y-%m-%d %H:%M:%S %z\"" OUTPUT_VARIABLE currentDate OUTPUT_STRIP_TRAILING_WHITESPACE)
@@ -193,7 +193,6 @@ endif()
 	)
 
 	set (${PROJECT_NAME}_HDRS
-             ./include/country-codes.h
 	     ./include/constants.h
 	     ./include/logger.h
 	     ./include/logging.h
@@ -201,6 +200,7 @@ endif()
 	     ./include/combobox.h
 	     ./include/listwidget.h
 	     ./include/dab/dab-processor.h
+	     ./include/dab/dab-tables.h
              ./include/fm/fm-demodulator.h
              ./include/fm/fm-processor.h
              ./include/support/fir-filters.h
@@ -270,7 +270,6 @@ endif()
 	     ./include/support/ringbuffer.h
 	     ./include/support/dab-params.h
 	     ./include/support/band-handler.h
-	     ./include/support/dab-tables.h
 	     ./include/support/bits-helper.h
 	     ./include/support/math-helper.h
 	     ./include/support/viterbi-spiral/viterbi-spiral.h
@@ -282,6 +281,7 @@ endif()
 	     ${${PROJECT_NAME}_SRCS}
 	     ./src/main.cpp
 	     ./src/dab/dab-processor.cpp
+	     ./src/dab/dab-tables.cpp
              ./src/fm/fm-demodulator.cpp
              ./src/fm/fm-processor.cpp
 	     ./src/support/fir-filters.cpp
@@ -341,7 +341,6 @@ endif()
 	     ./src/support/fft-handler.cpp
 	     ./src/support/dab-params.cpp
 	     ./src/support/band-handler.cpp
-	     ./src/support/dab-tables.cpp
 	     ./src/support/viterbi-spiral/viterbi-spiral.cpp
 	     ./src/radio.cpp
 	     ./src/dialogs.cpp
@@ -511,7 +510,6 @@ endif()
 
 	   add_definitions (-DHAVE_HACKRF)
 	endif (HACKRF)
-#
 	if (LIMESDR)
 	   include_directories (
 	     ./devices/lime-handler
@@ -572,19 +570,24 @@ endif()
 	   list(APPEND extraLibs -liio  -lad9361)
 	endif (PLUTO)
 
-#
-	if (TRY_EPG)
+	if (USE_SPI)
+	   find_package (Qt${QT_VERSION_MAJOR}Xml REQUIRED)
+	   include_directories (
+	     ./include/backend/data/epg
+	     ${Qt${QT_VERSION_MAJOR}Xml_INCLUDE_DIRS}
+	   )
+
 	   set ($(PROJECT_NAME)_HDRS
 	        ${${PROJECT_NAME}_HDRS}
-	             ./include/backend/data/epg/epgdec.h
+	        ./include/backend/data/epg/epgdec.h
 	   )
 
 	   set (${PROJECT_NAME}_SRCS
 	        ${${PROJECT_NAME}_SRCS}
-	             ./src/backend/data/epg/epgdec.cpp
+	        ./src/backend/data/epg/epgdec.cpp
 	   )
-	   add_definitions (-DTRY_EPG)
-	endif (TRY_EPG)
+	   add_definitions (-DUSE_SPI)
+	endif (USE_SPI)
 
         find_package(Portaudio)
         if (NOT PORTAUDIO_FOUND)
