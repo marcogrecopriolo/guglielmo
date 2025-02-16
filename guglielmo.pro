@@ -1,7 +1,7 @@
 TEMPLATE	= app
 objectName      = guglielmo
 os		= $$system(uname)
-objectVersion	= 0.6
+objectVersion	= 0.7
 orgName		= SQSL
 orgDomain	= sqsl.org
 TARGET		= $$objectName
