@@ -640,6 +640,7 @@ endif()
 
 	target_link_libraries (${BINARY_TARGET}
 	                       Qt${QT_VERSION_MAJOR}::Widgets
+	                       Qt${QT_VERSION_MAJOR}::Xml
 	                       ${RTLTCP_lib}
 	                       ${FFTW3F_LIBRARIES}
 	                       ${extraLibs}
