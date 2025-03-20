@@ -24,6 +24,9 @@
  *    Lazy Chair Computing
  */
 #include "sdrplay-handler-v3.h"
+
+#include <climits>
+
 #include "constants.h"
 #include "logging.h"
 

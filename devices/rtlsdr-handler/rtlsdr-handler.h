@@ -27,6 +27,7 @@
 #ifndef RTLSDR_HANDLER_H
 #define	RTLSDR_HANDLER_H
 
+#include <climits>
 #include <stdio.h>
 #include "constants.h"
 #include "device-handler.h"

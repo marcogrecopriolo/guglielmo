@@ -25,6 +25,9 @@
  */
 
 #include "sdrplay-handler.h"
+
+#include <climits>
+
 #include "logging.h"
 
 #define DEV_PLAY LOG_DEV
