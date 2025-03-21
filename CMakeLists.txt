@@ -587,6 +587,7 @@ endif()
 	        ./src/backend/data/epg/epgdec.cpp
 	   )
 	   add_definitions (-DUSE_SPI)
+	   list(APPEND extraLibs ${Qt${QT_VERSION_MAJOR}Xml_LIBRARIES})
 	endif (USE_SPI)
 
         find_package(Portaudio)
