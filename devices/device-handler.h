@@ -28,6 +28,7 @@
 #define	DEVICE_HANDLER_H
 
 #include <stdint.h>
+#include <climits>
 #include "constants.h"
 
 #if IS_WINDOWS
