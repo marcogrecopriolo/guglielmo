@@ -121,7 +121,12 @@ endif()
 	    endmacro()
 	endif ()
 	find_package (Qt${QT_VERSION_MAJOR}Widgets REQUIRED)
-	find_package (Qwt REQUIRED)
+	if(QT_VERSION_MAJOR EQUAL 6)
+	    set(QWT_MIN_VERSION 6.2)
+	else ()
+	    set(QWT_MIN_VERSION 6.1.4)
+	endif ()
+	find_package (Qwt ${QWT_MIN_VERSION} REQUIRED)
 
 	include_directories (
 	  ${QWT_INCLUDE_DIRS}

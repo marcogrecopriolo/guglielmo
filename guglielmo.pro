@@ -47,11 +47,8 @@ CONFIG	+= use-spi
 
 linux {
 	DESTDIR		= ./linux-bin
-	CONFIG		+= mpris
+	CONFIG		+= mpris qwt
 
-	# FIXME currently needs to be set by hand
-	INCLUDEPATH	+= /usr/include/qt5/qwt6
-	LIBS		+= -lqwt
 	CONFIG		+= PC
 }
 
