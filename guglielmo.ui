@@ -23,16 +23,66 @@
    <property name="geometry">
     <rect>
      <x>290</x>
-     <y>30</y>
-     <width>240</width>
-     <height>300</height>
+     <y>10</y>
+     <width>260</width>
+     <height>310</height>
     </rect>
    </property>
+    <widget class="QToolButton" name="leftDisplayButton">
+     <property name="geometry">
+      <rect>
+       <x>0</x>
+       <y>0</y>
+       <width>15</width>
+       <height>15</height>
+      </rect>
+     </property>
+     <property name="toolTip">
+      <string>switch view</string>
+     </property>
+     <property name="text">
+      <string/>
+     </property>
+     <property name="popupMode">
+      <enum>QToolButton::DelayedPopup</enum>
+     </property>
+     <property name="autoRaise">
+      <bool>true</bool>
+     </property>
+     <property name="arrowType">
+      <enum>Qt::LeftArrow</enum>
+     </property>
+     </widget>
+     <widget class="QToolButton" name="rightDisplayButton">
+     <property name="geometry">
+      <rect>
+       <x>15</x>
+       <y>0</y>
+       <width>15</width>
+       <height>15</height>
+      </rect>
+     </property>
+     <property name="toolTip">
+      <string>switch view</string>
+     </property>
+     <property name="text">
+      <string/>
+     </property>
+     <property name="popupMode">
+      <enum>QToolButton::DelayedPopup</enum>
+     </property>
+     <property name="autoRaise">
+      <bool>true</bool>
+     </property>
+     <property name="arrowType">
+      <enum>Qt::RightArrow</enum>
+     </property>
+    </widget>
    <widget class="QLabel" name="ensembleId">
     <property name="geometry">
      <rect>
       <x>20</x>
-      <y>20</y>
+      <y>30</y>
       <width>200</width>
       <height>32</height>
      </rect>
@@ -56,7 +106,7 @@
     <property name="geometry">
      <rect>
       <x>30</x>
-      <y>60</y>
+      <y>70</y>
       <width>180</width>
       <height>180</height>
      </rect>
@@ -75,7 +125,7 @@
     <property name="geometry">
      <rect>
       <x>80</x>
-      <y>250</y>
+      <y>270</y>
       <width>80</width>
       <height>40</height>
      </rect>
@@ -95,11 +145,35 @@
      <string>channel selector</string>
     </property>
    </widget>
-   <widget class="QPushButton" name="nextChanButton">
+   <widget class="ComboBox" name="stationSelector">
+    <property name="geometry">
+     <rect>
+      <x>50</x>
+      <y>270</y>
+      <width>140</width>
+      <height>40</height>
+     </rect>
+    </property>
+    <property name="sizePolicy">
+     <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+      <horstretch>0</horstretch>
+      <verstretch>0</verstretch>
+     </sizepolicy>
+    </property>
+    <property name="font">
+     <font>
+      <pointsize>10</pointsize>
+     </font>
+    </property>
+    <property name="toolTip">
+     <string>select any station in this channel</string>
+    </property>
+   </widget>
+   <widget class="QToolButton" name="nextChanButton">
     <property name="geometry">
      <rect>
       <x>200</x>
-      <y>250</y>
+      <y>270</y>
       <width>40</width>
       <height>40</height>
      </rect>
@@ -107,12 +181,15 @@
     <property name="toolTip">
      <string>select the next service or channel</string>
     </property>
+    <property name="arrowType">
+     <enum>Qt::RightArrow</enum>
+    </property>
    </widget>
-   <widget class="QPushButton" name="prevChanButton">
+   <widget class="QToolButton" name="prevChanButton">
     <property name="geometry">
      <rect>
       <x>0</x>
-      <y>250</y>
+      <y>270</y>
       <width>40</width>
       <height>40</height>
      </rect>
@@ -120,6 +197,9 @@
     <property name="toolTip">
      <string>select the previous service or channel</string>
     </property>
+    <property name="arrowType">
+     <enum>Qt::LeftArrow</enum>
+   </property>
    </widget>
    <widget class="QLabel" name="slidesLabel">
     <property name="enabled">
@@ -128,7 +208,7 @@
     <property name="geometry">
      <rect>
       <x>30</x>
-      <y>60</y>
+      <y>70</y>
       <width>180</width>
       <height>180</height>
      </rect>
@@ -151,7 +231,7 @@
     <property name="geometry">
      <rect>
       <x>30</x>
-      <y>60</y>
+      <y>50</y>
       <width>180</width>
       <height>180</height>
      </rect>
@@ -214,7 +294,7 @@
     <property name="geometry">
      <rect>
       <x>60</x>
-      <y>20</y>
+      <y>10</y>
       <width>120</width>
       <height>32</height>
      </rect>
@@ -238,7 +318,7 @@
      <number>6</number>
     </property>
    </widget>
-   <widget class="QPushButton" name="scanBackButton">
+   <widget class="QToolButton" name="scanBackButton">
     <property name="geometry">
      <rect>
       <x>0</x>
@@ -249,6 +329,9 @@
     </property>
     <property name="toolTip">
      <string>scan for the previous station</string>
+    </property>
+    <property name="arrowType">
+      <enum>Qt::LeftArrow</enum>
     </property>
    </widget>
    <widget class="QPushButton" name="stopScanButton">
@@ -264,7 +347,7 @@
      <string>stop the current scan</string>
     </property>
    </widget>
-   <widget class="QPushButton" name="scanForwardButton">
+   <widget class="QToolButton" name="scanForwardButton">
     <property name="geometry">
      <rect>
       <x>200</x>
@@ -275,6 +358,9 @@
     </property>
     <property name="toolTip">
      <string>scan for the next station</string>
+    </property>
+    <property name="arrowType">
+     <enum>Qt::RightArrow</enum>
     </property>
    </widget>
   </widget>
@@ -328,7 +414,7 @@
    <property name="geometry">
     <rect>
      <x>10</x>
-     <y>90</y>
+     <y>80</y>
      <width>280</width>
      <height>160</height>
     </rect>
@@ -601,14 +687,14 @@
   <widget class="QToolButton" name="menuButton">
    <property name="geometry">
     <rect>
-     <x>500</x>
+     <x>508</x>
      <y>10</y>
-     <width>32</width>
-     <height>32</height>
+     <width>22</width>
+     <height>22</height>
     </rect>
    </property>
    <property name="toolTip">
-    <string extracomment="open menu"/>
+    <string>open menu</string>
    </property>
    <property name="layoutDirection">
     <enum>Qt::RightToLeft</enum>

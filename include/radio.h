@@ -78,6 +78,12 @@ enum agcMode {
     AGC_COMBINED =	3
 };
 
+enum dabDisplay {
+    DD_STATIONS =	0,
+    DD_SLIDES =		1,
+    DD_COUNT  = 	2
+};
+
 class deviceDescriptor {
 public:
     QString deviceType;
@@ -174,8 +180,8 @@ private:
     int minSignal;
     int maxSignal;
 
+    int dabDisplay;
     bool isFM;
-    bool isSlides;
     bool playing;
     bool recording;
     bool scanning;
@@ -209,8 +215,9 @@ private:
     void stopDABService();
     void startDataService(QString, uint);
     void stopDataServices();
-    void showSlides(QByteArray data, int contentType, QString pictureName, int dirs);
+    void handleSlides(QByteArray data, int contentType, QString pictureName, int dirs);
     void showSlides(QPixmap p);
+    void handleEPGPicture(QPixmap p, QString pictureName);
     void startFM(int32_t);
     void stopFM();
     void startFMscan(bool);
@@ -227,6 +234,8 @@ private:
     void checkIfGain();
     void cleanScreen();
     void terminateProcess();
+    void dabDisplayOn();
+    void dabDisplayOff();
 
 // MPRIS
 #ifdef HAVE_MPRIS
@@ -271,6 +280,7 @@ private slots:
     void handlePrevChanButton();
     void handleSelectChannel(int);
     void handleSelectService(QModelIndex);
+    void handleSelectService(int);
     void handleDABButton();
     void handlePresetSelector(int);
     void handlePlayButton();
@@ -283,6 +293,8 @@ private slots:
     void handleSettingsAction();
     void handleStationsAction();
     void handleSlidesAction();
+    void handleLeftDisplayButton();
+    void handleRightDisplayButton();
 
 // settings
     void settingsClose(void);

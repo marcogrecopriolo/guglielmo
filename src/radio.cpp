@@ -122,15 +122,13 @@ RadioInterface::RadioInterface(QSettings *Si, QWidget	 *parent):
     menu->addAction(aboutAction);
     menu->setLayoutDirection(Qt::LeftToRight);
     menuButton->setMenu(menu);
-    prevChanButton->setIcon(style()->standardIcon(QStyle::SP_ArrowBack));
-    nextChanButton->setIcon(style()->standardIcon(QStyle::SP_ArrowForward));
-    scanBackButton->setIcon(style()->standardIcon(QStyle::SP_MediaSeekBackward));
     stopScanButton->setIcon(style()->standardIcon(QStyle::SP_MediaStop));
-    scanForwardButton->setIcon(style()->standardIcon(QStyle::SP_MediaSeekForward));
     DABButton->setShortcut(QKeySequence(KEY_MODIFIER | Qt::Key_D));
     FMButton->setShortcut(QKeySequence(KEY_MODIFIER | Qt::Key_F));
     playButton->setShortcut(QKeySequence(KEY_MODIFIER | Qt::Key_P));
     recordButton->setShortcut(QKeySequence(KEY_MODIFIER | Qt::Key_R));
+    presetSelector->view()->setMinimumWidth(ensembleDisplay->width());
+    stationSelector->view()->setMinimumWidth(ensembleDisplay->width());
 
     // setting the background to transparent hides the label, so we 
     // store the initial style instead
@@ -139,6 +137,7 @@ RadioInterface::RadioInterface(QSettings *Si, QWidget	 *parent):
     serviceList.clear();
     ensembleModel.clear();
     ensembleDisplay->setModel(&ensembleModel);
+    stationSelector->setModel(&ensembleModel);
 
 #ifdef HAVE_MPRIS
     player.setServiceName(QString("guglielmo"));
@@ -237,7 +236,6 @@ RadioInterface::RadioInterface(QSettings *Si, QWidget	 *parent):
     frequencyLCD->display(int(FMfreq*1000));
 
     // presets
-    presetSelector->view()->setMinimumWidth(ensembleDisplay->width());
     presetSelector->addItem("Presets");
     int size = settings->beginReadArray(GROUP_PRESETS);
     for (int i = 0; i < size; ++i) {
@@ -263,7 +261,11 @@ RadioInterface::RadioInterface(QSettings *Si, QWidget	 *parent):
     recording = false;
     scanning = false;
     isFM = (settings->value(GEN_TUNER_MODE, GEN_DEF_TUNER_MODE).toString() == GEN_FM);
-    isSlides = (settings->value(GEN_DAB_MODE, GEN_DEF_DAB_MODE).toString() == GEN_DAB_SLIDES);
+    if (settings->value(GEN_DAB_MODE, GEN_DEF_DAB_MODE).toString() == GEN_DAB_SLIDES)
+	dabDisplay = DD_SLIDES;
+    else
+	dabDisplay = DD_STATIONS;
+    dabDisplayOff();
     if (isFM)
 	toFM();
     else
@@ -278,10 +280,16 @@ RadioInterface::RadioInterface(QSettings *Si, QWidget	 *parent):
 		this, SLOT(handleStationsAction()));
     connect(slidesAction, SIGNAL(triggered(bool)),
 		this, SLOT(handleSlidesAction()));
+    connect(leftDisplayButton, SIGNAL(clicked(void)),
+		this, SLOT(handleLeftDisplayButton()));
+    connect(rightDisplayButton, SIGNAL(clicked(void)),
+		this, SLOT(handleRightDisplayButton()));
     connect(presetSelector, SIGNAL(activated(int)),
 		this, SLOT(handlePresetSelector(int)));
     connect(ensembleDisplay, SIGNAL(clicked(QModelIndex)),
 		this, SLOT(handleSelectService(QModelIndex)));
+    connect(stationSelector, SIGNAL(activated(int)),
+		this, SLOT(handleSelectService(int)));
     connect(channelSelector, SIGNAL(activated(int)),
 		this, SLOT(handleSelectChannel(int)));
     connect(prevChanButton, SIGNAL(clicked(void)),
@@ -367,7 +375,7 @@ void RadioInterface::processGain(agcStats *newStats, int amount) {
 	swAgcSkip+swAgcAccrue, swAgcAmount, stats.min, stats.max, stats.overflows);
 
     // we most likely already have data in the buffer, which will not be yet
-    // affected by our gain change, so skip some buffers before retesting
+    // affected by our gain change, so skip some buffers before retesting:
     // this avoids AGC induced signal oscillations
     if (swAgcSkip > 0) {
 	swAgcAmount = 0;
@@ -434,7 +442,7 @@ void RadioInterface::makeDABprocessor() {
     DABglobals.responseBuffer = &responseBuffer;
     DABglobals.tiiBuffer = &tiiBuffer;
 
-    // FIXME frameBuffer is used aac frame dumping and is currentlky unused
+    // FIXME frameBuffer is used by aac frame dumping and is currentlky unused
     DABglobals.frameBuffer = &frameBuffer;
     DABglobals.dabMode = 1;
     DABprocessor = new dabProcessor(this, inputDevice, &DABglobals);
@@ -492,7 +500,7 @@ void RadioInterface::terminateProcess() {
     settings->setValue(GEN_CHANNEL, channelSelector->currentText());
     settings->setValue(GEN_FM_FREQUENCY, FMfreq);
     settings->setValue(GEN_TUNER_MODE, isFM? GEN_FM: GEN_DAB);
-    settings->setValue(GEN_DAB_MODE, isSlides? GEN_DAB_SLIDES: GEN_DAB_STATIONS);
+    settings->setValue(GEN_DAB_MODE, dabDisplay == DD_SLIDES? GEN_DAB_SLIDES: GEN_DAB_STATIONS);
     settings->setValue(GEN_VOLUME, int(volumeKnob->value()));
     settings->setValue(GEN_SQUELCH, int(squelchKnob->value()));
     settings->setValue(GEN_DEVICE_TYPE, deviceType);
@@ -658,12 +666,10 @@ void RadioInterface::checkLnaGain() {
 	lnaGain = minLnaGain;
 }
 
-/**
-  *	If a change is detected, we have to restart the selected
-  *	service - if any. If the service is a secondary service,
-  *	it might be the case that we have to start the main service
-  *	how do we find that?
-  */
+// If a change is detected, we have to restart the selected
+// service - if any. If the service is a secondary service,
+// it might be the case that we have to start the main service
+// how do we find that?
 void RadioInterface::changeInConfiguration() {
     dabService s;
 
@@ -683,11 +689,14 @@ void RadioInterface::changeInConfiguration() {
 			QFont("Cantarell", 11), Qt::FontRole);
 	}
 	ensembleDisplay->setModel(&ensembleModel);
+	stationSelector->setModel(&ensembleModel);
     }
 
     // and restart the one that was running
     if (s.valid) {
-	if (s.SCIds != 0) {			// secondary service may be gone
+
+	// secondary service may be gone
+	if (s.SCIds != 0) {
 	    if (DABprocessor->findService(s.SId, s.SCIds) == s.serviceName) {
 		startDABService(&s);
 		return;
@@ -706,8 +715,8 @@ void RadioInterface::changeInConfiguration() {
     }
 }
 
-//	In order to not overload with an enormous amount of
-//	signals, we trigger this function at most 10 times a second
+// In order to not overload with an enormous amount of
+// signals, we trigger this function at most 10 times a second
 void RadioInterface::newAudio(int amount, int rate) {
     _VLA(int16_t, vec, amount);
 
@@ -853,12 +862,15 @@ void RadioInterface::addToEnsemble(const QString &serviceName, uint SId) {
     for (const auto &serv: serviceList)
 	ensembleModel.appendRow(new QStandardItem(serv.name));
     for (int i = 0; i < ensembleModel.rowCount(); i++) {
-	if (currentService.valid && serviceList.at(i).name == currentService.serviceName)
+	if (currentService.valid && serviceList.at(i).name == currentService.serviceName) {
 	    ensembleDisplay->setCurrentIndex(ensembleModel.index(i, 0));
+	    stationSelector->setCurrentIndex(i);
+	}
 	ensembleModel.setData(ensembleModel.index(i, 0), QFont("Cantarell", 11), Qt::FontRole);
     }
 
     ensembleDisplay->setModel(&ensembleModel);
+    stationSelector->setModel(&ensembleModel);
     if (nextService.valid && nextService.serviceName == serviceName) {
 #ifdef HAVE_MPRIS
 	mprisLabelAndText("DAB", serviceName.trimmed());
@@ -874,7 +886,6 @@ void RadioInterface::addToEnsemble(const QString &serviceName, uint SId) {
 
 void RadioInterface::nameOfEnsemble(int id, const QString &v) {
     log(LOG_EVENT, LOG_CHATTY, "station name %s %i", qPrintable(v), id);
-    ensembleId->setAlignment(Qt::AlignLeft);
     ensembleId->setText(v + " (" + QString::number(id, 16) + ")");
 }
 
@@ -905,6 +916,7 @@ void RadioInterface::ensembleLoaded(int count) {
 	    startDABService(&currentService);
 	} else {
 	    ensembleDisplay->setCurrentIndex(ensembleModel.index(i, 0));
+	    stationSelector->setCurrentIndex(i);
 	}
     }
     nextService.serviceName = "";
@@ -944,7 +956,7 @@ void RadioInterface::showText(QString s) {
 #ifdef HAVE_MPRIS
 
     // some MPRIS mistakenly report "no track playing" if the title is empty
-    // note that blank but no empty does the trick
+    // note that blank but not empty does the trick
     if (s != "") {
 	metadata["xesam:title"] = s;
 	player.setMetadata(metadata);
@@ -969,11 +981,11 @@ void RadioInterface::showLabel(const QString s) {
 #endif
 }
 
-void RadioInterface::showSlides(QByteArray data, int contentType, QString pictureName, int dirs) {
+void RadioInterface::handleSlides(QByteArray data, int contentType, QString pictureName, int dirs) {
     const char *type;
     QPixmap p;
 
-    log(LOG_EVENT, LOG_MIN, "slide %s %i", qPrintable(pictureName), contentType);
+    log(LOG_EVENT, LOG_MIN, "slide %s 0x%x", qPrintable(pictureName), contentType);
     if (pictureName == QString(""))
 	return;
     switch (static_cast<MOTContentType>(contentType)) {
@@ -992,11 +1004,15 @@ void RadioInterface::showSlides(QByteArray data, int contentType, QString pictur
     default:
 	return;
     }
-    if (dirs != 0)
-	return;
 
     p.loadFromData(data, type);
-    showSlides(p);
+    if (dirs != 0) {
+	handleEPGPicture(p, pictureName);
+    } else
+        showSlides(p);
+}
+
+void RadioInterface::handleEPGPicture(QPixmap p, QString pictureName) {
 }
 
 void RadioInterface::showSlides(QPixmap p) {
@@ -1007,7 +1023,7 @@ void RadioInterface::showSlides(QPixmap p) {
     int w = slidesLabel->width();
 
     slidesLabel->setPixmap(p.scaled(w, h, Qt::KeepAspectRatio));
-    if (isSlides)
+    if (dabDisplay == DD_SLIDES)
 	slidesLabel->show();
 #ifdef HAVE_MPRIS
     if (tmpPicFile != "")
@@ -1024,19 +1040,18 @@ void RadioInterface::handleMotObject(QByteArray result,
 					  QString name,
 					  int contentType, bool dirElement) {
 
-    log(LOG_EVENT, LOG_MIN, "MOT name %s cont %i dir %i", qPrintable(name), getContentBaseType((MOTContentType)contentType), dirElement);
+    log(LOG_EVENT, LOG_MIN, "MOT name %s cont 0x%x dir %i", qPrintable(name), getContentBaseType((MOTContentType)contentType), dirElement);
+
     // currently we only handle images
     switch (getContentBaseType((MOTContentType)contentType)) {
     case MOTBaseTypeImage:
-	if (dirElement == 0)
-	    showSlides(result, contentType, name, dirElement);
+	handleSlides(result, contentType, name, dirElement);
 	break;
     default:
 	break;
     }
 }
 
-// 	close button
 void RadioInterface::closeEvent(QCloseEvent *event) {
     log(LOG_UI, LOG_MIN, "close window received");
     if (yesNo(this)) {
@@ -1264,6 +1279,26 @@ void RadioInterface::handleSelectService(QModelIndex ind) {
     stopDABService();
     DABprocessor->getParameters(currentProgram, &s. SId, &s.SCIds);
     if (s.SId == 0)
+	   warning(this, tr(BAD_SERVICE));
+    else {
+	s.serviceName = currentProgram;
+	startDABService(&s);
+    }
+}
+
+void RadioInterface::handleSelectService(int ind) {
+    dabService s;
+
+    QString currentProgram = stationSelector->itemText(ind);
+    if (currentProgram == "") {
+	log(LOG_UI, LOG_MIN, "switching to an empty service");
+	return;
+    }
+    log(LOG_UI, LOG_MIN, "switching to dab %s", qPrintable(currentProgram));
+
+    stopDABService();
+    DABprocessor->getParameters(currentProgram, &s. SId, &s.SCIds);
+    if (s.SId == 0)
 	   warning(this, tr(BAD_SERVICE));	
     else {
 	s.serviceName = currentProgram;
@@ -1272,21 +1307,55 @@ void RadioInterface::handleSelectService(QModelIndex ind) {
 }
 
 void RadioInterface::handleStationsAction() {
-	log(LOG_UI, LOG_MIN, "switching to dab stations");
-	isSlides = false;
-	slidesAction->setVisible(true);
-	stationsAction->setVisible(false);
-	slidesLabel->setVisible(false);
-	ensembleDisplay->setVisible(true);
+    log(LOG_UI, LOG_MIN, "switching to dab stations");
+    dabDisplayOff();
+    dabDisplay = DD_STATIONS;
+    dabDisplayOn();
 }
 
 void RadioInterface::handleSlidesAction() {
-	log(LOG_UI, LOG_MIN, "switching to dab slides");
-	isSlides = true;
-	slidesAction->setVisible(false);
-	stationsAction->setVisible(true);
-	slidesLabel->setVisible(true);
-	ensembleDisplay->setVisible(false);
+    log(LOG_UI, LOG_MIN, "switching to dab slides");
+    dabDisplayOff();
+    dabDisplay = DD_SLIDES;
+    dabDisplayOn();
+}
+
+void RadioInterface::handleLeftDisplayButton() {
+    dabDisplayOff();
+    dabDisplay = dabDisplay > 0? dabDisplay - 1: DD_COUNT - 1;
+    log(LOG_UI, LOG_MIN, "switching to prior dab view %i", dabDisplay);
+    dabDisplayOn();
+}
+
+void RadioInterface::handleRightDisplayButton() {
+    dabDisplayOff();
+    dabDisplay = (dabDisplay + 1) % DD_COUNT;
+    log(LOG_UI, LOG_MIN, "switching to next dab view %i", dabDisplay);
+    dabDisplayOn();
+}
+
+void RadioInterface::dabDisplayOff() {
+    slidesAction->setVisible(false);
+    stationsAction->setVisible(false);
+    slidesLabel->setVisible(false);
+    ensembleDisplay->setVisible(false);
+    stationSelector->setVisible(false);
+    channelSelector->setVisible(false);
+}
+
+void RadioInterface::dabDisplayOn() {
+    switch (dabDisplay) {
+      case DD_SLIDES:
+        slidesLabel->setVisible(true);
+	stationSelector->setVisible(true);
+        stationsAction->setVisible(true);
+	break;
+      case DD_STATIONS:
+        slidesAction->setVisible(true);
+	channelSelector->setVisible(true);
+        ensembleDisplay->setVisible(true);
+	break;
+    }
 }
 
 //	DAB OPs
@@ -1313,6 +1382,7 @@ void RadioInterface::startDABService(dabService *s) {
 	    char buf[INFOBUFLEN];
 
 	    ensembleDisplay->setCurrentIndex(ensembleModel.index(i, 0));
+	    stationSelector->setCurrentIndex(i);
 	    serviceLabel->setStyleSheet("QLabel {color: black}");
 	    showLabel(serviceName);
 	    if (DABprocessor->is_audioService(serviceName)) {
@@ -1428,6 +1498,7 @@ void RadioInterface::stopDAB() {
     serviceList.clear();
     ensembleModel.clear();
     ensembleDisplay->setModel(&ensembleModel);
+    stationSelector->setModel(&ensembleModel);
     ensembleId->clear();
     cleanScreen();
 #ifdef HAVE_MPRIS
@@ -1477,6 +1548,7 @@ void RadioInterface::handleNextChanButton() {
 		} else {
 		    currentService.serviceName = serviceList.at(i).name;
 		    ensembleDisplay->setCurrentIndex(ensembleModel.index(i, 0));
+		    stationSelector->setCurrentIndex(i);
 		}
 		return;
 	    }
@@ -1525,6 +1597,7 @@ void RadioInterface::handlePrevChanButton() {
 		} else {
 		    currentService.serviceName = serviceList.at(i).name;
 		    ensembleDisplay->setCurrentIndex(ensembleModel.index(i, 0));
+		    stationSelector->setCurrentIndex(i);
 		}
 		return;
 	    }
@@ -1807,10 +1880,7 @@ void RadioInterface::toDAB() {
 		this, SLOT(handleDeleteDABPreset(void)));
     FMButton->setChecked(false);
     DABButton->setChecked(true);
-    if (isSlides) 
-	handleSlidesAction();
-    else
-	handleStationsAction();
+    dabDisplayOn();
 }
 
 void RadioInterface::handleFMButton() {
@@ -1916,7 +1986,7 @@ void RadioInterface::changeStation(int d) {
 	}
     }
     if (isFM)
-	startFMscan((d > 0));
+	startFMscan((d < 0));
     else if (d < 0)
 	handlePrevChanButton();
     else

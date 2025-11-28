@@ -47,9 +47,7 @@ CONFIG	+= use-spi
 
 linux {
 	DESTDIR		= ./linux-bin
-	CONFIG		+= mpris qwt
-
-	CONFIG		+= PC
+	CONFIG		+= mpris qwt PC svg
 }
 
 macx {
