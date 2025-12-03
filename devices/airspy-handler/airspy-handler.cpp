@@ -36,6 +36,9 @@
 
 #include "constants.h"
 #include "airspy-handler.h"
+
+#include <climits>
+
 #include "logging.h"
 #include "math-helper.h"
 #include <inttypes.h>
