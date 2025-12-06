@@ -114,8 +114,10 @@ rtlsdrHandler::rtlsdrHandler(): _I_Buffer (4 * 1024 * 1024) {
 
     // rather than doing floating point divisions at all times
     // we just have a table of possible float values
-    for (i = 0; i <= UCHAR_MAX; i++)
-	convTable[i] = (CHAR_MIN+i)/float(-CHAR_MIN);
+    float median = float(1 + UCHAR_MAX / 2);
+    for (i = 0; i <= UCHAR_MAX; i++) {
+	convTable[i] = (i-median)/median;
+    }
 
     if (!deviceOpen(0)) {
 	log(DEV_RTLSDR, LOG_MIN, "opening device failed");
@@ -247,6 +249,7 @@ bool rtlsdrHandler::restartReader(int32_t frequency) {
     if (this->rtlsdr_reset_buffer(device) < 0)
 	return false;
 
+    log(DEV_RTLSDR, LOG_MIN, "restarting device");
     this->rtlsdr_set_center_freq(device, frequency);
     workerHandle = new dllDriver(this);
     rtlsdr_set_agc_mode(device, agcControl);

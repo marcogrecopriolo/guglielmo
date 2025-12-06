@@ -16,7 +16,7 @@ option(PLUTO "Enable Pluto support" OFF)
 option(FDK_AAC "Use FDK AAC instead of FAAD2, for AAC decoding" OFF)
 option(RPI "Enable Raspberry PI support" OFF)
 option(VITERBI_NEON "Use NEON instructions for the Viterbi decoder (only on ARM)" OFF)
-option(VITERBI_SSE "Use SSE instructions for the Viterbi decoder" ON)
+option(VITERBI_SSE "Use SSE instructions for the Viterbi decoder" OFF)
 option(USE_SPI "Enable SPI / EPG  support" ON)
 
 # sigh! add_definitions ignore anything past the variable, so the single and double quotes have to be added to the date format

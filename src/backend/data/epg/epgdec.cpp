@@ -50,7 +50,7 @@ void	CEPGDecoder::decode (const vector<_BYTE>& vecData,
 	   FILE *epgFile = fopen (name. toUtf8(). data (), "w");
 	   if (epgFile != nullptr) {
 	      log (LOG_EPG, LOG_CHATTY, "filename %s", name. toUtf8(). data());
-	      fprintf (epgFile, test. toLatin1(). data());
+	      fprintf (epgFile, "%s", test. toLatin1(). data());
 	      fclose (epgFile);
 	   }
 	   else

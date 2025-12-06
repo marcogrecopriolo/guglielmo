@@ -47,7 +47,13 @@ CONFIG	+= use-spi
 
 linux {
 	DESTDIR		= ./linux-bin
-	CONFIG		+= mpris qwt PC svg
+	CONFIG		+= mpris qwt svg
+        variant		= $$system(uname -m)
+	contains(variant, aarch64) {
+		CONFIG += NO_SSE
+        } else {
+		CONFIG += SSE
+	}
 }
 
 macx {
@@ -110,7 +116,6 @@ mingw32 {
 
 	CONFIG		+= faad
 
-#	CONFIG		+= PC
 	CONFIG		+= NO_SSE
 }
 
@@ -153,7 +158,6 @@ visualStudio {
 
 	CONFIG		+= faad
 
-#	CONFIG		+= PC
 	CONFIG		+= NO_SSE
 }
 
@@ -400,7 +404,7 @@ RPI	{
 	SOURCES		+= ./src/support/viterbi-spiral/spiral-neon.c
 }
 
-PC	{
+SSE	{
 #	DEFINES		+= __THREADED_BACKEND
 #	DEFINES		+= __MSC_THREAD__
 	DEFINES		+= SSE_AVAILABLE
