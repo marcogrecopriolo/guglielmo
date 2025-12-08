@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.25)
+cmake_minimum_required(VERSION 3.12)
 cmake_policy(SET CMP0048 NEW)
 project(guglielmo VERSION 0.7)
 set (BINARY_TARGET ${PROJECT_NAME})
@@ -16,6 +16,15 @@ option(PLUTO "Enable Pluto support" OFF)
 option(FDK_AAC "Use FDK AAC instead of FAAD2, for AAC decoding" OFF)
 option(USE_SPI "Enable SPI / EPG  support" ON)
 option(RPI "Enable Raspberry PI support" OFF)
+
+# The LINUX variable only came out in 3.25, but we need to support 3.12, used by Opensuse 15.2, which
+# we use to deploy appimages (linuxdeplyqt won't go any higher than that)
+if (NOT LINUX)
+    execute_process(COMMAND uname OUTPUT_VARIABLE os OUTPUT_STRIP_TRAILING_WHITESPACE)
+    if(${os} STREQUAL "Linux")
+	set(LINUX ON)
+    endif ()
+endif ()
 
 if (LINUX)
     if (CMAKE_HOST_SYSTEM_PROCESSOR STREQUAL "x86_64")
@@ -37,11 +46,11 @@ if (UNIX)
     add_definitions(-DCHOOSE_CONFIG=Unix)
     if(LINUX)
 	set(MPRIS_DEFAULT ON)
-    endif()
+    endif ()
 elseif (NOT MSYS AND NOT MINGW)
     execute_process(COMMAND powershell Get-Date -Uformat \"%Y-%m-%d %H:%M:%S %Z\" OUTPUT_VARIABLE currentDate OUTPUT_STRIP_TRAILING_WHITESPACE)
-        add_definitions (-DCURRENT_DATE=\"${currentDate}\")
-	add_definitions(-DCHOOSE_CONFIG=Windows)
+    add_definitions (-DCURRENT_DATE=\"${currentDate}\")
+    add_definitions(-DCHOOSE_CONFIG=Windows)
 endif()
 option(MPRIS "Enable MPRIS support" ${MPRIS_DEFAULT})
 
@@ -51,8 +60,8 @@ if(LTO)
     check_ipo_supported(RESULT guglielmo_ipo_supported)
     if(guglielmo_ipo_supported AND NOT DEFINED CMAKE_INTERPROCEDURAL_OPTIMIZATION)
         set(CMAKE_INTERPROCEDURAL_OPTIMIZATION ON)
-    endif()
-endif()
+    endif ()
+endif ()
 
 if (NOT (UNIX OR MSYS OR MINGW))
     set (MSVC_INCLUDE_PATH "${CMAKE_SOURCE_DIR}/../includes")
@@ -74,23 +83,23 @@ if (NOT (UNIX OR MSYS OR MINGW))
         ${libBasePath}/um/x86
         c:/"Program\ Files/Microsoft\ Visual\ Studio"/2022/Community/VC/Tools/MSVC/14.31.31103/lib/x86
     )
-endif()
+endif ()
 
 set(CMAKE_AUTORCC ON)
 set(CMAKE_AUTOMOC ON)
 if (CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
     set (CMAKE_INSTALL_PREFIX "/usr/local/bin" CACHE PATH "default install path" FORCE)
-endif()
+endif ()
 
 if(MINGW)
     add_definitions ( -municode)
-endif()
+endif ()
 
 # msys2 cmake mishandles prefixes and postfixes
 if(MSYS)
     set(CMAKE_FIND_LIBRARY_PREFIXES "")
     set(CMAKE_FIND_LIBRARY_SUFFIXES ".dll")
-endif()
+endif ()
 
 ########################################################################
 # select the release build type by default to get optimization flags
@@ -105,10 +114,10 @@ set(CMAKE_BUILD_TYPE ${CMAKE_BUILD_TYPE} CACHE STRING "")
 list(INSERT CMAKE_MODULE_PATH 0 ${CMAKE_SOURCE_DIR}/cmake/Modules)
 
 add_definitions (-DPRESET_NAME)
-if(RPI)
-	add_definitions (-D__THREADED_BACKEND)
-	add_definitions (-D__MSC_THREAD__)
-endif()
+if (RPI)
+    add_definitions (-D__THREADED_BACKEND)
+    add_definitions (-D__MSC_THREAD__)
+endif ()
 
 ########################################################################
 
