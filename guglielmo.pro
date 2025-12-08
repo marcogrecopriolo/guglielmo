@@ -7,6 +7,8 @@ orgDomain	= sqsl.org
 TARGET		= $$objectName
 DEFINES		+= TARGET=\\\"$$objectName\\\" CURRENT_VERSION=\\\"$$objectVersion\\\" ORGNAME=\\\"$$orgName\\\" ORGDOMAIN=\\\"$$orgDomain\\\"
 QT		+= widgets multimedia
+QMAKE_CXXFLAGS_RELEASE	-= -O2
+QMAKE_CFLAGS_RELEASE	-= -O2
 QMAKE_CXXFLAGS	+= -std=c++11 -O3 -isystem $$[QT_INSTALL_HEADERS]
 QMAKE_CFLAGS	+= -flto -ffast-math -O3
 QMAKE_CXXFLAGS_DEBUG	+= -std=c++11 -g -O0 -isystem $$[QT_INSTALL_HEADERS]
@@ -50,9 +52,13 @@ linux {
 	CONFIG		+= mpris qwt svg
         variant		= $$system(uname -m)
 	contains(variant, aarch64) {
-		CONFIG += NO_SSE
-        } else {
-		CONFIG += SSE
+		CONFIG += NEON
+	} else {
+		contains(variant, x86_64) {
+			CONFIG += SSE
+		} else {
+			CONFIG += NO_SSE
+		}
 	}
 }
 
@@ -410,6 +416,14 @@ SSE	{
 	DEFINES		+= SSE_AVAILABLE
 	HEADERS		+= ./src/support/viterbi-spiral/spiral-sse.h
 	SOURCES		+= ./src/support/viterbi-spiral/spiral-sse.c
+}
+
+NEON	{
+#	DEFINES		+= __MSC_THREAD__
+#	DEFINES		+= __THREADED_BACKEND
+	DEFINES		+= NEON_AVAILABLE
+	HEADERS		+= ./src/support/viterbi-spiral/spiral-neon.h
+	SOURCES		+= ./src/support/viterbi-spiral/spiral-neon.c
 }
 
 NO_SSE	{
