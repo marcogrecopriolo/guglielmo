@@ -82,14 +82,9 @@ dabProcessor::dabProcessor(RadioInterface *mr, deviceHandler *inputDevice,
 }
 
 dabProcessor::~dabProcessor() {
+    // Whoa! this should not be happening
     if (isRunning()) {
-        myReader.setRunning(false);
-        // exception to be raised
-        // through the getSample(s) functions.
-        msleep(100);
-        while (isRunning()) {
-            usleep(100);
-        }
+	log(LOG_DAB, LOG_MIN, "dab processor delete while thread running");
     }
 }
 
@@ -101,13 +96,16 @@ void dabProcessor::start(int frequency) {
         my_mscHandler.reset_Channel();
     log(LOG_DAB, LOG_MIN, "dab processor starting");
     QThread::start();
+
 }
 
 void dabProcessor::stop() {
     myReader.setRunning(false);
-    while (isRunning())
-        wait();
-    usleep(10000);
+    if (isRunning()) {
+	log(LOG_DAB, LOG_MIN, "dab processor stopping");
+	while (isRunning())
+	    wait(1000);
+    }
     log(LOG_DAB, LOG_MIN, "dab processor stopped");
 }
 /*

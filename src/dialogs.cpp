@@ -280,7 +280,7 @@ void RadioInterface::handleSettingsAction() {
 	settingsDialog->connect(settingsUi.lnaSpinBox, SIGNAL(valueChanged(int)),
 		this, SLOT(setLnaGain(int)));
     }
-    settingsDialog->setWindowTitle(windowTitle());
+    settingsDialog->setWindowTitle(originalTitle);
     settingsUi.presetList->clear();
     for (int i = 1; i < presetSelector->count(); i ++)
 	settingsUi.presetList->addItem(presetSelector->itemText(i));

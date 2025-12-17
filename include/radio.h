@@ -44,6 +44,12 @@
 #include "device-handler.h"
 #include "process-params.h"
 
+// UI
+#define ICON_LISTVIEW_SIZE 16, 16
+#define ICON_MIN_SIZE 32
+#define ICON_MAX_SIZE 64
+#define SLIDE_MIN_SIZE 128
+
 // dialogs
 void warning(QWidget *parent, QString what);
 bool yesNo(QWidget *parent);
@@ -57,6 +63,7 @@ public:
     QString serviceName;
     uint32_t SId;
     int SCIds;
+    int slidePriority;
     bool valid;
     bool fromEnd;
     bool autoPlay;
@@ -143,6 +150,7 @@ private:
     QAction *slidesAction;
     QStandardItemModel ensembleModel;
     QString stereoStyle;
+    QString originalTitle;
     QSettings *settings;
     std::vector<serviceId> serviceList;
     std::vector<deviceDescriptor> deviceList;
@@ -217,7 +225,7 @@ private:
     void stopDataServices();
     void handleSlides(QByteArray data, int contentType, QString pictureName, int dirs);
     void showSlides(QPixmap p);
-    void handleEPGPicture(QPixmap p, QString pictureName);
+    void handleEPGPicture(QByteArray data, const char *type, QString pictureName);
     void startFM(int32_t);
     void stopFM();
     void startFMscan(bool);
@@ -236,6 +244,9 @@ private:
     void terminateProcess();
     void dabDisplayOn();
     void dabDisplayOff();
+
+//UI
+    void setIconAndTitle();
 
 // MPRIS
 #ifdef HAVE_MPRIS
@@ -263,6 +274,7 @@ public slots:
     void scanFound();
     void scanEnsembleLoaded();
     void closeEvent(QCloseEvent *event);
+    void changeEvent(QEvent *event);
 
 private slots:
 

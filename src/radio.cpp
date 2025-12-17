@@ -23,6 +23,8 @@
 #include <QCloseEvent>
 #include <QFileInfo>
 #include <QStandardPaths>
+#include <QRegularExpression>
+#include <QPainter>
 #include <fstream>
 #include "constants.h"
 #include "settings.h"
@@ -71,7 +73,6 @@
 // Text buffers
 #define INFOBUFLEN 100
 
-
 // most buffer not used locally, but within the DAB processor
 RadioInterface::RadioInterface(QSettings *Si, QWidget	 *parent):
 	QWidget(parent),
@@ -97,6 +98,7 @@ RadioInterface::RadioInterface(QSettings *Si, QWidget	 *parent):
     // UI
     setupUi(this);
     settingsDialog = nullptr;
+    originalTitle = windowTitle();
 
     p = signalQuality->palette();
     p.setColor(QPalette::Base, Qt::transparent);
@@ -349,7 +351,11 @@ RadioInterface::RadioInterface(QSettings *Si, QWidget	 *parent):
 
 RadioInterface::~RadioInterface() {
 
-    // destruct
+    // clear the model before deleting listview and combobox
+    // to avoid double references and double frees
+    ensembleModel.clear();
+    ensembleDisplay->setModel(&ensembleModel);
+    stationSelector->setModel(&ensembleModel);
     delete soundOut;
     if (DABprocessor != nullptr)
 	delete DABprocessor;
@@ -418,7 +424,7 @@ void RadioInterface::processGain(agcStats *newStats, int amount) {
 void RadioInterface::resetAgcStats() {
     swAgcAmount = 0;
     swAgcAccrue = SW_AGC_SKIP_COUNT;
-    stats.min = INT_MAX;;
+    stats.min = INT_MAX;
     stats.max = 0;
     stats.overflows = 0;
 }
@@ -867,6 +873,7 @@ void RadioInterface::addToEnsemble(const QString &serviceName, uint SId) {
 	    stationSelector->setCurrentIndex(i);
 	}
 	ensembleModel.setData(ensembleModel.index(i, 0), QFont("Cantarell", 11), Qt::FontRole);
+
     }
 
     ensembleDisplay->setModel(&ensembleModel);
@@ -981,9 +988,81 @@ void RadioInterface::showLabel(const QString s) {
 #endif
 }
 
+#define BLACK_THRESHOLD 10
+
+bool isBlack(QRgb pixel) {
+    if (qAlpha(pixel) == 0)
+	return true;
+    return qRed(pixel) <= BLACK_THRESHOLD &&
+	qGreen(pixel) <= BLACK_THRESHOLD &&
+	qBlue(pixel) <= BLACK_THRESHOLD;
+};
+
+bool rowHasContent(QImage img, QRgb pixel, int width, int y) {
+    const QRgb* line = reinterpret_cast<const QRgb*>(img.constScanLine(y));
+    return (line[0] == pixel) &&
+	(line[width/2] == pixel) &&
+	(line[width-1] == pixel);
+};
+
+bool colHasContent(QImage img, QRgb pixel, int x, int top, int bottom) {
+    const QRgb* lineTop = reinterpret_cast<const QRgb*>(img.constScanLine(top));
+    const QRgb* lineMid = reinterpret_cast<const QRgb*>(img.constScanLine((top+bottom)/2));
+    const QRgb* lineBot = reinterpret_cast<const QRgb*>(img.constScanLine(bottom));
+    return (lineTop[x] == pixel) &&
+	(lineMid[x] == pixel) &&
+	(lineBot[x] == pixel);
+};
+
+QPixmap trimBorders(const QImage& image) {
+    QImage img = image.convertToFormat(QImage::Format_ARGB32);
+    int width = img.width();
+    int height = img.height();
+    int top = 0;
+    int bottom = height - 1;
+    int left = 0;
+    int right = width - 1;
+    const QRgb* topLine = reinterpret_cast<const QRgb*>(img.constScanLine(top));
+    const QRgb* bottomLine = reinterpret_cast<const QRgb*>(img.constScanLine(bottom));
+    QRgb topLeft = topLine[0];
+    QRgb bottomRight = bottomLine[right];
+
+    if (isBlack(topLeft)) {
+	for (; top < height && !rowHasContent(img, topLeft, width, top); ++top);
+	for (; left < width && !colHasContent(img, topLeft, left, top, bottom); ++left);
+    }
+
+    if (isBlack(bottomRight)) {
+	for (; bottom > top && !rowHasContent(img, bottomRight, width, bottom); --bottom);
+	for (; right > left && !colHasContent(img, bottomRight, right, top, bottom); --right);
+    }
+
+    int doTop = (top > 0 || bottom < height - 1);
+    int doSides = (left > 0 || right < width - 1);
+    if (left > right || top > bottom)
+	return QPixmap();
+    else if (!doTop && !doSides)
+	return QPixmap::fromImage(img);
+
+    // if only one pair of sides, we can just trim the image,
+    // as the content scaling won't change
+    if (doTop != doSides)
+         return QPixmap::fromImage(img.copy(left, top, right - left + 1, bottom - top + 1));
+
+    // otherwise crop top and bottom and fill left and right)
+    img = img.copy(0, top, width - 1, bottom - top + 1);
+    QPainter painter(&img);
+    painter.setCompositionMode(QPainter::CompositionMode_Source);
+    if (left > 0)
+	painter.fillRect(0, 0, left, img.height(), Qt::transparent);
+    if (right < width - 1)
+	painter.fillRect(right - left + 1, 0, width - right -1, img.height(), Qt::transparent);
+
+    return QPixmap::fromImage(img);
+}
+
 void RadioInterface::handleSlides(QByteArray data, int contentType, QString pictureName, int dirs) {
     const char *type;
-    QPixmap p;
 
     log(LOG_EVENT, LOG_MIN, "slide %s 0x%x", qPrintable(pictureName), contentType);
     if (pictureName == QString(""))
@@ -1005,16 +1084,94 @@ void RadioInterface::handleSlides(QByteArray data, int contentType, QString pict
 	return;
     }
 
+    if (dirs != 0)
+	handleEPGPicture(data, type, pictureName);
+    else {
+	QImage i;
+
+	i.loadFromData(data, type);
+	currentService.slidePriority = INT_MAX;
+	showSlides(trimBorders(i));
+    }
+}
+
+int32_t extractServiceIdFromFilename(const QString &filename) {
+    QString serviceIdHex;
+    QString name = filename.split('/').last().split('\\').last();
+    int dotPos = name.lastIndexOf('.');
+
+    if (dotPos > 0)
+	name = name.left(dotPos);
+
+    // Pattern 1: siXXXX## format (e.g., siC22C03, siD31701)
+    QRegularExpression pattern1("^si([0-9A-Fa-f]+)\\d{2}$");
+    QRegularExpressionMatch match1 = pattern1.match(name);
+    if (match1.hasMatch())
+	serviceIdHex = match1.captured(1);
+    else {
+
+	// Pattern 2: XXXX_#_### format (e.g., C22C_1_000, D317_0_000)
+	QRegularExpression pattern2("^([0-9A-Fa-f]+)_\\d+_\\d+$");
+	QRegularExpressionMatch match2 = pattern2.match(name);
+	if (match2.hasMatch())
+	    serviceIdHex = match2.captured(1);
+	else {
+
+	    // Pattern 3: YYYYMMDD_XXXX_SI format (e.g., 20241213_C22C_SI)
+	    QRegularExpression pattern3("^\\d{8}_([0-9A-Fa-f]+)_SI$");
+	    QRegularExpressionMatch match3 = pattern3.match(name);
+	    if (match3.hasMatch())
+		serviceIdHex = match3.captured(1);
+	}
+    }
+
+    if (!serviceIdHex.isEmpty()) {
+	bool ok;
+	int serviceId = serviceIdHex.toInt(&ok, 16);  // Base 16 for hex
+	if (ok)
+	    return serviceId;
+    }
+    return -1;
+}
+
+void RadioInterface::handleEPGPicture(QByteArray data, const char *type, QString pictureName) {
+    QPixmap p;
+    int32_t SId;
+    int priority;
+
+    SId = extractServiceIdFromFilename(pictureName);
+    if (SId < 0)
+	return;
     p.loadFromData(data, type);
-    if (dirs != 0) {
-	handleEPGPicture(p, pictureName);
-    } else
+    priority = p.width() * p.height();
+    log(LOG_EVENT, LOG_MIN, "slide SId %i %s %i %i", SId, type, p.width(), p.height());
+    if (p.width() == p.height() && p.height() >= ICON_MIN_SIZE && p.height() <= ICON_MAX_SIZE) {
+	QPixmap empty(ICON_LISTVIEW_SIZE);
+
+	// there's no other way to align text when some icons are missing
+	// than adding an empty icon
+	// it will be overwritten by the logo when it arrives
+	empty.fill(Qt::transparent);
+	ensembleDisplay->setIconSize(QSize(ICON_LISTVIEW_SIZE));
+	for (int i = 0; i < ensembleModel.rowCount(); i++) {
+	    if (serviceList.at(i).SId == (uint32_t) SId) {
+	        ensembleModel.item(i)->setIcon(p);
+	    } else if (ensembleModel.item(i)->icon().isNull())
+		ensembleModel.item(i)->setIcon(QIcon(empty));
+	}
+    } else if (playing && currentService.SId == (uint32_t) SId &&
+	       priority > currentService.slidePriority &&
+	       p.width() >= SLIDE_MIN_SIZE && p.height() >= SLIDE_MIN_SIZE) {
+	currentService.slidePriority = priority;
         showSlides(p);
+    }
 }
 
-void RadioInterface::handleEPGPicture(QPixmap p, QString pictureName) {
-}
-
+// Slides should be desplayed with the following priorities
+// MOT slideshows
+// MOT logos (highest reolution preferred)
+// default slides
+// empty slides
 void RadioInterface::showSlides(QPixmap p) {
 #ifdef HAVE_MPRIS
     QString tmpPicFile = currentPicFile;
@@ -1022,7 +1179,7 @@ void RadioInterface::showSlides(QPixmap p) {
     int h = slidesLabel->height();
     int w = slidesLabel->width();
 
-    slidesLabel->setPixmap(p.scaled(w, h, Qt::KeepAspectRatio));
+    slidesLabel->setPixmap(p.scaled(w, h, Qt::KeepAspectRatio, Qt::SmoothTransformation));
     if (dabDisplay == DD_SLIDES)
 	slidesLabel->show();
 #ifdef HAVE_MPRIS
@@ -1040,7 +1197,8 @@ void RadioInterface::handleMotObject(QByteArray result,
 					  QString name,
 					  int contentType, bool dirElement) {
 
-    log(LOG_EVENT, LOG_MIN, "MOT name %s cont 0x%x dir %i", qPrintable(name), getContentBaseType((MOTContentType)contentType), dirElement);
+    log(LOG_EVENT, LOG_MIN, "MOT name %s cont 0x%x dir %i", qPrintable(name),
+	getContentBaseType((MOTContentType)contentType), dirElement);
 
     // currently we only handle images
     switch (getContentBaseType((MOTContentType)contentType)) {
@@ -1063,6 +1221,18 @@ void RadioInterface::closeEvent(QCloseEvent *event) {
 	event->ignore();
     }
 }
+
+// program icon changes depending on whether window is minimised
+// and radio is playing
+void RadioInterface::changeEvent(QEvent* event) {
+    QWidget::changeEvent(event);
+    if (event->type() == QEvent::WindowStateChange) {
+        if (!isMinimized())
+	    setWindowIcon(MAIN_ICON_PATH);
+	setIconAndTitle();
+    }
+}
+
 
 //	audio
 
@@ -1368,8 +1538,6 @@ void RadioInterface::startDABService(dabService *s) {
 	log(LOG_UI, LOG_MIN, "service %s is still valid", currentService.serviceName.toLatin1().data());
 	stopDABService();
     }
-    p.load(":/empty.png");
-    showSlides(p);
 
     ficBlocks = 0;
     ficSuccess = 0;
@@ -1397,6 +1565,12 @@ void RadioInterface::startDABService(dabService *s) {
 		    stereoLabel->setToolTip((char *) &buf);
 		    ad.serviceInfo((char *) &buf, INFOBUFLEN);
 		    serviceLabel->setToolTip((char *) &buf);
+		    if (ad.isDABplus())
+			p.load(":/empty_plus.png");
+		    else
+			p.load(":/empty.png");
+		    currentService.slidePriority = 0;
+		    showSlides(p);
 		}
 		currentService.valid = true;
 		currentService.serviceName = serviceName;
@@ -1735,14 +1909,7 @@ void RadioInterface::handlePauseButton() {
 	stopDABService();
 }
 
-#define PAUSED "paused - "
-
 void RadioInterface::setPlaying() {
-    QString title;
-
-    title = windowTitle();
-    if (title.startsWith(PAUSED))
-	title.remove(0, strlen(PAUSED));
     if (inputDevice != nullptr && ((isFM && !scanning) || (!isFM && currentService.valid))) {
 	playButton->setEnabled(true);
 	if (playing) {
@@ -1755,13 +1922,35 @@ void RadioInterface::setPlaying() {
 			this, SLOT(handlePlayButton(void)));
 	    playButton->setIcon(style()->standardIcon(QStyle::SP_MediaPlay));
 	    playButton->setToolTip("Start playback");
-	    title.prepend(PAUSED);
 	}
     } else {
 	playButton->setToolTip("");
 	playButton->setIcon(style()->standardIcon(QStyle::SP_MediaPlay));
 	playButton->setEnabled(false);
-	title.prepend(PAUSED);
+    }
+    setIconAndTitle();
+}
+
+#define PAUSED "paused - "
+
+void RadioInterface::setIconAndTitle() {
+    QString title;
+
+    if (isMinimized()) {
+        if (playing)
+	    setWindowIcon(PLAY_ICON_PATH);
+	else
+	    setWindowIcon(PAUSE_ICON_PATH);
+	if (isFM)
+	    title = QString().asprintf("%3.3f", FMfreq);
+	else if (currentService.serviceName != "")
+	    title = currentService.serviceName;
+	else
+	    title = originalTitle;
+    } else {
+	title = originalTitle;
+	if (!playing)
+	    title.prepend(PAUSED);
     }
     setWindowTitle(title);
 }
@@ -1928,12 +2117,13 @@ void RadioInterface::cleanScreen() {
 	ensembleId->clear();
     serviceLabel->clear();
     dynamicLabel->clear();
-#ifdef HAVE_MPRISX
+#ifdef HAVE_MPRIS
     mprisEmptyArt(true);
 #endif
     presetSelector->setCurrentIndex(0);
     stereoLabel->setStyleSheet(stereoStyle);
     stereoLabel->clear();
+    stereoLabel->setToolTip("");
     signalQuality->setValue(0);
     signalStrength->setValue(0);
     log(LOG_EVENT, LOG_CHATTY, "clean screen");
@@ -2010,6 +2200,7 @@ void RadioInterface::mprisEmptyArt(bool dimmed) {
 	p.load(":/guglielmo_dimmed.png");
     else
 	p.load(":/guglielmo.ico");
+    currentService.slidePriority = 0;
     showSlides(p);
 }
 

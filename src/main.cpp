@@ -124,7 +124,7 @@ int main(int argc, char **argv) {
     QLocale::setDefault(QLocale((const QString&)locale));
 
     QApplication a(argc, argv);
-    a.setWindowIcon(QIcon(":/" TARGET ".ico"));
+    a.setWindowIcon(MAIN_ICON_PATH);
     radioInterface = new RadioInterface(settings);
     radioInterface->show();
     a.exec();

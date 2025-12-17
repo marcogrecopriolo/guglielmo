@@ -156,4 +156,9 @@ typedef std::complex<DSPFLOAT> DSPCOMPLEX;
 #define MHz(x) (KHz(x) * 1000)
 #define mHz(x) (kHz(x) * 1000)
 
+// UI
+
+#define MAIN_ICON_PATH QIcon(":/" TARGET ".ico")
+#define PLAY_ICON_PATH QIcon(":/" TARGET "_play.ico")
+#define PAUSE_ICON_PATH QIcon(":/" TARGET "_pause.ico")
 #endif

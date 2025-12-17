@@ -2,6 +2,9 @@
     <qresource prefix="/">
 	<file alias="AUTHORS">AUTHORS</file>
 	<file alias="guglielmo.ico">icons/guglielmo.ico</file>
+	<file alias="guglielmo_play.ico">icons/guglielmo_play.ico</file>
+	<file alias="guglielmo_pause.ico">icons/guglielmo_pause.ico</file>
+	<file alias="guglielmo_dimmed.png">icons/guglielmo_dimmed.png</file>
 	<file alias="menubutton.png">icons/menubutton.png</file>
 	<file alias="recordbutton.png">icons/recordbutton.png</file>
 	<file alias="recordbuttonred.png">icons/recordbuttonred.png</file>
@@ -11,6 +14,6 @@
 	<file alias="stations.png">icons/stations.png</file>
 	<file alias="sort.png">icons/sort.png</file>
 	<file alias="empty.png">icons/empty.png</file>
-	<file alias="guglielmo_dimmed.png">icons/guglielmo_dimmed.png</file>
+	<file alias="empty_plus.png">icons/empty_plus.png</file>
     </qresource>
 </RCC>
