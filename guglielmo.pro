@@ -28,7 +28,6 @@ contains(os, MINGW64.*) {
 
 win32 {
     CONFIG		+= windows
-    DEFINES		+= CHOOSE_CONFIG=Windows
     mingw32 {
 	# powershell hangs on date, so make sure we use a proper shell
 	currDate	= $$system(sh -c date "+\"%Y-%m-%d %H:%M:%S %z\"")
@@ -79,8 +78,6 @@ unix {
 	LIBS		+= -lz
 	LIBS		+= -lsndfile
 	LIBS		+= -lsamplerate
-
-	DEFINES		+= CHOOSE_CONFIG=Unix
 
 	# comment or uncomment for the devices you want to have support for
 	# (you obviously have libraries installed for the selected ones)

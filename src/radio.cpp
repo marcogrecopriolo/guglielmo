@@ -23,6 +23,7 @@
 #include <QCloseEvent>
 #include <QFileInfo>
 #include <QStandardPaths>
+#include <QDir>
 #include <QRegularExpression>
 #include <QPainter>
 #include <fstream>
@@ -74,7 +75,7 @@
 #define INFOBUFLEN 100
 
 // most buffer not used locally, but within the DAB processor
-RadioInterface::RadioInterface(QSettings *Si, QWidget	 *parent):
+RadioInterface::RadioInterface(QSettings *Si, QWidget *parent):
 	QWidget(parent),
 	iqBuffer(2 * 1536),
 	tiiBuffer(32768),
@@ -142,17 +143,22 @@ RadioInterface::RadioInterface(QSettings *Si, QWidget	 *parent):
     stationSelector->setModel(&ensembleModel);
 
 #ifdef HAVE_MPRIS
-    player.setServiceName(QString("guglielmo"));
-    player.setIdentity(QString("guglielmo"));
+    player.setServiceName(QString(TARGET));
+    player.setIdentity(QString(TARGET));
 #endif
 
     // Settings
     // UI
     settings->beginGroup(GROUP_UI);
-    QString theme = settings->value(UI_THEME, "").toString();
-    if (theme != "")
+    theme = settings->value(UI_THEME, UI_DEF_THEME).toString().toLower();
+    if (theme != "") {
+	log(LOG_UI, LOG_MIN, "applying theme %s", qPrintable(theme));
 	QApplication::setStyle(theme);
+    }
+    skin = settings->value(UI_SKIN, UI_DEF_SKIN).toString();
+    skinIsLocal = settings->value(UI_SKIN_LOCAL, UI_DEF_SKIN_LOCAL).toInt() != 0;
     settings->endGroup();
+    qApp->setStyleSheet(loadSkin());
 
     // DAB
     DABprocessor = nullptr;
@@ -314,6 +320,8 @@ RadioInterface::RadioInterface(QSettings *Si, QWidget	 *parent):
 		this, SLOT(handleVolume(double)));
     connect(squelchKnob, SIGNAL(valueChanged(double)),
 		this, SLOT(handleSquelch(double)));
+    connect(this, SIGNAL(newSkin(QString)),
+		this, SLOT(changeSkin(QString)));
 
 #ifdef HAVE_MPRIS
     player.setCanControl(true);
@@ -367,6 +375,71 @@ RadioInterface::~RadioInterface() {
 	delete settingsDialog;
     for (const auto &dev: deviceList)
 	delete dev.device;
+}
+
+QString extractStyleName(const QString& text)
+{
+    static const QRegularExpression re(
+	R"(/\*\+\s*style\s*:\s*([^\*\s]+)\s*\*/)",
+	QRegularExpression::CaseInsensitiveOption
+    );
+
+    QRegularExpressionMatch match = re.match(text);
+    if (match.hasMatch())
+	return match.captured(1);
+
+    return QString();
+}
+
+QString RadioInterface::loadSkin() {
+    if (skin == "") {
+	log(LOG_UI, LOG_MIN, "no skin in use");
+	this->setAttribute(Qt::WA_StyledBackground, false);
+	return QString("");
+    }
+    QString filename = QString("%1/skins/%2/%3.qss").arg(
+	skinIsLocal? ":": QDir::home().absoluteFilePath(LOCAL_STORAGE), skin, skin);
+    QFile file(filename);
+    QString styleSheet;
+    QString embeddedStyle;
+
+    log(LOG_UI, LOG_MIN, "loading skin %s", qPrintable(filename));
+    if (file.open(QFile::ReadOnly)) {
+	this->setAttribute(Qt::WA_StyledBackground, true);
+        styleSheet = QLatin1String(file.readAll());
+	embeddedStyle = extractStyleName(styleSheet);
+	if (embeddedStyle != "") {
+	    log(LOG_UI, LOG_MIN, "switching theme to %s", qPrintable(embeddedStyle));
+	    theme = embeddedStyle;
+	    QApplication::setStyle(theme);
+	    settings->beginGroup(GROUP_UI);
+	    settings->setValue(UI_THEME, theme);
+	    settings->endGroup();
+	}
+    } else {
+	this->setAttribute(Qt::WA_StyledBackground, false);
+	log(LOG_UI, LOG_MIN, "loading skin %s failed, switchng to none", qPrintable(filename));
+	skin = QString("");
+	skinIsLocal = true;
+	settings->beginGroup(GROUP_UI);
+	settings->setValue(UI_SKIN, skin);
+	settings->setValue(UI_SKIN_LOCAL, skinIsLocal);
+	settings->endGroup();
+        return QString("");
+    }
+    return styleSheet;
+}
+
+void RadioInterface::changeSkin(QString skin) {
+    QString originalDir = QDir::currentPath();
+
+    QDir::setCurrent(".");
+    log(LOG_UI, LOG_MIN, "received newSkin");
+    qApp->setStyleSheet(skin);
+    QDir::setCurrent(originalDir);
+    this->style()->unpolish(this);
+    this->style()->polish(this);
+    this->update();
 }
 
 void RadioInterface::processGain(agcStats *newStats, int amount) {
@@ -1185,7 +1258,7 @@ void RadioInterface::showSlides(QPixmap p) {
 #ifdef HAVE_MPRIS
     if (tmpPicFile != "")
 	QFile::remove(tmpPicFile);
-    currentPicFile = QStandardPaths::writableLocation(QStandardPaths::TempLocation) + QString("/guglielmo%1.png").arg(rand());
+    currentPicFile = QStandardPaths::writableLocation(QStandardPaths::TempLocation) + QString("/" TARGET "%1.png").arg(rand());
     p.save(currentPicFile);
     log(LOG_MPRIS, LOG_MIN, "slide file %s", qPrintable(currentPicFile));
     metadata["mpris:artUrl"] = currentPicFile;
@@ -2197,9 +2270,9 @@ void RadioInterface::mprisEmptyArt(bool dimmed) {
     QPixmap p;
 
     if (dimmed)
-	p.load(":/guglielmo_dimmed.png");
+	p.load(":/" TARGET "_dimmed.png");
     else
-	p.load(":/guglielmo.ico");
+	p.load(":/" TARGET ".ico");
     currentService.slidePriority = 0;
     showSlides(p);
 }

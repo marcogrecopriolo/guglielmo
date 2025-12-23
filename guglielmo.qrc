@@ -16,4 +16,8 @@
 	<file alias="empty.png">icons/empty.png</file>
 	<file alias="empty_plus.png">icons/empty_plus.png</file>
     </qresource>
+    <qresource prefix="/skins/">
+	<!-- skins go here, for example -->
+	<!-- <file alias="base/base.qss">skins/base/base.qss</file> -->
+    </qresource>
 </RCC>

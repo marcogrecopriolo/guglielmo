@@ -140,14 +140,36 @@ void RadioInterface::handleSettingsAction() {
 
 	// UI tab
 	QStringList list = QStyleFactory::keys();
-	QString currentStyle = QApplication::style()->objectName().toLower();
 	for (int i = 0; i < list.size(); i++) {
-		settingsUi.styleComboBox->insertItem(i, list[i]);
-		if (list[i].toLower() == currentStyle)
-			settingsUi.styleComboBox->setCurrentIndex(i);
+	    settingsUi.styleComboBox->insertItem(i, list[i]);
+	    log(LOG_UI, LOG_CHATTY, "found style %s", qPrintable(list[i].toLower()));
+	    if (list[i].toLower() == theme)
+		settingsUi.styleComboBox->setCurrentIndex(i);
 	}
 	settingsDialog->connect(settingsUi.styleComboBox, SIGNAL(activated(int)),
 		this, SLOT(setUiStyle(int)));
+	QDir local(QString(":/skins"));
+	QDir external(QString("%1/skins").arg(QDir::home().absoluteFilePath(LOCAL_STORAGE)));
+	QStringList skins = local.entryList(QDir::Dirs | QDir::NoDotAndDotDot);
+	int count;
+
+	settingsUi.skinComboBox->addItem("none");
+	for (count = 0; count < skins.size(); count++) {
+	    settingsUi.skinComboBox->addItem(skins[count]);
+	    settingsUi.skinComboBox->setItemData(count, true);
+	    if (skins[count].toLower() == skin && skinIsLocal)
+		settingsUi.skinComboBox->setCurrentIndex(count+1);
+	}
+	count++;
+	skins = external.entryList(QDir::Dirs | QDir::NoDotAndDotDot);
+	for (int i = 0; i < skins.size(); i++) {
+	    settingsUi.skinComboBox->addItem(skins[i]);
+	    settingsUi.skinComboBox->setItemData(i+count, false);
+	    if (skins[i].toLower() == skin && !skinIsLocal)
+		settingsUi.skinComboBox->setCurrentIndex(i+count);
+	}
+	settingsDialog->connect(settingsUi.skinComboBox, SIGNAL(activated(int)),
+		this, SLOT(setUiSkin(int)));
 
 	// MPRIS
 #ifndef HAVE_MPRIS
@@ -325,16 +347,23 @@ void RadioInterface::settingsClose(void) {
 	stopFullScan();
 
     // Presets tab
-    QString p = presetSelector->itemText(0);
+    if (settingsUi.presetList->count() > 0) {
 
-    presetSelector->clear();
-    presetSelector->addItem(p);
-    for (int i = 0; i < settingsUi.presetList->count(); i ++)
-	presetSelector->addItem(settingsUi.presetList->item(i)->text());
+	// only reloaded if a scan is actually done because it is prone to segv
+	// if a skin is changed
+	QString p = presetSelector->itemText(0);
+
+	presetSelector->clear();
+	presetSelector->addItem(p);
+	for (int i = 0; i < settingsUi.presetList->count(); i ++)
+	    presetSelector->addItem(settingsUi.presetList->item(i)->text());
+    }
 
     // Ui tab
     settings->beginGroup(GROUP_UI);
-    settings->setValue(UI_THEME, QApplication::style()->objectName().toLower());
+    settings->setValue(UI_SKIN, skin);
+    settings->setValue(UI_SKIN_LOCAL, skinIsLocal);
+    settings->setValue(UI_THEME, theme);
     settings->endGroup();
 
     // Sound tab
@@ -632,10 +661,36 @@ void RadioInterface::sortPresets() {
 }
 
 void RadioInterface::setUiStyle(int index) {
-    QString style = settingsUi.styleComboBox->itemText(index);
+    theme = settingsUi.styleComboBox->itemText(index).toLower();
 
-    log(LOG_UI, LOG_MIN, "style %s", qPrintable(style));
-    QApplication::setStyle(style);
+    log(LOG_UI, LOG_MIN, "style %s", qPrintable(theme));
+    QApplication::setStyle(theme);
+    this->style()->unpolish(this);
+    this->style()->polish(this);
+    this->update();
+}
+
+void RadioInterface::setUiSkin(int index) {
+    QString skinText;
+
+    if (index == 0)
+	skin = QString("");
+    else {
+	skin = settingsUi.skinComboBox->itemText(index);
+	skinIsLocal = settingsUi.skinComboBox->itemData(index).toBool();
+    }
+
+    skinText = loadSkin();
+    if (theme != settingsUi.styleComboBox->itemText(settingsUi.styleComboBox->currentIndex()).toLower()) {
+	for (int i = 0; i < settingsUi.styleComboBox->count(); i++) {
+	    if (settingsUi.styleComboBox->itemText(i).toLower() == theme)
+		settingsUi.styleComboBox->setCurrentIndex(i);
+	}
+    }
+
+    // it should not make any difference since the object is the same
+    // but there's some race condition here if the skin is loaded directly
+    emit newSkin(skinText);
 }
 
 #ifdef HAVE_MPRIS

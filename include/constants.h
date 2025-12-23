@@ -62,17 +62,28 @@
 #include "windows.h"
 #define PRIx64 "llx"
 #define KEY_MODIFIER Qt::ALT
+#define DEFAULT_CFG "AppData/Local/" TARGET "/" TARGET ".ini"
+#define LOCAL_STORAGE "AppData/Local/" TARGET
+#define LOCAL_CACHE "AppData/Local/" TARGET "/cache"
 #else
-#define KEY_MODIFIER Qt::CTRL
+
 #if !defined(__FREEBSD__) && !defined(__APPLE_CC__)
 #include <malloc.h>
 #endif
 #include "dlfcn.h"
 typedef void* HINSTANCE;
+#define KEY_MODIFIER Qt::CTRL
+
+// Linux and OSX share the same config location, as QtCreator does
+#define DEFAULT_CFG ".config/" TARGET ".conf"
 #ifdef __APPLE_CC__
 #define LIBEXT ".dylib"
+#define LOCAL_STORAGE "Lybrary/Application Support/" TARGET
+#define LOCAL_CACHE "Library/Caches/" TARGET
 #else
 #define LIBEXT ".so"
+#define LOCAL_STORAGE ".share/" TARGET
+#define LOCAL_CACHE ".cache/" TARGET
 #endif
 #endif
 

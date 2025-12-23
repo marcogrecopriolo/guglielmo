@@ -136,7 +136,7 @@ rtlsdrHandler::~rtlsdrHandler(void) {
     }
     CLOSE_LIBRARY(Handle);
     if (gains != NULL)
-	delete gains;
+	delete [] gains;
 }
 
 
@@ -164,7 +164,7 @@ bool rtlsdrHandler::deviceOpen(int devNo) {
     gainsCount = rtlsdr_get_tuner_gains(device, gains);
     for (i = 0; i < gainsCount; i++)
         log(DEV_RTLSDR, LOG_CHATTY, "found gain %i", gains[i]);
-    devName = this->rtlsdr_get_device_name(i);
+    devName = this->rtlsdr_get_device_name(devNo);
     sprintf((char *) currentId, "%s-%i", devName, 0);
 
     rtlsdr_set_agc_mode(device, agcControl != 0);
@@ -234,7 +234,7 @@ bool rtlsdrHandler::setDevice(const char *id) {
 	stopReader();
 	this->rtlsdr_close(device);
 	if (gains != NULL)
-	    delete gains;
+	    delete [] gains;
 	open = false;
 	currentId[0] = '\0';
     }

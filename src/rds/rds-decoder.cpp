@@ -104,12 +104,12 @@ rdsDecoder::rdsDecoder(RadioInterface* myRadio,
 }
 
 rdsDecoder::~rdsDecoder(void) {
-    delete[] syncBuffer;
+    delete [] syncBuffer;
     delete my_rdsGroupDecoder;
     delete my_rdsGroup;
     delete my_rdsBlockSync;
-    delete rdsKernel;
-    delete rdsBuffer;
+    delete [] rdsKernel;
+    delete [] rdsBuffer;
     delete sharpFilter;
 }
 

@@ -1,0 +1,30 @@
+QWidget#guglielmo {
+    background: url(./skins/silver/silver.png) repeat;
+}
+QWidget#ensembleId {
+    background: url(./skins/silver/glass.png) repeat;
+}
+QWidget#serviceLabel {
+    background: url(./skins/silver/glass.png) repeat;
+}
+QWidget#dynamicLabel {
+    background: url(./skins/silver/glass.png) repeat;
+}
+
+QWidget#frequencyLCD {
+    background: url(./skins/silver/glass.png) repeat;
+    border: 1px solid #888;
+    padding: 2px;
+}
+QWidget#stereoLabel {
+    background: lightGray;
+}
+QWidget#signalStrength {
+    background: lightGray;
+}
+QWidget#signalQuality {
+    background: lightGray;
+}
+QDialog {
+    background: url(./skins/silver/silver.png) repeat;
+}

@@ -28,21 +28,9 @@
 #include "logger.h"
 #include "radio.h"
 
-#if CHOOSE_CONFIG == Unix
-#define DEFAULT_CFG ".config/" TARGET ".conf"
-#elif CHOOSE_CONFIG == Windows
-#define DEFAULT_CFG TARGET ".ini"
-#else
-#define "." DEFAULT_CFG TARGET
-#endif
-
 static
 void usage(const char *name) {
-#ifdef CHOOSE_CONFIG
     fprintf(stderr, "usage: %s [[-i <config file>] [-d <debug level>][-v]|-h|-V]\n", name);
-#else
-    fprintf(stderr, "usage: %s [-d <debug level>][-v]|-h|-V]\n", name);
-#endif
 }
 
 int main(int argc, char **argv) {
@@ -60,33 +48,25 @@ int main(int argc, char **argv) {
 	freopen("CONOUT$", "w", stderr);
     }
 #endif
-#ifdef CHOOSE_CONFIG
     configFile = QDir::homePath();
     configFile.append("/");
     configFile.append(QString(DEFAULT_CFG));
-#endif
     QCoreApplication::setOrganizationName(ORGNAME);
     QCoreApplication::setOrganizationDomain(ORGDOMAIN);
     QCoreApplication::setApplicationName(TARGET);
     QCoreApplication::setApplicationVersion(QString(CURRENT_VERSION));
 
-#ifdef CHOOSE_CONFIG
     while ((opt = getopt(argc, argv, "d:hi:vV")) != -1)
-#else
-    while ((opt = getopt(argc, argv, "d:hvV")) != -1)
-#endif
 	switch (opt) {
 	case 'd':
 	    mask = QString(optarg).toLongLong(NULL, 0);
 	    setLogMask(mask);
 	    break;
-#ifdef CHOOSE_CONFIG
 	case 'i':
 
 	    // this is an absolute path or relative to CWD, not relative to the home directory
 	    configFile = optarg;
 	    break;
-#endif
 	case 'v':
 	    incLogVerbosity();
 	    break;

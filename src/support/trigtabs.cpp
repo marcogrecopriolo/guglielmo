@@ -79,15 +79,15 @@ trigTabs::trigTabs (int32_t rate) {
 }
 
 trigTabs::~trigTabs (void) {
-    delete []table;
-    delete ATAN2_TABLE_PPY;
-    delete ATAN2_TABLE_PPX;
-    delete ATAN2_TABLE_PNX;
-    delete ATAN2_TABLE_PNY;
-    delete ATAN2_TABLE_NPY;
-    delete ATAN2_TABLE_NPX;
-    delete ATAN2_TABLE_NNY;
-    delete ATAN2_TABLE_NNX;
+    delete [] table;
+    delete [] ATAN2_TABLE_PPY;
+    delete [] ATAN2_TABLE_PPX;
+    delete [] ATAN2_TABLE_PNX;
+    delete [] ATAN2_TABLE_PNY;
+    delete [] ATAN2_TABLE_NPY;
+    delete [] ATAN2_TABLE_NPX;
+    delete [] ATAN2_TABLE_NNY;
+    delete [] ATAN2_TABLE_NNX;
 }
 
 int32_t	trigTabs::fromPhasetoIndex (DSPFLOAT phase) {	

@@ -151,6 +151,9 @@ private:
     QStandardItemModel ensembleModel;
     QString stereoStyle;
     QString originalTitle;
+    QString theme;
+    QString skin;
+    bool skinIsLocal;
     QSettings *settings;
     std::vector<serviceId> serviceList;
     std::vector<deviceDescriptor> deviceList;
@@ -247,6 +250,7 @@ private:
 
 //UI
     void setIconAndTitle();
+    QString loadSkin();
 
 // MPRIS
 #ifdef HAVE_MPRIS
@@ -308,6 +312,9 @@ private slots:
     void handleLeftDisplayButton();
     void handleRightDisplayButton();
 
+// UI
+    void changeSkin(QString);
+
 // settings
     void settingsClose(void);
 
@@ -321,6 +328,7 @@ private slots:
     void copyStation();
 
     void setUiStyle(int);
+    void setUiSkin(int);
 
 #ifdef HAVE_MPRIS
     void setRemoteMode(int);
@@ -362,5 +370,6 @@ private slots:
 
 signals:
     void advanceScan(int);
+    void newSkin(QString);
 };
 #endif		// RADIO_H

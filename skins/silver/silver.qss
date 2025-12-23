@@ -1,0 +1,99 @@
+QWidget#guglielmo {
+    background: url(./skins/silver/silver.png) repeat;
+}
+QWidget#ensembleId {
+    background: url(./skins/silver/glass.png) repeat;
+}
+QWidget#serviceLabel {
+    background: url(./skins/silver/glass.png) repeat;
+}
+QWidget#dynamicLabel {
+    background: url(./skins/silver/glass.png) repeat;
+}
+QWidget#frequencyLCD {
+    background: url(./skins/silver/glass.png) repeat;
+    border: 1px solid #888;
+    padding: 2px;
+}
+QWidget#stereoLabel {
+    background: lightGray;
+}
+QWidget#signalStrength {
+    background: lightGray;
+}
+QWidget#signalQuality {
+    background: lightGray;
+}
+QPushButton#DABButton {
+    background: transparent;
+}
+QPushButton#FMButton {
+    background: transparent;
+}
+QPushButton#playButton {
+    background: transparent;
+}
+QPushButton#recordButton {
+    background: transparent;
+}
+QComboBox#channelSelector {
+    background: transparent;
+}
+QComboBox#stationSelector {
+    background: transparent;
+}
+QToolButton#nextChanButton {
+    background: transparent;
+    border: 1px solid gray;
+    border-radius: 2px;
+}
+QToolButton#nextChanButton:hover {
+    background: transparent;
+    border: 1px solid lightblue;
+    border-radius: 2px;
+}
+QToolButton#prevChanButton {
+    background: transparent;
+    border: 1px solid gray;
+    border-radius: 2px;
+}
+QToolButton#prevChanButton:hover {
+    background: transparent;
+    border: 1px solid lightblue;
+    border-radius: 2px;
+}
+QToolButton#scanBackButton {
+    background: transparent;
+    border: 1px solid gray;
+    border-radius: 2px;
+}
+QToolButton#scanBackButton:hover {
+    background: transparent;
+    border: 1px solid lightblue;
+    border-radius: 2px;
+}
+QToolButton#scanForwardButton {
+    background: transparent;
+    border: 1px solid gray;
+    border-radius: 2px;
+}
+QToolButton#scanForwardButton:hover {
+    background: transparent;
+    border: 1px solid lightblue;
+    border-radius: 2px;
+}
+QPushButton#stopScanButton {
+    background: transparent;
+}
+QComboBox#presetSelector {
+    background: transparent;
+}
+QPushButton#addPresetButton {
+    background: transparent;
+}
+QPushButton#deletePresetButton {
+    background: transparent;
+}
+QDialog {
+    background: url(./skins/silver/silver.png) repeat;
+}

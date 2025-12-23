@@ -24,7 +24,7 @@
     <rect>
      <x>290</x>
      <y>10</y>
-     <width>260</width>
+     <width>250</width>
      <height>310</height>
     </rect>
    </property>
@@ -105,9 +105,9 @@
    <widget class="QListView" name="ensembleDisplay">
     <property name="geometry">
      <rect>
-      <x>30</x>
+      <x>20</x>
       <y>70</y>
-      <width>180</width>
+      <width>200</width>
       <height>180</height>
      </rect>
     </property>
@@ -372,7 +372,7 @@
     <rect>
      <x>10</x>
      <y>10</y>
-     <width>80</width>
+     <width>83</width>
      <height>20</height>
     </rect>
    </property>
@@ -419,7 +419,7 @@
      <x>10</x>
      <y>80</y>
      <width>270</width>
-     <height>160</height>
+     <height>180</height>
     </rect>
    </property>
    <property name="text">
@@ -632,9 +632,9 @@
   <widget class="QwtThermo" name="signalStrength">
    <property name="geometry">
     <rect>
-     <x>100</x>
+     <x>103</x>
      <y>10</y>
-     <width>80</width>
+     <width>84</width>
      <height>20</height>
     </rect>
    </property>
@@ -657,9 +657,9 @@
   <widget class="QwtThermo" name="signalQuality">
    <property name="geometry">
     <rect>
-     <x>190</x>
+     <x>197</x>
      <y>10</y>
-     <width>80</width>
+     <width>83</width>
      <height>20</height>
     </rect>
    </property>
