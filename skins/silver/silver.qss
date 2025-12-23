@@ -1,17 +1,17 @@
 QWidget#guglielmo {
-    background: url(./skins/silver/silver.png) repeat;
+    background: url(${THEMEDIR}/skins/silver/silver.png) repeat;
 }
 QWidget#ensembleId {
-    background: url(./skins/silver/glass.png) repeat;
+    background: url(${THEMEDIR}/skins/silver/glass.png) repeat;
 }
 QWidget#serviceLabel {
-    background: url(./skins/silver/glass.png) repeat;
+    background: url(${THEMEDIR}/skins/silver/glass.png) repeat;
 }
 QWidget#dynamicLabel {
-    background: url(./skins/silver/glass.png) repeat;
+    background: url(${THEMEDIR}/skins/silver/glass.png) repeat;
 }
 QWidget#frequencyLCD {
-    background: url(./skins/silver/glass.png) repeat;
+    background: url(${THEMEDIR}/skins/silver/glass.png) repeat;
     border: 1px solid #888;
     padding: 2px;
 }
@@ -95,5 +95,5 @@ QPushButton#deletePresetButton {
     background: transparent;
 }
 QDialog {
-    background: url(./skins/silver/silver.png) repeat;
+    background: url(${THEMEDIR}/skins/silver/silver.png) repeat;
 }

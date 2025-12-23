@@ -158,7 +158,7 @@ RadioInterface::RadioInterface(QSettings *Si, QWidget *parent):
     skin = settings->value(UI_SKIN, UI_DEF_SKIN).toString();
     skinIsLocal = settings->value(UI_SKIN_LOCAL, UI_DEF_SKIN_LOCAL).toInt() != 0;
     settings->endGroup();
-    qApp->setStyleSheet(loadSkin());
+    changeSkin(loadSkin());
 
     // DAB
     DABprocessor = nullptr;
@@ -431,12 +431,11 @@ QString RadioInterface::loadSkin() {
 }
 
 void RadioInterface::changeSkin(QString skin) {
-    QString originalDir = QDir::currentPath();
+    QString themedir = QDir::home().absoluteFilePath(LOCAL_STORAGE);
 
-    QDir::setCurrent(".");
     log(LOG_UI, LOG_MIN, "received newSkin");
+    skin.replace("${THEMEDIR}", themedir);
     qApp->setStyleSheet(skin);
-    QDir::setCurrent(originalDir);
     this->style()->unpolish(this);
     this->style()->polish(this);
     this->update();
