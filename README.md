@@ -105,6 +105,7 @@ They are not preserved across runs.
 #### UI
 
 The actual themes depend on the platform and the build.
+There is basic support for skins. At this time no skins are installed, but you can install skins manually in the application data store (AppData/Local/guglielmo/skins on Windows, .local/share/guglielmo/skins on Linux, and /Library/Application Support/guglielmo/skins on OSX).
 
 #### Remote control
 
@@ -178,9 +179,27 @@ supporting the device you intend to use.
 
 The executable is created either with qmake or cmake.
 
+Make sure that you have all the packages installed that the appliction needs. On Debian, using Qt5, these are
+
+qtbase5-dev
+qtmultimedia5-dev
+qt5-image-formats-plugins
+libqt5multimedia5-plugins
+libqt5svg5-dev
+libqwt-qt5-dev
+libfaad-dev
+libsndfile1-dev
+libfftw3-dev
+libsamplerate-dev
+portaudio19-dev
+libmpris-qt5-dev
+
+Qt6 is supported.
+(Working out the correct packages for the user's Qt and distribution combination is left as an exercise for the reader).
+
 Using qmake, modify guglielmo.pro and comment out the devices you don't wish to include in the build.
 
-Run qmake (or qmake-qt5, depending on the qt5 installation), then make, and you'll find the executable in
+Run qmake (or qmake-qt5, or..., depending on the Qt installation), then make, and you'll find the executable in
 the bin directory appropriate for your port (eg linux-bin).
 
 For cmake:
@@ -212,7 +231,7 @@ At this moment in time, the only devices tested are the RTL SDR stick (both V3 a
 and the AirSpy Mini and R2..
 
 The RTL SDR stick and the Airspy R2 and Mini have been successfully tested on Linux (OpenSuse Leap 15.2
-and 15.5, Ubuntu 22.04), macOS High Sierra x86_64 and Windows 11, and the RSP1a with Linux and Windows.
+and 15.5, Ubuntu 22.04, Raspberry Pi OS Bookworm), macOS High Sierra x86_64 and Windows 11, and the RSP1a with Linux and Windows.
 
 Windows does build with Visual Studio, and Mingw plus Msys or Msys2, but the process needs a fair
 amount of manual intervention.

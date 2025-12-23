@@ -82,7 +82,7 @@ typedef void* HINSTANCE;
 #define LOCAL_CACHE "Library/Caches/" TARGET
 #else
 #define LIBEXT ".so"
-#define LOCAL_STORAGE ".share/" TARGET
+#define LOCAL_STORAGE ".local/share/" TARGET
 #define LOCAL_CACHE ".cache/" TARGET
 #endif
 #endif
