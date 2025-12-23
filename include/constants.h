@@ -78,7 +78,7 @@ typedef void* HINSTANCE;
 #define DEFAULT_CFG ".config/" TARGET ".conf"
 #ifdef __APPLE_CC__
 #define LIBEXT ".dylib"
-#define LOCAL_STORAGE "Lybrary/Application Support/" TARGET
+#define LOCAL_STORAGE "Library/Application Support/" TARGET
 #define LOCAL_CACHE "Library/Caches/" TARGET
 #else
 #define LIBEXT ".so"
