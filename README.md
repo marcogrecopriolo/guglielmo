@@ -181,18 +181,18 @@ The executable is created either with qmake or cmake.
 
 Make sure that you have all the packages installed that the appliction needs. On Debian, using Qt5, these are
 
-qtbase5-dev
-qtmultimedia5-dev
-qt5-image-formats-plugins
-libqt5multimedia5-plugins
-libqt5svg5-dev
-libqwt-qt5-dev
-libfaad-dev
-libsndfile1-dev
-libfftw3-dev
-libsamplerate-dev
-portaudio19-dev
-libmpris-qt5-dev
+- qtbase5-dev
+- qtmultimedia5-dev
+- qt5-image-formats-plugins
+- libqt5multimedia5-plugins
+- libqt5svg5-dev
+- libqwt-qt5-dev
+- libfaad-dev
+- libsndfile1-dev
+- libfftw3-dev
+- libsamplerate-dev
+- portaudio19-dev
+- libmpris-qt5-dev
 
 Qt6 is supported.
 (Working out the correct packages for the user's Qt and distribution combination is left as an exercise for the reader).
