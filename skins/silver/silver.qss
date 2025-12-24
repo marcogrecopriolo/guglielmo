@@ -1,17 +1,18 @@
+/*+ style: Breeze */
 QWidget#guglielmo {
-    background: url(${THEMEDIR}/skins/silver/silver.png) repeat;
+    background: url(${APP_DATA_DIR}/skins/silver/silver.png) repeat;
 }
 QWidget#ensembleId {
-    background: url(${THEMEDIR}/skins/silver/glass.png) repeat;
+    background: url(${APP_DATA_DIR}/skins/silver/glass.png) repeat;
 }
 QWidget#serviceLabel {
-    background: url(${THEMEDIR}/skins/silver/glass.png) repeat;
+    background: url(${APP_DATA_DIR}/skins/silver/glass.png) repeat;
 }
 QWidget#dynamicLabel {
-    background: url(${THEMEDIR}/skins/silver/glass.png) repeat;
+    background: url(${APP_DATA_DIR}/skins/silver/glass.png) repeat;
 }
 QWidget#frequencyLCD {
-    background: url(${THEMEDIR}/skins/silver/glass.png) repeat;
+    background: url(${APP_DATA_DIR}/skins/silver/glass.png) repeat;
     border: 1px solid #888;
     padding: 2px;
 }
@@ -95,5 +96,5 @@ QPushButton#deletePresetButton {
     background: transparent;
 }
 QDialog {
-    background: url(${THEMEDIR}/skins/silver/silver.png) repeat;
+    background: url(${APP_DATA_DIR}/skins/silver/silver.png) repeat;
 }

@@ -681,7 +681,7 @@ void RadioInterface::setUiSkin(int index) {
     }
 
     skinText = loadSkin();
-    if (theme != settingsUi.styleComboBox->itemText(settingsUi.styleComboBox->currentIndex()).toLower()) {
+    if (theme.toLower() != settingsUi.styleComboBox->itemText(settingsUi.styleComboBox->currentIndex()).toLower()) {
 	for (int i = 0; i < settingsUi.styleComboBox->count(); i++) {
 	    if (settingsUi.styleComboBox->itemText(i).toLower() == theme)
 		settingsUi.styleComboBox->setCurrentIndex(i);

@@ -251,11 +251,11 @@ private:
 //UI
     void setIconAndTitle();
     QString loadSkin();
+    void emptyArt(bool);
 
 // MPRIS
 #ifdef HAVE_MPRIS
     void mprisLabelAndText(QString, QString);
-    void mprisEmptyArt(bool);
 #endif
 
 // SW AGC

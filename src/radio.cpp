@@ -158,7 +158,7 @@ RadioInterface::RadioInterface(QSettings *Si, QWidget *parent):
     skin = settings->value(UI_SKIN, UI_DEF_SKIN).toString();
     skinIsLocal = settings->value(UI_SKIN_LOCAL, UI_DEF_SKIN_LOCAL).toInt() != 0;
     settings->endGroup();
-    changeSkin(loadSkin());
+    qApp->setStyleSheet(loadSkin());
 
     // DAB
     DABprocessor = nullptr;
@@ -386,7 +386,7 @@ QString extractStyleName(const QString& text)
 
     QRegularExpressionMatch match = re.match(text);
     if (match.hasMatch())
-	return match.captured(1);
+	return match.captured(1).toLower();
 
     return QString();
 }
@@ -405,8 +405,10 @@ QString RadioInterface::loadSkin() {
 
     log(LOG_UI, LOG_MIN, "loading skin %s", qPrintable(filename));
     if (file.open(QFile::ReadOnly)) {
+	QString storageDir = QDir::home().absoluteFilePath(LOCAL_STORAGE);
 	this->setAttribute(Qt::WA_StyledBackground, true);
-        styleSheet = QLatin1String(file.readAll());
+	styleSheet = QLatin1String(file.readAll());
+	styleSheet.replace("${APP_DATA_DIR}", storageDir);
 	embeddedStyle = extractStyleName(styleSheet);
 	if (embeddedStyle != "") {
 	    log(LOG_UI, LOG_MIN, "switching theme to %s", qPrintable(embeddedStyle));
@@ -431,10 +433,7 @@ QString RadioInterface::loadSkin() {
 }
 
 void RadioInterface::changeSkin(QString skin) {
-    QString themedir = QDir::home().absoluteFilePath(LOCAL_STORAGE);
-
     log(LOG_UI, LOG_MIN, "received newSkin");
-    skin.replace("${THEMEDIR}", themedir);
     qApp->setStyleSheet(skin);
     this->style()->unpolish(this);
     this->style()->polish(this);
@@ -1666,8 +1665,8 @@ void RadioInterface::startDAB() {
 
     if (inputDevice == nullptr || DABprocessor == nullptr)
 	return;
+    emptyArt(true);
 #ifdef HAVE_MPRIS
-    mprisEmptyArt(true);
     mprisLabelAndText("DAB", channel);
     player.setPlaybackStatus(Mpris::Stopped);
 #endif
@@ -1885,8 +1884,8 @@ void RadioInterface::startFM(int32_t freq) {
     recording = false;
     setPlaying();
     setRecording();
+    emptyArt(false);
 #ifdef HAVE_MPRIS
-    mprisEmptyArt(false);
     mprisLabelAndText("FM", QString().asprintf("%3.3f", FMfreq));
     player.setPlaybackStatus(Mpris::Playing);
 #endif
@@ -1909,8 +1908,8 @@ void RadioInterface::stopFM() {
     setRecording();
     setScanning();
     cleanScreen();
+    emptyArt(true);
 #ifdef HAVE_MPRIS
-    mprisEmptyArt(true);
     mprisLabelAndText("FM", QString().asprintf("%3.3f", FMfreq));
     player.setPlaybackStatus(Mpris::Stopped);
 #endif
@@ -2173,14 +2172,25 @@ void RadioInterface::toFM() {
     FMButton->setChecked(true);
     slidesAction->setVisible(false);
     stationsAction->setVisible(false);
+    emptyArt(true);
 #ifdef HAVE_MPRIS
-    mprisEmptyArt(true);
     mprisLabelAndText("FM", QString().asprintf("%3.3f", FMfreq));
     player.setPlaybackStatus(Mpris::Stopped);
 #endif
 }
 
 // utility
+
+void RadioInterface::emptyArt(bool dimmed) {
+    QPixmap p;
+
+    if (dimmed)
+	p.load(":/" TARGET "_dimmed.png");
+    else
+	p.load(":/" TARGET ".ico");
+    currentService.slidePriority = 0;
+    showSlides(p);
+}
 
 void RadioInterface::cleanScreen() {
     QPixmap p;
@@ -2189,9 +2199,7 @@ void RadioInterface::cleanScreen() {
 	ensembleId->clear();
     serviceLabel->clear();
     dynamicLabel->clear();
-#ifdef HAVE_MPRIS
-    mprisEmptyArt(true);
-#endif
+    emptyArt(true);
     presetSelector->setCurrentIndex(0);
     stereoLabel->setStyleSheet(stereoStyle);
     stereoLabel->clear();
@@ -2263,17 +2271,6 @@ void RadioInterface::mprisLabelAndText(QString l, QString t) {
     metadata["xesam:artist"] = l;
     metadata["xesam:title"] = t;
     player.setMetadata(metadata);
-}
-
-void RadioInterface::mprisEmptyArt(bool dimmed) {
-    QPixmap p;
-
-    if (dimmed)
-	p.load(":/" TARGET "_dimmed.png");
-    else
-	p.load(":/" TARGET ".ico");
-    currentService.slidePriority = 0;
-    showSlides(p);
 }
 
 void RadioInterface::mprisClose() {
