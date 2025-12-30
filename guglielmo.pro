@@ -288,6 +288,7 @@ HEADERS += ./include/radio.h \
 	   ./include/support/trigtabs.h \
            ./include/support/fft-handler.h \
 	   ./include/support/ringbuffer.h \
+	   ./include/support/dir-cache.h \
 	   ./include/support/dab-params.h \
 	   ./include/support/band-handler.h \
 	   ./include/support/bits-helper.h \
@@ -363,6 +364,7 @@ SOURCES += ./src/main.cpp \
            ./src/support/fft-handler.cpp \
 	   ./src/support/dab-params.cpp \
 	   ./src/support/band-handler.cpp \
+	   ./src/support/dir-cache.cpp \
 	   ./devices/device-handler.cpp
 
 faad	{

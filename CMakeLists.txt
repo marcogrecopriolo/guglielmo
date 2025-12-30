@@ -227,6 +227,7 @@ endif ()
              ./include/support/pll.h
              ./include/support/trigtabs.h
              ./include/support/squelchClass.h
+             ./include/support/dir-cache.h
              ./include/rds/rds-blocksynchronizer.h
              ./include/rds/rds-decoder.h
              ./include/rds/rds-groupdecoder.h
@@ -307,6 +308,7 @@ endif ()
              ./src/support/iir-filters.cpp
              ./src/support/pll.cpp
              ./src/support/trigtabs.cpp
+             ./src/support/dir-cache.cpp
              ./src/rds/rds-blocksynchronizer.cpp
              ./src/rds/rds-decoder.cpp
              ./src/rds/rds-group.cpp

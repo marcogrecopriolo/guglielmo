@@ -39,6 +39,7 @@
 #include "constants.h"
 #include "dab-processor.h"
 #include "fm-processor.h"
+#include "dir-cache.h"
 #include "ringbuffer.h"
 #include "band-handler.h"
 #include "device-handler.h"
@@ -120,6 +121,8 @@ private:
     dabService nextService;
     bandHandler DABband;
     dabService currentService;
+
+    ImageCache *cache;
 
     // currently we only support one data service
     dabService dataService;
@@ -252,6 +255,7 @@ private:
     void setIconAndTitle();
     QString loadSkin();
     void emptyArt(bool);
+    QPixmap getIcon(uint);
 
 // MPRIS
 #ifdef HAVE_MPRIS

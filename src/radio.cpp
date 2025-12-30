@@ -427,7 +427,7 @@ QString RadioInterface::loadSkin() {
 	settings->setValue(UI_SKIN, skin);
 	settings->setValue(UI_SKIN_LOCAL, skinIsLocal);
 	settings->endGroup();
-        return QString("");
+	return QString("");
     }
     return styleSheet;
 }
@@ -487,7 +487,7 @@ void RadioInterface::processGain(agcStats *newStats, int amount) {
 	log(LOG_AGC, LOG_MIN, "switching gain to %i (min %i max %i overflows %i)",
 			swAgc, stats.min, stats.max, stats.overflows);
 	inputDevice->setIfGain(swAgc);
-        swAgcSkip = SW_AGC_SKIP_COUNT;
+	swAgcSkip = SW_AGC_SKIP_COUNT;
     }
     resetAgcStats();
 }
@@ -687,7 +687,7 @@ void RadioInterface::findDevices() {
 		    deviceType = deviceList[i].deviceType;
 		    break;
 		}
-        log(LOG_UI, LOG_CHATTY, "using device %s", qPrintable(deviceType));
+	log(LOG_UI, LOG_CHATTY, "using device %s", qPrintable(deviceType));
 	settings->beginGroup(deviceType);
 	uint dc = inputDevice->devices((deviceStrings *) &devNames, MAX_DEVICES);
 	bool found = false;
@@ -891,6 +891,35 @@ void RadioInterface::scanDone(void) {
 
 //	slots exercised by the processors
 
+QPixmap RadioInterface::getIcon(uint SId) {
+    QPixmap p = QPixmap();
+    QList<ImageInfo> info = cache->getImagesForChannel(SId);
+
+    if (info.size() > 0) {
+	int w = 0, h = 0;
+	QString path = "";
+
+	log(LOG_CACHE, LOG_CHATTY, "searching icons for %x", SId);
+	for (const ImageInfo& entry : info) {
+	    log(LOG_CACHE, LOG_CHATTY, "found %s %i %i", qPrintable(entry.path), entry.width, entry.height);
+	    if (entry.width >= w && entry.height >= h &&
+		entry.width >= ICON_MIN_SIZE && entry.height >= ICON_MIN_SIZE &&
+		entry.width <= ICON_MAX_SIZE && entry.height <= ICON_MAX_SIZE) {
+		    w = entry.width;
+		    h = entry.height;
+		    path = entry.path;
+	    }
+	}
+	if (path != "")
+	    p = cache->loadImage(path);
+    }
+    if (p.isNull()) {
+	p = QPixmap(ICON_LISTVIEW_SIZE);
+	p.fill(Qt::transparent);
+    }
+    return p;
+}
+
 void RadioInterface::addToEnsemble(const QString &serviceName, uint SId) {
     serviceId ed;
     uint32_t lastId = 0;
@@ -910,10 +939,9 @@ void RadioInterface::addToEnsemble(const QString &serviceName, uint SId) {
     ed.name = serviceName;
     ed.SId = SId;
 
-    if (serviceList.size() == 0) {
-	serviceList.push_back(ed);
-	inserted = true;
-    } else if (serviceOrder == ID_BASED) {
+    if (serviceList.size() == 0)
+	ensembleModel.clear();
+    else if (serviceOrder == ID_BASED) {
 	for (i=serviceList.begin(); i<serviceList.end(); i++) {
 	    if (lastId < SId && SId <= i->SId) {
 	    	serviceList.insert(i, ed);
@@ -932,20 +960,33 @@ void RadioInterface::addToEnsemble(const QString &serviceName, uint SId) {
 	    lastName = i->name;
 	}
     }
-    if (!inserted)
+    if (!inserted) {
+	int row = ensembleModel.rowCount();
 	serviceList.push_back(ed);
+	ensembleModel.appendRow(new QStandardItem(ed.name));
+	ensembleModel.setData(ensembleModel.index(row, 0),
+			QFont("Cantarell", 11), Qt::FontRole);
+	if (cache->imageCount() > 0)
+	    ensembleModel.item(row)->setIcon(getIcon(ed.SId));
+    } else {
+	int row = 0;
+	bool hasIcons = (cache->imageCount() > 0);
 
-    ensembleModel.clear();
-    for (const auto &serv: serviceList)
-	ensembleModel.appendRow(new QStandardItem(serv.name));
-    for (int i = 0; i < ensembleModel.rowCount(); i++) {
+	ensembleModel.clear();
+	for (const auto &serv: serviceList) {
+	    ensembleModel.appendRow(new QStandardItem(serv.name));
+	    ensembleModel.setData(ensembleModel.index(row, 0),
+			    QFont("Cantarell", 11), Qt::FontRole);
+	    if (hasIcons)
+		ensembleModel.item(row)->setIcon(getIcon(serv.SId));
+	    row++;
+	}
+    }
+    for (int i = 0; i < ensembleModel.rowCount(); i++)
 	if (currentService.valid && serviceList.at(i).name == currentService.serviceName) {
 	    ensembleDisplay->setCurrentIndex(ensembleModel.index(i, 0));
 	    stationSelector->setCurrentIndex(i);
 	}
-	ensembleModel.setData(ensembleModel.index(i, 0), QFont("Cantarell", 11), Qt::FontRole);
-
-    }
 
     ensembleDisplay->setModel(&ensembleModel);
     stationSelector->setModel(&ensembleModel);
@@ -972,7 +1013,7 @@ void RadioInterface::ensembleLoaded(int count) {
 
     // we are loading a scan list, no need to start a service
     if (scanning) {
-        if (count >= 0)
+	if (count >= 0)
 	    log(LOG_EVENT, LOG_MIN, "dab full scan ensemble loaded with %i services", count);
 	scanEnsembleLoaded();
 	return;
@@ -1118,7 +1159,7 @@ QPixmap trimBorders(const QImage& image) {
     // if only one pair of sides, we can just trim the image,
     // as the content scaling won't change
     if (doTop != doSides)
-         return QPixmap::fromImage(img.copy(left, top, right - left + 1, bottom - top + 1));
+	return QPixmap::fromImage(img.copy(left, top, right - left + 1, bottom - top + 1));
 
     // otherwise crop top and bottom and fill left and right)
     img = img.copy(0, top, width - 1, bottom - top + 1);
@@ -1207,6 +1248,7 @@ int32_t extractServiceIdFromFilename(const QString &filename) {
 
 void RadioInterface::handleEPGPicture(QByteArray data, const char *type, QString pictureName) {
     QPixmap p;
+    QString serviceName;
     int32_t SId;
     int priority;
 
@@ -1215,7 +1257,10 @@ void RadioInterface::handleEPGPicture(QByteArray data, const char *type, QString
 	return;
     p.loadFromData(data, type);
     priority = p.width() * p.height();
-    log(LOG_EVENT, LOG_MIN, "slide SId %i %s %i %i", SId, type, p.width(), p.height());
+    log(LOG_EVENT, LOG_MIN, "slide SId %x %s %i %i", SId, type, p.width(), p.height());
+    if (!cache->hasImage(SId, p.width(), p.height(), type)) {
+	cache->addImage(SId, p.width(), p.height(), type, data);
+    }
     if (p.width() == p.height() && p.height() >= ICON_MIN_SIZE && p.height() <= ICON_MAX_SIZE) {
 	QPixmap empty(ICON_LISTVIEW_SIZE);
 
@@ -1226,7 +1271,7 @@ void RadioInterface::handleEPGPicture(QByteArray data, const char *type, QString
 	ensembleDisplay->setIconSize(QSize(ICON_LISTVIEW_SIZE));
 	for (int i = 0; i < ensembleModel.rowCount(); i++) {
 	    if (serviceList.at(i).SId == (uint32_t) SId) {
-	        ensembleModel.item(i)->setIcon(p);
+		ensembleModel.item(i)->setIcon(p);
 	    } else if (ensembleModel.item(i)->icon().isNull())
 		ensembleModel.item(i)->setIcon(QIcon(empty));
 	}
@@ -1234,7 +1279,7 @@ void RadioInterface::handleEPGPicture(QByteArray data, const char *type, QString
 	       priority > currentService.slidePriority &&
 	       p.width() >= SLIDE_MIN_SIZE && p.height() >= SLIDE_MIN_SIZE) {
 	currentService.slidePriority = priority;
-        showSlides(p);
+	showSlides(p);
     }
 }
 
@@ -1298,7 +1343,7 @@ void RadioInterface::closeEvent(QCloseEvent *event) {
 void RadioInterface::changeEvent(QEvent* event) {
     QWidget::changeEvent(event);
     if (event->type() == QEvent::WindowStateChange) {
-        if (!isMinimized())
+	if (!isMinimized())
 	    setWindowIcon(MAIN_ICON_PATH);
 	setIconAndTitle();
     }
@@ -1587,14 +1632,14 @@ void RadioInterface::dabDisplayOff() {
 void RadioInterface::dabDisplayOn() {
     switch (dabDisplay) {
       case DD_SLIDES:
-        slidesLabel->setVisible(true);
+	slidesLabel->setVisible(true);
 	stationSelector->setVisible(true);
-        stationsAction->setVisible(true);
+	stationsAction->setVisible(true);
 	break;
       case DD_STATIONS:
-        slidesAction->setVisible(true);
+	slidesAction->setVisible(true);
 	channelSelector->setVisible(true);
-        ensembleDisplay->setVisible(true);
+	ensembleDisplay->setVisible(true);
 	break;
     }
 }
@@ -1626,6 +1671,9 @@ void RadioInterface::startDABService(dabService *s) {
 	    showLabel(serviceName);
 	    if (DABprocessor->is_audioService(serviceName)) {
 		DABprocessor->dataforAudioService(serviceName, &ad);
+		currentService.valid = true;
+		currentService.serviceName = serviceName;
+		currentService.SId = serviceList.at(i).SId;
 		if (!ad.defined)
 		    warning(this, tr(BAD_SERVICE));
 		else {
@@ -1636,15 +1684,34 @@ void RadioInterface::startDABService(dabService *s) {
 		    stereoLabel->setToolTip((char *) &buf);
 		    ad.serviceInfo((char *) &buf, INFOBUFLEN);
 		    serviceLabel->setToolTip((char *) &buf);
-		    if (ad.isDABplus())
-			p.load(":/empty_plus.png");
-		    else
-			p.load(":/empty.png");
 		    currentService.slidePriority = 0;
+		    QList<ImageInfo> info = cache->getImagesForChannel(currentService.SId);
+		    if (info.size() > 0) {
+			int w = 0, h = 0;
+			QString path = "";
+
+			for (const ImageInfo& entry : info) {
+			    log(LOG_CACHE, LOG_CHATTY, "found %s %i %i", qPrintable(entry.path), entry.width, entry.height);
+			    if (entry.width >= w && entry.height >= h &&
+				entry.width >= SLIDE_MIN_SIZE && entry.height >= SLIDE_MIN_SIZE) {
+				    w = entry.width;
+				    h = entry.height;
+				    path = entry.path;
+			    }
+			}
+			if (path != "") {
+			    p = cache->loadImage(path);
+			    currentService.slidePriority = p.width() * p.height();
+			}
+		    }
+		    if (currentService.slidePriority == 0) {
+			if (ad.isDABplus())
+			    p.load(":/empty_plus.png");
+			else
+			    p.load(":/empty.png");
+		    }
 		    showSlides(p);
 		}
-		currentService.valid = true;
-		currentService.serviceName = serviceName;
 		playing = true;
 		setPlaying();
 		setRecording();
@@ -1665,6 +1732,7 @@ void RadioInterface::startDAB() {
 
     if (inputDevice == nullptr || DABprocessor == nullptr)
 	return;
+    cache = new ImageCache(QString("%1/%2").arg(LOCAL_CACHE).arg(channel));
     emptyArt(true);
 #ifdef HAVE_MPRIS
     mprisLabelAndText("DAB", channel);
@@ -1684,7 +1752,7 @@ void RadioInterface::startDataService(QString serviceName, uint SId) {
 	return;
     DABprocessor->dataforPacketService(serviceName, &pd, 0);
     if (!pd.defined) {
-        log(LOG_SPI, LOG_MIN, "cound not find background service %s %d", qPrintable(serviceName), SId);
+	log(LOG_SPI, LOG_MIN, "cound not find background service %s %d", qPrintable(serviceName), SId);
 	return;
     }
     log(LOG_SPI, LOG_MIN, "starting background service %s %d", qPrintable(serviceName), SId);
@@ -1750,6 +1818,11 @@ void RadioInterface::stopDAB() {
     mprisLabelAndText("DAB", " ");
     player.setPlaybackStatus(Mpris::Stopped);
 #endif
+
+    if (cache != nullptr) {
+	delete cache;
+	cache = nullptr;
+    }
 }
 
 void RadioInterface::handleSelectChannel(int index) {
@@ -2008,7 +2081,7 @@ void RadioInterface::setIconAndTitle() {
     QString title;
 
     if (isMinimized()) {
-        if (playing)
+	if (playing)
 	    setWindowIcon(PLAY_ICON_PATH);
 	else
 	    setWindowIcon(PAUSE_ICON_PATH);

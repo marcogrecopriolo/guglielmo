@@ -40,6 +40,7 @@
 #define LOG_SPI		0x0800
 #define LOG_EPG		0x1000
 #define LOG_AGC		0x2000
+#define LOG_CACHE	0x4000
 
 extern qint64 logMask;
 extern int logVerbosity;
