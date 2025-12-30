@@ -33,7 +33,10 @@ select, or the previous or next channel if already at either end of the service 
 Or you can switch service or channel using the appropriate selectors.
 
 The central display can switch between the services list for the current channel and the slide show
-for the current service using the "stations" and "slides" menus accessible from the burger menu.
+for the current service using the "stations" and "slides" menus accessible from the burger menu, or the
+left and right arrows on the top left section of the DAB panel.
+
+![DAB screen](/images/dab_logo.png)
 
 ### FM
 
@@ -249,8 +252,8 @@ The backends have wholesale lifted from Qt-dab and Sdr-j-fm by Jan van Katwijk a
 various other contributors.
 
 I have written the interface, integrated the two processors, rewritten the devices to work
-against the guglielmo interface and fixed several bugs and improved several things, most
-notably the FM and RDS subsystem.
+against the guglielmo interface, improved several things and fixed several bugs, most
+notably MOT handling, the FM and RDS subsystems, gain management and logging.
 
 Carl Laufer at rtl-sdr.com, Jon Hudson at sdrplay.com and Youssef Touil at AirSpy deserve
 a special mention for having provided hardware that I have used to develop the drivers.
