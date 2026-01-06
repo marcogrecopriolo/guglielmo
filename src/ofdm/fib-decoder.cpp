@@ -606,7 +606,7 @@ int16_t fibDecoder::HandleFIG0Extension13(uint8_t *d, int16_t used,
 	log(LOG_DAB, LOG_VERBOSE, "processing application %i appType %i", i, appType);
         int compIndex = findServiceComponent(localBase, SId, SCIds);
         if (compIndex != -1) {
-	    log(LOG_DAB, LOG_CHATTY, "service component %i TM %i appType %i",
+	    log(LOG_DAB, LOG_VERBOSE, "service component %i TM %i appType %i",
 		localBase->serviceComps[compIndex].DSCTy, localBase->serviceComps[compIndex].TMid, appType);
             if (localBase->serviceComps[compIndex].TMid == TMPacketData)
                 localBase->serviceComps[compIndex].appType = appType;

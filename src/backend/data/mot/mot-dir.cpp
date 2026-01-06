@@ -28,12 +28,15 @@
  */
 
 #include "mot-dir.h"
+#include "logging.h"
 
 motDirectory::motDirectory(RadioInterface *mr, uint16_t transportId,
                            int16_t segmentSize, int32_t dirSize,
-                           int16_t objects, uint8_t *segment) {
+                           int16_t objects, uint8_t *segment,
+			   motCache *cache) {
     int16_t i;
 
+    log(LOG_MOT, LOG_CHATTY, "new directory transport %x size %i objects %i", transportId, dirSize, objects);
     this->myRadioInterface = mr;
     for (i = 0; i < 512; i++)
         marked[i] = false;
@@ -41,50 +44,43 @@ motDirectory::motDirectory(RadioInterface *mr, uint16_t transportId,
     this->transportId = transportId;
     this->dirSize = dirSize;
     this->numObjects = objects;
+    doneObjects = 0;
     this->dir_segmentSize = segmentSize;
     dir_segments = new uint8_t[dirSize];
-    motComponents = new motComponentType[objects];
-    for (i = 0; i < objects; i++)
-        motComponents[i].inUse = false;
     memcpy(&dir_segments[0], segment, segmentSize);
     marked[0] = true;
+    this->cache = cache;
 }
 
 motDirectory::~motDirectory() {
-    int i;
+    log(LOG_MOT, LOG_CHATTY, "discarding directory %x", transportId);
     delete[] dir_segments;
-
-    for (i = 0; i < numObjects; i++)
-        if (motComponents[i].inUse)
-            delete motComponents[i].motSlide;
-    delete[] motComponents;
+    for (auto it = motComponents.constBegin(); it != motComponents.constEnd(); ++it)
+	delete it.value();
+    motComponents.clear();
+    if (cache != nullptr) {
+	for (auto it = cache->constBegin(); it != cache->constEnd(); ++it)
+	    delete it.value();
+	cache->clear();
+    }
 }
 
 motObject *motDirectory::getHandle(uint16_t transportId) {
-    int i;
 
-    for (i = 0; i < numObjects; i++)
-        if ((motComponents[i].inUse) &&
-            (motComponents[i].transportId == transportId))
-            return motComponents[i].motSlide;
-
-    return nullptr;
+    // returns nullptr as default value of a ptr
+    return motComponents.value(transportId);
 }
 
-void motDirectory::setHandle(motObject *h, uint16_t transportId) {
-    int i;
-
-    for (i = 0; i < numObjects; i++)
-        if (!motComponents[i].inUse) {
-            motComponents[i].inUse = true;
-            motComponents[i].transportId = transportId;
-            motComponents[i].motSlide = h;
-            return;
-        }
+void motDirectory::markObjectComplete() {
+    doneObjects++;
+    if (doneObjects < numObjects) {
+	log(LOG_MOT, LOG_VERBOSE, "mot directory %x completed %i / %i objects", transportId, doneObjects, numObjects);
+    } else {
+	log(LOG_MOT, LOG_CHATTY, "mot directory %x completed %i objects", transportId, numObjects);
+    }
 }
 
-//	unfortunately, directory segments do not need to come in
-//	in order
+// unfortunately, directory segments do not need to come in in order
 void motDirectory::directorySegment(uint16_t transportId, uint8_t *segment,
                                     int16_t segmentNumber, int32_t segmentSize,
                                     bool lastSegment) {
@@ -92,31 +88,31 @@ void motDirectory::directorySegment(uint16_t transportId, uint8_t *segment,
 
     if (this->transportId != transportId)
         return;
+
     if (this->marked[segmentNumber])
         return;
     if (lastSegment)
         this->num_dirSegments = segmentNumber + 1;
+
+    log(LOG_MOT, LOG_VERBOSE, "directory %x new segment %i last %i", transportId, segmentNumber, lastSegment);
     this->marked[segmentNumber] = true;
     uint8_t *address = &dir_segments[segmentNumber * dir_segmentSize];
     memcpy(address, segment, segmentSize);
 
-    //	we are "complete" if we know the number of segments and
-    //	all segments are "in"
+    // we are "complete" if we know the number of segments and
+    // all segments are "in"
     if (this->num_dirSegments != -1) {
         for (i = 0; i < this->num_dirSegments; i++)
             if (!this->marked[i])
                 return;
     }
 
-    //	yes we have all data to build up the directory
-    analyse_theDirectory();
+    // yes we have all data to build up the directory
+    analyseDirectory();
 }
 
-//	This is the tough one, we collected the bits, and now
-//	we need to extract the "motObject"s from it
-
-void motDirectory::analyse_theDirectory() {
-    uint32_t currentBase = 11; // in bytes
+void motDirectory::analyseDirectory() {
+    uint32_t currentBase = 11;		// in bytes
     uint8_t *data = dir_segments;
     uint16_t extensionLength =
         (dir_segments[currentBase] << 8) | data[currentBase + 1];
@@ -126,15 +122,30 @@ void motDirectory::analyse_theDirectory() {
     currentBase += 2 + extensionLength;
     for (i = 0; i < numObjects; i++) {
         uint16_t transportId = (data[currentBase] << 8) | data[currentBase + 1];
-        if (transportId == 0) // just a dummy
+        if (transportId == 0)		// just a dummy
             break;
         uint8_t *segment = &data[currentBase + 2];
-        motObject *handle = new motObject(myRadioInterface, true, transportId,
+        motObject *handle = new motObject(myRadioInterface, motObject::Directory, transportId,
                                           segment, -1, false);
+	if (cache != nullptr) {
+	    motObject *cached = cache->take(transportId);
+	    if (cached != nullptr) {
+		if (handle->mergeObject(cached))
+		    markObjectComplete();
+		delete cached;
+	    }
+	}
+        currentBase += 2 + handle->getHeaderSize();
+	motComponents.insert(transportId, handle);
+    }
 
-        currentBase += 2 + handle->get_headerSize();
-        setHandle(handle, transportId);
+    // we no longer need objects received prior to the directory
+    if (cache != nullptr) {
+	for (auto it = cache->constBegin(); it != cache->constEnd(); ++it)
+	    delete it.value();
+	cache->clear();
+	cache = nullptr;
     }
 }
 
-uint16_t motDirectory::get_transportId() { return transportId; }
+uint16_t motDirectory::getTransportId() { return transportId; }

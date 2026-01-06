@@ -448,16 +448,16 @@ void padHandler::build_MSC_segment(std::vector<uint8_t> data) {
         if (currentSlide == nullptr) {
             log(LOG_DATA, LOG_VERBOSE, "creating %d", transportId);
             currentSlide =
-                new motObject(myRadioInterface, false, transportId,
+                new motObject(myRadioInterface, motObject::Pad, transportId,
                               &data[index + 2], segmentSize, lastFlag);
         } else {
-            if (currentSlide->get_transportId() == transportId)
+            if (currentSlide->getTransportId() == transportId)
                 break;
             log(LOG_DATA, LOG_VERBOSE, "out goes %d, in comes %d",
-                currentSlide->get_transportId(), transportId);
+                currentSlide->getTransportId(), transportId);
             delete currentSlide;
             currentSlide =
-                new motObject(myRadioInterface, false, transportId,
+                new motObject(myRadioInterface, motObject::Pad, transportId,
                               &data[index + 2], segmentSize, lastFlag);
         }
         break;
@@ -465,7 +465,7 @@ void padHandler::build_MSC_segment(std::vector<uint8_t> data) {
     case 4:
         if (currentSlide == nullptr)
             return;
-        if (currentSlide->get_transportId() == transportId) {
+        if (currentSlide->getTransportId() == transportId) {
             log(LOG_DATA, LOG_VERBOSE, "add segment %d of  %d", segmentNumber,
                 transportId);
             currentSlide->addBodySegment(&data[index + 2], segmentNumber,

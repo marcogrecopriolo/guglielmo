@@ -31,23 +31,24 @@
 #define MOT_DIRECTORY_H
 
 #include "mot-object.h"
-#include <QString>
+#include <QHash>
+
 class RadioInterface;
 
 class motDirectory {
   public:
     motDirectory(RadioInterface *, uint16_t, int16_t, int32_t, int16_t,
-                 uint8_t *);
+                 uint8_t *, motCache *cache);
     ~motDirectory();
+    void markObjectComplete();
     motObject *getHandle(uint16_t);
-    void setHandle(motObject *, uint16_t);
     void directorySegment(uint16_t transportId, uint8_t *segment,
                           int16_t segmentNumber, int32_t segmentSize,
                           bool lastSegment);
-    uint16_t get_transportId();
+    uint16_t getTransportId();
 
   private:
-    void analyse_theDirectory();
+    void analyseDirectory();
     uint16_t transportId;
 
     RadioInterface *myRadioInterface;
@@ -57,11 +58,8 @@ class motDirectory {
     int16_t num_dirSegments;
     int16_t dirSize;
     int16_t numObjects;
-    typedef struct {
-        bool inUse;
-        uint16_t transportId;
-        motObject *motSlide;
-    } motComponentType;
-    motComponentType *motComponents;
+    int16_t doneObjects;
+    motCache motComponents;
+    motCache *cache;
 };
 #endif

@@ -32,36 +32,25 @@
 #include "mot-object.h"
 #include "radio.h"
 
-//	we "cache" the most recent single motSlides (not those in a directory)
-struct motTable_ {
-    uint16_t transportId;
-    int32_t orderNumber;
-    motObject *motSlide;
-} motTable[15];
-
 motHandler::motHandler(RadioInterface *mr) {
     myRadioInterface = mr;
     orderNumber = 0;
 
-    theDirectory = nullptr;
-    for (int i = 0; i < 15; i++) {
-        motTable[i].orderNumber = -1;
-        motTable[i].motSlide = nullptr;
-    }
+    currentDirectory = nullptr;
+    currentObject = nullptr;
+    cache = new motCache();
 }
 
 motHandler::~motHandler() {
-    int i;
-
-    for (i = 0; i < 15; i++)
-        if (motTable[i].orderNumber > 0) {
-            if (motTable[i].motSlide != nullptr) {
-                delete motTable[i].motSlide;
-                motTable[i].motSlide = nullptr;
-            }
-        }
-    if (theDirectory != nullptr)
-        delete theDirectory;
+    if (currentObject != nullptr)
+        delete currentObject;
+    if (currentDirectory != nullptr)
+        delete currentDirectory;
+    if (cache != nullptr) {
+	for (auto it = cache->constBegin(); it != cache->constEnd(); ++it)
+	    delete it.value();
+	cache->clear();
+    }
 }
 
 void motHandler::add_mscDatagroup(std::vector<uint8_t> msc) {
@@ -79,6 +68,7 @@ void motHandler::add_mscDatagroup(std::vector<uint8_t> msc) {
     uint16_t transportId = 0;
     uint8_t lengthInd;
     int32_t i;
+    motObject *h;
 
     (void)CI;
     if (msc.size() <= 0) {
@@ -119,44 +109,63 @@ void motHandler::add_mscDatagroup(std::vector<uint8_t> msc) {
 
     uint32_t segmentSize = ((motVector[0] & 0x1F) << 8) | motVector[1];
 
+    // This is all described in ETSI EN301234 section 5.1
     switch (groupType) {
+
+    // MOT object header, never in directory mode, only ever one at any one time (discard any prior data).
     case 3:
-        if (segmentNumber == 0) {
-            motObject *h = getHandle(transportId);
-            if (h != nullptr)
-                break;
-            h = new motObject(myRadioInterface,
-                              false, // not within a directory
+
+	// we only handle non segemented headers
+	if (segmentNumber != 0)
+	    break;
+
+	if  (currentObject != nullptr || transportId != currentObject->getTransportId())
+	    delete currentObject;
+        currentObject = new motObject(myRadioInterface,
+                              motObject::Header,
                               transportId, &motVector[2], segmentSize,
                               lastFlag);
-            setHandle(h, transportId);
-        }
         break;
 
-    case 4: {
-        motObject *h = getHandle(transportId);
-        if ((h == nullptr) && (segmentNumber != 0))
-            break;
-        if ((h == nullptr) && (segmentNumber == 0)) {
-            h = new motObject(myRadioInterface,
-                              false, // not within a directory
-                              transportId, &motVector[2], segmentSize,
-                              lastFlag);
-            setHandle(h, transportId);
-            break;
+    // MOT object body, this could be in header mode or directory mode, plus, we may not
+    // even have the directory yet
+    case 4:
+	if (currentObject != nullptr && currentObject->getTransportId() == transportId) {
+	     (void) currentObject->addBodySegment(&motVector[2], segmentNumber, segmentSize, lastFlag);
+	     break;
+	}
+	if (currentDirectory != nullptr) {
+	    h = currentDirectory->getHandle(transportId);
+	    if (h != nullptr && h->addBodySegment(&motVector[2], segmentNumber, segmentSize, lastFlag))
+		currentDirectory->markObjectComplete();
+	} else if (cache != nullptr) {
+
+	    // returns null on missing entry as defaul;t value of a pointer
+	    motObject *h = cache->value(transportId);
+	    if ((h == nullptr) && (segmentNumber == 0)) {
+		h = new motObject(myRadioInterface,
+                         motObject::Cache,
+                         transportId, &motVector[2], segmentSize,
+                         lastFlag);
+		cache->insert(transportId, h);
+	    }
+	    if (h != nullptr)
+		(void) h->addBodySegment(&motVector[2], segmentNumber, segmentSize, lastFlag);
         }
+	break;
 
-        h->addBodySegment(&motVector[2], segmentNumber, segmentSize, lastFlag);
-    } break;
-
+    // MOT directory
     case 6:
-        if (segmentNumber == 0) { // MOT directory
-            if (theDirectory != nullptr)
-                if (theDirectory->get_transportId() == transportId)
-                    break; // already existing
+        if (segmentNumber == 0) {
+            if (currentDirectory != nullptr) {
 
-            if (theDirectory != nullptr) // an old one, replace it
-                delete theDirectory;
+		// TODO - should we not refresh the current one?
+                if (currentDirectory->getTransportId() == transportId)
+                    break;
+
+		// a different one, start fromm scratch
+                delete currentDirectory;
+	    }
 
             int32_t segmentSize = ((motVector[0] & 0x1F) << 8) | motVector[1];
             uint8_t *segment = &motVector[2];
@@ -167,14 +176,15 @@ void motHandler::add_mscDatagroup(std::vector<uint8_t> msc) {
             //	                          (segment [7] <<  8) | segment [8];
             //	         int32_t segSize
             //	                        = ((segment [9] & 0x1F) << 8) | segment [10];
-            theDirectory =
+            currentDirectory =
                 new motDirectory(myRadioInterface, transportId, segmentSize,
-                                 dirSize, numObjects, segment);
+                                 dirSize, numObjects, segment, cache);
+	        cache = nullptr;
         } else {
-            if ((theDirectory == nullptr) ||
-                (theDirectory->get_transportId() != transportId))
+            if ((currentDirectory == nullptr) ||
+                (currentDirectory->getTransportId() != transportId))
                 break;
-            theDirectory->directorySegment(transportId, &motVector[2],
+            currentDirectory->directorySegment(transportId, &motVector[2],
                                            segmentNumber, segmentSize,
                                            lastFlag);
         }
@@ -183,43 +193,4 @@ void motHandler::add_mscDatagroup(std::vector<uint8_t> msc) {
     default:
         return;
     }
-}
-
-motObject *motHandler::getHandle(uint16_t transportId) {
-    int i;
-
-    for (i = 0; i < 15; i++)
-        if ((motTable[i].orderNumber >= 0) &&
-            (motTable[i].transportId == transportId))
-            return motTable[i].motSlide;
-    if (theDirectory != nullptr)
-        return theDirectory->getHandle(transportId);
-    return nullptr;
-}
-
-void motHandler::setHandle(motObject *h, uint16_t transportId) {
-    int i;
-    int oldest = orderNumber;
-    int index = 0;
-
-    for (i = 0; i < 15; i++)
-        if (motTable[i].orderNumber == -1) {
-            motTable[i].orderNumber = orderNumber++;
-            motTable[i].transportId = transportId;
-            motTable[i].motSlide = h;
-            return;
-        }
-
-    //	if here, the cache is full, so we delete the oldest one
-    index = 0;
-    for (i = 0; i < 15; i++)
-        if (motTable[i].orderNumber < oldest) {
-            oldest = motTable[i].orderNumber;
-            index = i;
-        }
-
-    delete motTable[index].motSlide;
-    motTable[index].orderNumber = orderNumber++;
-    motTable[index].transportId = transportId;
-    motTable[index].motSlide = h;
 }

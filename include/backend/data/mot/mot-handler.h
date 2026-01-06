@@ -29,7 +29,9 @@
 
 #include "constants.h"
 #include "virtual-datahandler.h"
+#include "mot-object.h"
 #include <vector>
+#include <QHash>
 
 class RadioInterface;
 class motObject;
@@ -46,6 +48,8 @@ class motHandler : public virtual_dataHandler {
     void setHandle(motObject *, uint16_t);
     motObject *getHandle(uint16_t);
     int orderNumber;
-    motDirectory *theDirectory;
+    motObject *currentObject;
+    motDirectory *currentDirectory;
+    motCache *cache;
 };
 #endif

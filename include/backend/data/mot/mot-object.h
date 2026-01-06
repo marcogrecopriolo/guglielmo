@@ -30,9 +30,7 @@
 #include "constants.h"
 #include "dab-tables.h"
 #include <QByteArray>
-#include <QDir>
-#include <QImage>
-#include <QLabel>
+#include <QHash>
 #include <QObject>
 #include <QString>
 #include <iterator>
@@ -42,20 +40,28 @@ class RadioInterface;
 
 class motObject : public QObject {
     Q_OBJECT
+
   public:
-    motObject(RadioInterface *mr, bool dirElement, uint16_t transportId,
-              uint8_t *segment, int32_t segmentSize, bool lastFlag);
+    enum Type {
+	Pad,
+	Header,
+	Cache,
+	Directory
+    };
+    motObject(RadioInterface *mr, Type objectType, uint16_t transportId,
+	      uint8_t *segment, int32_t segmentSize, bool lastFlag);
     ~motObject();
-    void addBodySegment(uint8_t *bodySegment, int16_t segmentNumber,
-                        int32_t segmentSize, bool lastFlag);
-    uint16_t get_transportId();
-    int get_headerSize();
+    bool addBodySegment(uint8_t *bodySegment, int16_t segmentNumber,
+			int32_t segmentSize, bool lastFlag);
+    bool mergeObject(motObject *cached);
+    uint16_t getTransportId();
+    int getHeaderSize();
 
   private:
     bool dirElement;
-    QString picturePath;
+    bool isCache;
     uint16_t transportId;
-    int16_t numofSegments;
+    int16_t numOfSegments;
     int32_t segmentSize;
     uint32_t headerSize;
     uint32_t bodySize;
@@ -65,7 +71,8 @@ class motObject : public QObject {
     std::map<int, QByteArray> motMap;
 
   signals:
-    void the_picture(QByteArray, int, QString);
     void handleMotObject(QByteArray, QString, int, bool);
 };
+
+using  motCache = QHash<uint16_t, motObject*>;
 #endif
