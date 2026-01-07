@@ -959,6 +959,7 @@ void RadioInterface::addToEnsemble(const QString &serviceName, uint SId) {
 	    lastName = i->name;
 	}
     }
+    ensembleDisplay->setIconSize(QSize(ICON_LISTVIEW_SIZE));
     if (!inserted) {
 	int row = ensembleModel.rowCount();
 	serviceList.push_back(ed);
