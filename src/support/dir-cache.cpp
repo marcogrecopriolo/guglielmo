@@ -38,7 +38,7 @@ void ImageCache::loadCache() {
 
     QDir dir(cacheDir);
     if (!dir.exists()) {
-	log(LOG_CACHE, LOG_CHATTY, "Cache dia does not exist %s", qPrintable(cacheDir));
+	log(LOG_CACHE, LOG_CHATTY, "Cache dir does not exist %s", qPrintable(cacheDir));
 	return;
     }
     log(LOG_CACHE, LOG_MIN, "loading %s", qPrintable(cacheDir));
@@ -52,22 +52,21 @@ void ImageCache::loadCache() {
 	QStringList files = channelDir.entryList(QDir::Files);
 
 	for (const QString& filename : files) {
-	    QRegularExpression pattern("^(\\d+)x(\\d+)\\.(\\w+)$");
+	    QRegularExpression pattern("^(\\d+)x(\\d+)-([0-9a-fA-F]{4})\\.(\\w+)$");
 	    QRegularExpressionMatch match = pattern.match(filename);
 
 	    if (match.hasMatch()) {
 		int width = match.captured(1).toInt();
 		int height = match.captured(2).toInt();
-		QString imageType = match.captured(3);
+		QString hash = match.captured(3).toLower();
+		QString imageType = match.captured(4).toLower();
 
-		QString hashKey = QString("%1/%2x%3.%4")
-		    .arg(serviceId).arg(width).arg(height).arg(imageType);
-
+		QString key = hashKey(serviceId.toLower(), width, height, imageType);
 		QString fullPath = channelPath + "/" + filename;
 
-		cache[hashKey] = fullPath;
+		cache[key] = fullPath;
 
-		ImageInfo newInfo{fullPath, width, height, imageType};
+		ImageInfo newInfo{fullPath, width, height, imageType, hash};
 		log(LOG_CACHE, LOG_CHATTY, "found %s %s %i %i", qPrintable(fullPath), qPrintable(serviceId), width, height);
 		removeFromChannelIndex(serviceId, width, height, imageType);
 
@@ -85,9 +84,8 @@ int ImageCache::imageCount() {
 
 bool ImageCache::hasImage(int32_t SId, int width, int height, 
 		  const QString& imageType) {
-    QString hashKey = QString("%1/%2x%3.%4")
-	.arg(toServiceId(SId)).arg(width).arg(height).arg(imageType);
-    return cache.contains(hashKey);
+    QString key = hashKey(toServiceId(SId), width, height, imageType);
+    return cache.contains(key);
 }
     
 QList<ImageInfo> ImageCache::getImagesForChannel(int32_t SId) {
@@ -99,13 +97,26 @@ QList<ImageInfo> ImageCache::getImagesForChannel(int32_t SId) {
 void ImageCache::addImage(int32_t SId, int width, int height, 
 		  const QString& imageType, const QByteArray& image) {
     QString serviceId = toServiceId(SId);
+    QString key = hashKey(serviceId, width, height, imageType);
+    QString imageHash = calculateHash(image);
+    QString filename = QString("%1x%2-%3.%4")
+	.arg(width).arg(height).arg(imageHash).arg(imageType.toLower());
     QString channelPath = QDir::home().absoluteFilePath(cacheDir + "/" + serviceId);
+    QString fullPath = channelPath + "/" + filename;
+
+    QString existingPath = cache.value(key, "");
+    if (existingPath == fullPath) {
+	log(LOG_CACHE, LOG_CHATTY, "skipping unchanged image %s", qPrintable(existingPath));
+	return;
+    } else if (existingPath != "") {
+	cache.remove(key);
+	removeFromChannelIndex(serviceId, width, height, imageType);
+	QFile::remove(existingPath);
+	log(LOG_CACHE, LOG_CHATTY, "replacing mage %s", qPrintable(existingPath));
+    } else
+	log(LOG_CACHE, LOG_MIN, "writing image %s", qPrintable(fullPath));
     QDir dir;
     dir.mkpath(channelPath);
-
-    QString filename = QString("%1x%2.%3").arg(width).arg(height).arg(imageType.toLower());
-    QString fullPath = channelPath + "/" + filename;
-    log(LOG_CACHE, LOG_MIN, "writing image SId %s", qPrintable(fullPath));
 
     QFile file(fullPath);
     if (!file.open(QIODevice::WriteOnly)) {
@@ -115,13 +126,8 @@ void ImageCache::addImage(int32_t SId, int width, int height,
     file.write(image);
     file.close();
 
-    QString hashKey = QString("%1/%2x%3.%4")
-	.arg(serviceId).arg(width).arg(height).arg(imageType);
-    cache[hashKey] = fullPath;
-
-    removeFromChannelIndex(serviceId, width, height, imageType);
-
-    ImageInfo info{fullPath, width, height, imageType};
+    cache[key] = fullPath;
+    ImageInfo info{fullPath, width, height, imageType, imageHash};
     channelIndex.insert(serviceId, info);
 }
 
@@ -146,4 +152,14 @@ void ImageCache::removeFromChannelIndex(const QString& serviceId, int width,
 	    break;
 	}
     }
+}
+
+QString ImageCache::hashKey(QString serviceId, int width, int height, const QString& imageType) {
+    return QString("%1/%2x%3.%4")
+	.arg(serviceId).arg(width).arg(height).arg(imageType.toLower());
+}
+
+QString ImageCache::calculateHash(const QByteArray& data) {
+    uint hash = qHash(data);
+    return QString("%1").arg(hash & 0xFFFF, 4, 16, QChar('0'));
 }

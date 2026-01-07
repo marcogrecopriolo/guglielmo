@@ -899,7 +899,6 @@ QPixmap RadioInterface::getIcon(uint SId) {
 	int w = 0, h = 0;
 	QString path = "";
 
-	log(LOG_CACHE, LOG_CHATTY, "searching icons for %x", SId);
 	for (const ImageInfo& entry : info) {
 	    log(LOG_CACHE, LOG_CHATTY, "found %s %i %i", qPrintable(entry.path), entry.width, entry.height);
 	    if (entry.width >= w && entry.height >= h &&
@@ -1181,16 +1180,16 @@ void RadioInterface::handleSlides(QByteArray data, int contentType, QString pict
 	return;
     switch (static_cast<MOTContentType>(contentType)) {
     case MOTCTImageGIF:
-	type = "GIF";
+	type = "gif";
 	break;
     case MOTCTImageJFIF:
-	type = "JPG";
+	type = "jpg";
 	break;
     case MOTCTImageBMP:
-	type = "BMP";
+	type = "bmp";
 	break;
     case MOTCTImagePNG:
-	type = "PNG";
+	type = "png";
 	break;
     default:
 	return;
@@ -1258,9 +1257,7 @@ void RadioInterface::handleEPGPicture(QByteArray data, const char *type, QString
     p.loadFromData(data, type);
     priority = p.width() * p.height();
     log(LOG_EVENT, LOG_MIN, "slide SId %x %s %i %i", SId, type, p.width(), p.height());
-    if (!cache->hasImage(SId, p.width(), p.height(), type)) {
-	cache->addImage(SId, p.width(), p.height(), type, data);
-    }
+    cache->addImage(SId, p.width(), p.height(), type, data);
     if (p.width() == p.height() && p.height() >= ICON_MIN_SIZE && p.height() <= ICON_MAX_SIZE) {
 	QPixmap empty(ICON_LISTVIEW_SIZE);
 

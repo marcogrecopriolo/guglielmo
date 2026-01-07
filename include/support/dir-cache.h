@@ -35,6 +35,7 @@ struct ImageInfo {
     int width;
     int height;
     QString imageType;
+    QString hash;
 
     bool operator==(const ImageInfo& other) const {
 	return width == other.width && 
@@ -42,7 +43,7 @@ struct ImageInfo {
 	       imageType == other.imageType;
     }
 };
-    
+
 class ImageCache {
 public:
     ImageCache(const QString& cacheDir);
@@ -65,5 +66,7 @@ private:
     void loadCache(void);
     void removeFromChannelIndex(const QString& serviceId, int width, 
 				int height, const QString& imageType);
+    QString hashKey(QString serviceId, int width, int height, const QString& imageType);
+    QString calculateHash(const QByteArray& data);
 };
 #endif		// __DIR_CACHE_H__
