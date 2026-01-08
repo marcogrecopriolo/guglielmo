@@ -117,6 +117,17 @@
       <verstretch>0</verstretch>
      </sizepolicy>
     </property>
+    <property name="font">
+     <font>
+      <pointsize>10</pointsize>
+     </font>
+    </property>
+    <property name="iconSize">
+     <size>
+      <width>16</width>
+      <height>16</height>
+     </size>
+    </property>
     <property name="editTriggers">
      <set>QAbstractItemView::NoEditTriggers</set>
     </property>

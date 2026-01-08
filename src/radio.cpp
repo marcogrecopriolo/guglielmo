@@ -761,10 +761,6 @@ void RadioInterface::changeInConfiguration() {
     ensembleModel.clear();
     for (const auto &serv: serviceList) {
 	ensembleModel.appendRow(new QStandardItem(serv.name));
-	for (int i = 0; i < ensembleModel.rowCount(); i ++) {
-	    ensembleModel.setData(ensembleModel.index(i, 0),
-			QFont("Cantarell", 11), Qt::FontRole);
-	}
 	ensembleDisplay->setModel(&ensembleModel);
 	stationSelector->setModel(&ensembleModel);
     }
@@ -959,13 +955,10 @@ void RadioInterface::addToEnsemble(const QString &serviceName, uint SId) {
 	    lastName = i->name;
 	}
     }
-    ensembleDisplay->setIconSize(QSize(ICON_LISTVIEW_SIZE));
     if (!inserted) {
 	int row = ensembleModel.rowCount();
 	serviceList.push_back(ed);
 	ensembleModel.appendRow(new QStandardItem(ed.name));
-	ensembleModel.setData(ensembleModel.index(row, 0),
-			QFont("Cantarell", 11), Qt::FontRole);
 	if (cache->imageCount() > 0)
 	    ensembleModel.item(row)->setIcon(getIcon(ed.SId));
     } else {
@@ -975,8 +968,6 @@ void RadioInterface::addToEnsemble(const QString &serviceName, uint SId) {
 	ensembleModel.clear();
 	for (const auto &serv: serviceList) {
 	    ensembleModel.appendRow(new QStandardItem(serv.name));
-	    ensembleModel.setData(ensembleModel.index(row, 0),
-			    QFont("Cantarell", 11), Qt::FontRole);
 	    if (hasIcons)
 		ensembleModel.item(row)->setIcon(getIcon(serv.SId));
 	    row++;
@@ -1266,7 +1257,6 @@ void RadioInterface::handleEPGPicture(QByteArray data, const char *type, QString
 	// than adding an empty icon
 	// it will be overwritten by the logo when it arrives
 	empty.fill(Qt::transparent);
-	ensembleDisplay->setIconSize(QSize(ICON_LISTVIEW_SIZE));
 	for (int i = 0; i < ensembleModel.rowCount(); i++) {
 	    if (serviceList.at(i).SId == (uint32_t) SId) {
 		ensembleModel.item(i)->setIcon(p);
