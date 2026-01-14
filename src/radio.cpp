@@ -26,6 +26,8 @@
 #include <QDir>
 #include <QRegularExpression>
 #include <QPainter>
+#include <QImageReader>
+#include <QBuffer>
 #include <fstream>
 #include "constants.h"
 #include "settings.h"
@@ -1164,6 +1166,24 @@ QPixmap trimBorders(const QImage& image) {
     return QPixmap::fromImage(img);
 }
 
+bool checkImageData(QByteArray data, const char *type, QString pictureName) {
+    QBuffer buffer;
+    buffer.setData(data);
+    buffer.open(QIODevice::ReadOnly);
+
+    QImageReader reader(&buffer);
+
+    if (!reader.canRead()) {
+        return false;
+    }
+
+    QString found = reader.format();
+    bool res = (found == type);
+    if (!res)
+	log(LOG_EVENT, LOG_MIN, "expected %s to be %s found %s", qPrintable(pictureName), type, qPrintable(found));
+    return res;
+}
+
 void RadioInterface::handleSlides(QByteArray data, int contentType, QString pictureName, int dirs) {
     const char *type;
 
@@ -1192,9 +1212,11 @@ void RadioInterface::handleSlides(QByteArray data, int contentType, QString pict
     else {
 	QImage i;
 
-	i.loadFromData(data, type);
-	currentService.slidePriority = INT_MAX;
-	showSlides(trimBorders(i));
+	if (checkImageData(data, type, pictureName)) {
+	    i.loadFromData(data, type);
+	    currentService.slidePriority = INT_MAX;
+	    showSlides(trimBorders(i));
+	}
     }
 }
 
@@ -1245,6 +1267,8 @@ void RadioInterface::handleEPGPicture(QByteArray data, const char *type, QString
 
     SId = extractServiceIdFromFilename(pictureName);
     if (SId < 0)
+	return;
+    if (!checkImageData(data, type, pictureName))
 	return;
     p.loadFromData(data, type);
     priority = p.width() * p.height();
