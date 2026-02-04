@@ -178,8 +178,7 @@ bool airspyHandler::deviceOpen(uint64_t numId) {
     // Both the Airspy R2 and the mini support rates higher than 2048kbps.
     // Although, traditionally, people list sample rates and then choose
     // one of the advertised ones, both devices can set any sample rate.
-    // Empirically, using one of the advertised rates has HW AGC working
-    // much better, but at the extra cost of converting rates.
+
     // We choose simplicity, use 4096kbps and decimate by 2.
     result = my_airspy_set_samplerate(device, INPUT_RATE * 2);
     if (result != AIRSPY_SUCCESS) {
@@ -203,9 +202,8 @@ bool airspyHandler::restartReader(int32_t frequency) {
     theBuffer->FlushRingBuffer();
 
     my_airspy_set_freq(device, frequency);
-    my_airspy_set_sensitivity_gain(device, ifGain);
-    result = my_airspy_set_mixer_agc(device,
-        agcControl ? 1 : 0);
+    my_airspy_set_linearity_gain(device, ifGain);
+    my_airspy_set_mixer_agc(device, agcControl);
 
     result = my_airspy_start_rx(device,
         (airspy_sample_block_cb_fn)callback, this);
@@ -318,14 +316,15 @@ int32_t airspyHandler::Samples(void) {
 }
 
 void airspyHandler::setIfGain(int theGain) {
-    int result = my_airspy_set_sensitivity_gain(device, theGain);
+    int result = my_airspy_set_linearity_gain(device, theGain);
     if (result != AIRSPY_SUCCESS) {
-        log(DEV_AIRSPY, LOG_MIN, "airspy_set_mixer_gain() failed: %s (%d)",
+        log(DEV_AIRSPY, LOG_MIN, "airspy_set_linearity_gain() failed: %s (%d)",
             my_airspy_error_name((airspy_error)result), result);
         return;
     }
     ifGain = theGain;
     log(DEV_AIRSPY, LOG_MIN, "IF gain will be set to %d", ifGain);
+    my_airspy_set_mixer_agc(device, agcControl);
 }
 
 void airspyHandler::setAgcControl(int b) {
@@ -338,6 +337,8 @@ void airspyHandler::setAgcControl(int b) {
     } else {
         agcControl = (b != 0);
 	log(DEV_AIRSPY, LOG_MIN, "agc will be set to %d", agcControl);
+	if (!agcControl)
+	    my_airspy_set_linearity_gain(device, ifGain);
     }
 }
 

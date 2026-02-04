@@ -45,8 +45,8 @@ struct agcStats {
     int overflows;
 };
 
-#define DEV_SHORT 32
-#define DEV_LONG 64
+#define DEV_SHORT 64
+#define DEV_LONG 128
 #define MAX_DEVICES 6
 
 struct deviceStrings {

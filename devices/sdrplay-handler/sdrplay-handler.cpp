@@ -217,14 +217,14 @@ bool sdrplayHandler::setDevice(const char *id) {
     mir_sdr_ErrT err;
     mir_sdr_DeviceT devDesc[MAX_DEVICES];
 
-    if (strcmp(id, currentId) == 0) {
+    if (strncmp(id, currentId, DEV_SHORT) == 0) {
 	log(DEV_PLAY, LOG_MIN, "Skipping device switching - same device: %s", id);
 	return true;
     }
     my_mir_sdr_GetDevices(devDesc, &count, uint32_t(MAX_DEVICES));
     for (devNo = 0; devNo < count; devNo++) {
 	log(DEV_PLAY, LOG_CHATTY, "found device %i %s", devNo, (char *) devDesc[devNo].DevNm);
-	if (strcmp(id, (char *) devDesc[devNo].SerNo) == 0)
+	if (strncmp(id, (char *) devDesc[devNo].SerNo, DEV_SHORT) == 0)
 	   break;
     }
     if (devNo >= count) {

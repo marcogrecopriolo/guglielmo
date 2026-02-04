@@ -301,7 +301,7 @@ bool sdrplayHandler_v3::setDevice(const char *id) {
     sdrplay_api_DeviceT devDesc[MAX_DEVICES];
     uint32_t devNo, count;
 
-    if (chosenDevice != NULL && strcmp(id, (char *) chosenDevice->SerNo) == 0) {
+    if (chosenDevice != NULL && strncmp(id, (char *) chosenDevice->SerNo, DEV_SHORT) == 0) {
 	log(DEV_PLAYV3, LOG_MIN, "Skipping device switching - same device: %s", id);
 	return true;
     }
@@ -309,7 +309,7 @@ bool sdrplayHandler_v3::setDevice(const char *id) {
     for (devNo = 0; devNo < count; devNo++) {
 	log(DEV_PLAYV3, LOG_CHATTY, "found device %i %s-%s", devNo,
 		deviceName(devDesc[devNo].hwVer), (char *) devDesc[devNo].SerNo);
-	if (strcmp(id, (char *) devDesc[devNo].SerNo) == 0)
+	if (strncmp(id, (char *) devDesc[devNo].SerNo, DEV_SHORT) == 0)
 	   break;
     }
     if (devNo >= count) {

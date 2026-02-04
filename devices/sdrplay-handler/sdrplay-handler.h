@@ -116,7 +116,6 @@ private:
     bool configDevice(int32_t devNo, mir_sdr_DeviceT *devDesc);
     bool loadFunctions(void);
 
-    char currentId[DEV_SHORT];
     float signalAmplitude;
     int signalMin;
     int signalMax;
@@ -127,6 +126,7 @@ private:
     int16_t nrBits;
     bool libraryLoaded;
     HINSTANCE Handle;
+    char currentId[DEV_SHORT];
 
     pfn_mir_sdr_StreamInit my_mir_sdr_StreamInit;
     pfn_mir_sdr_Reinit my_mir_sdr_Reinit;

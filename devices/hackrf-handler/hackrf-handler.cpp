@@ -77,7 +77,7 @@ hackrfHandler::hackrfHandler()
         throw(22);
     }
 
-    res = hackrf_set_sample_rate(theDevice, 2048000.0);
+    res = hackrf_set_sample_rate(theDevice, INPUT_RATE);
     if (res != HACKRF_SUCCESS) {
         log(DEV_HACKRF, LOG_MIN, "Problem with hackrf_set_samplerate: %s ", hackrf_error_name(hackrf_error(res)));
         CLOSE_LIBRARY(Handle);

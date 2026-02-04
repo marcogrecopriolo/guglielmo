@@ -99,7 +99,7 @@ limeHandler::limeHandler()
         throw(24);
     }
 
-    res = LMS_SetSampleRate(theDevice, 2048000.0, 0);
+    res = LMS_SetSampleRate(theDevice, INPUT_RATE, 0);
     if (res < 0) {
         LMS_Close(theDevice);
         CLOSE_LIBRARY(Handle);
@@ -237,7 +237,7 @@ void limeHandler::run() {
             underruns += streamStatus.underrun;
             overruns += streamStatus.overrun;
         }
-        if (amountRead > 4 * 2048000) {
+        if (amountRead > 4 * INPUT_RATE) {
             amountRead = 0;
             underruns = 0;
             overruns = 0;

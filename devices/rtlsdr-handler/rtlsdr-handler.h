@@ -86,7 +86,6 @@ private:
     bool deviceOpen(int);
     bool load_rtlFunctions(void);
 
-    char currentId[DEV_SHORT];
     bool agcControl;
     int	 ifGain;
     HINSTANCE Handle;
@@ -96,6 +95,7 @@ private:
     int *gains;
     int16_t gainsCount;
     float convTable[UCHAR_MAX+1];
+    char currentId[DEV_SHORT];
 
     pfnrtlsdr_open rtlsdr_open;
     pfnrtlsdr_close rtlsdr_close;

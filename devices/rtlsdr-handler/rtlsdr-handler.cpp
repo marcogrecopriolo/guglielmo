@@ -192,8 +192,8 @@ int rtlsdrHandler::devices(deviceStrings *devs, int max) {
 	log(DEV_RTLSDR, LOG_CHATTY, "found device %i %s", i, (char *) &devs[i].name);
 
 	// unluckily RTLSDR devices seem not to care about serial numbers, I have
-	// two both wth S/N 00000001!
-	sprintf((char *) &devs[i].id, "%s-%i", name, i);
+	// two both with S/N 00000001!
+	snprintf((char *) &devs[i].id, DEV_SHORT, "%s-%i", name, i);
 	if (rtlsdr_get_device_usb_strings(i, manu, prod, serNo) == 0) {
 	    int len = DEV_LONG;
 
@@ -213,7 +213,7 @@ bool rtlsdrHandler::setDevice(const char *id) {
     int devNo, count;
     char buf[DEV_SHORT];
 
-    if (strcmp(id, currentId) == 0) {
+    if (strncmp(id, currentId, DEV_SHORT) == 0) {
 	log(DEV_RTLSDR, LOG_MIN, "Skipping device switching - same device: %s", id);
 	return true;
     }
@@ -222,7 +222,7 @@ bool rtlsdrHandler::setDevice(const char *id) {
 	char *name = this->rtlsdr_get_device_name(devNo);
 	log(DEV_RTLSDR, LOG_CHATTY, "found device %i %s", devNo, name);
 	sprintf((char *) &buf, "%s-%i", name, devNo); 
-	if (strcmp(id, (char *) buf) == 0)
+	if (strncmp(id, (char *) buf, DEV_SHORT) == 0)
 	   break;
     }
     if (devNo >= count) {
