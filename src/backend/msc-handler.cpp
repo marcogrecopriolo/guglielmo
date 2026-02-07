@@ -39,31 +39,32 @@
 static int cifTable[] = {18, 72, 0, 36};
 
 //	Note CIF counts from 0 .. 3
-mscHandler::mscHandler(RadioInterface *mr, uint8_t dabMode,
+mscHandler::mscHandler(RadioInterface *mr, dabParams *params,
                        RingBuffer<uint8_t> *frameBuffer)
-    : params(dabMode), my_fftHandler(dabMode), myMapper(dabMode)
+    : my_fftHandler(params->get_dabMode()), myMapper(params)
 #ifdef __MSC_THREAD__
       ,
-      bufferSpace(params.get_L())
+      bufferSpace(params->get_L())
 #endif
 {
     myRadioInterface = mr;
+    this->params = params;
     this->frameBuffer = frameBuffer;
     cifVector.resize(55296);
-    BitsperBlock = 2 * params.get_carriers();
+    BitsperBlock = 2 * params->get_carriers();
     ibits.resize(BitsperBlock);
-    nrBlocks = params.get_L();
+    nrBlocks = params->get_L();
 
     fft_buffer = my_fftHandler.getVector();
-    phaseReference.resize(params.get_T_u());
+    phaseReference.resize(params->get_T_u());
 
-    numberofblocksperCIF = cifTable[(dabMode - 1) & 03];
+    numberofblocksperCIF = cifTable[(params->get_dabMode() - 1) & 03];
  
 //	work_to_be_done. store (false);
 #ifdef __MSC_THREAD__
     command.resize(nrBlocks);
     for (int i = 0; i < nrBlocks; i++)
-        command[i].resize(params.get_T_u());
+        command[i].resize(params->get_T_u());
     amount = 0;
     running.store(false);
     start();
@@ -93,7 +94,7 @@ void mscHandler::processBlock_0(std::complex<float> *b) {
 #ifdef __MSC_THREAD__
     bufferSpace.acquire(1);
     memcpy(command[0].data(), b,
-           params.get_T_u() * sizeof(std::complex<float>));
+           params->get_T_u() * sizeof(std::complex<float>));
     helper.lock();
     amount++;
     commandHandler.wakeOne();
@@ -111,7 +112,7 @@ void mscHandler::process_Msc(std::complex<float> *b, int blkno) {
         return;
     bufferSpace.acquire(1);
     memcpy(command[blkno].data(), b,
-           params.get_T_u() * sizeof(std::complex<float>));
+           params->get_T_u() * sizeof(std::complex<float>));
     helper.lock();
     amount++;
     commandHandler.wakeOne();
@@ -134,13 +135,13 @@ void mscHandler::run() {
         helper.unlock();
         while ((amount > 0) && running.load()) {
             memcpy(fft_buffer, command[currentBlock].data(),
-                   params.get_T_u() * sizeof(std::complex<float>));
+                   params->get_T_u() * sizeof(std::complex<float>));
 
             //block 3 and up are needed as basis for demodulation the "mext"
             // block  "our" msc blocks start with blkno 4
             my_fftHandler.do_FFT();
             if (currentBlock >= 4) {
-                for (int i = 0; i < params.get_carriers(); i++) {
+                for (int i = 0; i < params->get_carriers(); i++) {
                     int16_t index = myMapper.mapIn(i);
                     if (index < 0)
                         index += params.get_T_u();
@@ -153,13 +154,13 @@ void mscHandler::run() {
                     //      127 max neg we make the bits into softbits in the
                     //      range -127 .. 127
                     ibits[i] = -real(r1) / ab1 * 1023.0;
-                    ibits[params.get_carriers() + i] = -imag(r1) / ab1 * 1023.0;
+                    ibits[params->get_carriers() + i] = -imag(r1) / ab1 * 1023.0;
                 }
 
                 process_mscBlock(ibits, currentBlock);
             }
             memcpy(phaseReference.data(), fft_buffer,
-                   params.get_T_u() * sizeof(std::complex<float>));
+                   params->get_T_u() * sizeof(std::complex<float>));
             bufferSpace.release(1);
             helper.lock();
             currentBlock = (currentBlock + 1) % (nrBlocks);
@@ -173,16 +174,16 @@ void mscHandler::run() {
 void mscHandler::process_Msc(std::complex<float> *b, int blkno) {
     if (blkno < 3)
         return;
-    memcpy(fft_buffer, b, params.get_T_u() * sizeof(std::complex<float>));
+    memcpy(fft_buffer, b, params->get_T_u() * sizeof(std::complex<float>));
 
     //	block 3 and up are needed as basis for demodulation the "mext" block
     //	"our" msc blocks start with blkno 4
     my_fftHandler.do_FFT();
     if (blkno >= 4) {
-        for (int i = 0; i < params.get_carriers(); i++) {
+        for (int i = 0; i < params->get_carriers(); i++) {
             int16_t index = myMapper.mapIn(i);
             if (index < 0)
-                index += params.get_T_u();
+                index += params->get_T_u();
             std::complex<float> r1 =
                 fft_buffer[index] * conj(phaseReference[index]);
             float ab1 = fastMagnitude(r1);
@@ -190,13 +191,13 @@ void mscHandler::process_Msc(std::complex<float> *b, int blkno) {
             //      Recall:  the viterbi decoder wants 127 max pos, - 127 max
             //      neg we make the bits into softbits in the range -127 .. 127
             ibits[i] = -real(r1) / ab1 * 256.0;
-            ibits[params.get_carriers() + i] = -imag(r1) / ab1 * 256.0;
+            ibits[params->get_carriers() + i] = -imag(r1) / ab1 * 256.0;
         }
 
         process_mscBlock(ibits, blkno);
     }
     memcpy(phaseReference.data(), fft_buffer,
-           params.get_T_u() * sizeof(std::complex<float>));
+           params->get_T_u() * sizeof(std::complex<float>));
 }
 #endif
 
@@ -211,7 +212,7 @@ void mscHandler::reset_Buffers() {
     running.store(false);
     while (isRunning())
         wait(100);
-    bufferSpace.release(params.get_L() - bufferSpace.available());
+    bufferSpace.release(params->get_L() - bufferSpace.available());
     start();
 #endif
 }

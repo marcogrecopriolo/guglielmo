@@ -49,14 +49,14 @@
  *	The data is sent through to the fib processor
  */
 
-ficHandler::ficHandler(RadioInterface *mr, uint8_t dabMode)
-    : fibDecoder(mr), params(dabMode), myViterbi(768, true) {
+ficHandler::ficHandler(RadioInterface *mr, dabParams *params)
+    : fibDecoder(mr), myViterbi(768, true) {
     int16_t i, j, k;
     int local = 0;
     int16_t shiftRegister[9] = {1, 1, 1, 1, 1, 1, 1, 1, 1};
 
     index = 0;
-    BitsperBlock = 2 * params.get_carriers();
+    BitsperBlock = 2 * params->get_carriers();
     ficno = 0;
     ficBlocks = 0;
     ficMissed = 0;
@@ -106,7 +106,7 @@ ficHandler::ficHandler(RadioInterface *mr, uint8_t dabMode)
         local++;
     }
 
-    connect(this, SIGNAL(show_ficSuccess(bool)), mr, SLOT(showQuality(bool)));
+    connect(this, SIGNAL(showFicSuccess(bool)), mr, SLOT(showQuality(bool)));
 }
 
 ficHandler::~ficHandler() {}
@@ -193,11 +193,11 @@ void ficHandler::process_ficInput(int16_t ficno) {
     for (i = ficno * 3; i < ficno * 3 + 3; i++) {
         uint8_t *p = &bitBuffer_out[(i % 3) * 256];
         if (!check_CRC_bits(p, 256)) {
-            show_ficSuccess(false);
+            emit showFicSuccess(false);
             continue;
         }
 
-        show_ficSuccess(true);
+        emit showFicSuccess(true);
         fibDecoder::process_FIB(p);
     }
 }

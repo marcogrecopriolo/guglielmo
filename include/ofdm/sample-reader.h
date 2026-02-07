@@ -48,10 +48,10 @@ class RadioInterface;
 class sampleReader : public QObject {
     Q_OBJECT
   public:
-    sampleReader(RadioInterface *mr, deviceHandler *theRig,
-                 RingBuffer<std::complex<float>> *spectrumBuffer = nullptr);
+    sampleReader(RadioInterface *mr, deviceHandler *theRig);
 
     ~sampleReader();
+    void reset(void);
     void setRunning(bool b);
     float get_sLevel();
     std::complex<float> getSample(int32_t);
@@ -62,7 +62,6 @@ class sampleReader : public QObject {
   private:
     RadioInterface *myRadioInterface;
     deviceHandler *theRig;
-    RingBuffer<std::complex<float>> *spectrumBuffer;
     std::vector<std::complex<float>> localBuffer;
     int32_t localCounter;
     int32_t bufferSize;
@@ -78,7 +77,6 @@ class sampleReader : public QObject {
     int16_t dumpBuffer[DUMPSIZE];
     std::atomic<SNDFILE *> dumpfilePointer;
   signals:
-    void show_Spectrum(int);
-    void show_Corrector(int);
+    void showCorrector(int);
 };
 #endif

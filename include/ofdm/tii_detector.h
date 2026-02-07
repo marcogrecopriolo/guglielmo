@@ -34,7 +34,7 @@
 
 class TII_Detector {
   public:
-    TII_Detector(uint8_t dabMode, int16_t);
+    TII_Detector(dabParams *, uint8_t, int16_t);
     ~TII_Detector();
     void reset();
     void addBuffer(std::vector<std::complex<float>>);
@@ -44,7 +44,6 @@ class TII_Detector {
     void collapse(std::complex<float> *, float *);
     int16_t depth;
     uint8_t invTable[256];
-    dabParams params;
     fftHandler my_fftHandler;
     int16_t T_u;
     int16_t carriers;

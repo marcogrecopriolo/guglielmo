@@ -47,7 +47,7 @@ fibDecoder::fibDecoder(RadioInterface *mr) {
 	    SLOT(ensembleLoaded(int)));
     connect(this, SIGNAL(nameOfEnsemble(int, const QString &)),
 	    myRadioInterface, SLOT(nameOfEnsemble(int, const QString &)));
-    connect(this, SIGNAL(changeinConfiguration()), myRadioInterface,
+    connect(this, SIGNAL(changeInConfiguration()), myRadioInterface,
 	    SLOT(changeInConfiguration()));
 
     currentConfig = new dabConfig();
@@ -236,7 +236,7 @@ void fibDecoder::FIG0Extension0(uint8_t *d) {
 	nextConfig = temp;
 	nextConfig->reset();
 	cleanupServiceList();
-	emit changeinConfiguration();
+	emit changeInConfiguration();
     }
 
     prevChangeFlag = changeFlag;

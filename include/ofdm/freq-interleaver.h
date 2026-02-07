@@ -38,12 +38,11 @@
  */
 class interLeaver {
   public:
-    interLeaver(uint8_t);
+    interLeaver(dabParams *);
     ~interLeaver();
     int16_t mapIn(int16_t);
 
   private:
-    dabParams p;
     void createMapper(int16_t T_u, int16_t V1, int16_t lwb, int16_t upb,
                       int16_t *v);
     std::vector<int16_t> permTable;

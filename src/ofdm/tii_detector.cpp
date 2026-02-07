@@ -109,13 +109,13 @@ static uint8_t table[] = {
     0360  // 1 1 1 1 0 0 0 0		69
 };
 
-TII_Detector::TII_Detector(uint8_t dabMode, int16_t depth)
-    : params(dabMode), my_fftHandler(dabMode) {
+TII_Detector::TII_Detector(dabParams *params, uint8_t dabMode, int16_t depth)
+    : my_fftHandler(dabMode) {
     int16_t i;
 
     this->depth = depth;
-    this->T_u = params.get_T_u();
-    carriers = params.get_carriers();
+    this->T_u = params->get_T_u();
+    carriers = params->get_carriers();
     theBuffer.resize(T_u);
     fft_buffer = my_fftHandler.getVector();
     window.resize(T_u);
@@ -132,8 +132,10 @@ TII_Detector::TII_Detector(uint8_t dabMode, int16_t depth)
 TII_Detector::~TII_Detector() {}
 
 void TII_Detector::reset() {
-    for (int i = 0; i < T_u; i++)
+    for (int i = 0; i < T_u; i++) {
+	fft_buffer[i] = std::complex<float>(0, 0);
         theBuffer[i] = std::complex<float>(0, 0);
+    }
 }
 
 //	To eliminate (reduce?) noise in the input signal, we might

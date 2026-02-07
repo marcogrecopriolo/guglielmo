@@ -40,19 +40,6 @@ dabParams::dabParams(uint8_t Mode) {
         CIFs = 1;
         break;
 
-    case 4:
-        dabMode = 4;
-        L = 76;
-        K = 768;
-        T_F = 98304;
-        T_null = 1328;
-        T_s = 1276;
-        T_u = 1024;
-        T_g = 252;
-        carrierDiff = 2000;
-        CIFs = 2;
-        break;
-
     case 3:
         dabMode = 3;
         L = 153;
@@ -64,6 +51,19 @@ dabParams::dabParams(uint8_t Mode) {
         T_g = 63;
         carrierDiff = 2000;
         CIFs = 1;
+        break;
+
+    case 4:
+        dabMode = 4;
+        L = 76;
+        K = 768;
+        T_F = 98304;
+        T_null = 1328;
+        T_s = 1276;
+        T_u = 1024;
+        T_g = 252;
+        carrierDiff = 2000;
+        CIFs = 2;
         break;
 
     case 1:

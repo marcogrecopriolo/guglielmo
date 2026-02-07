@@ -106,7 +106,7 @@ typedef void* HINSTANCE;
 #define UNKNOWN_SERVICE 0100
 
 // 40 and above shows good results
-#define DIFF_LENGTH 60
+#define DIFF_LENGTH 127
 
 typedef struct {
     int theTime;

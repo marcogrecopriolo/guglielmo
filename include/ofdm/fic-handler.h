@@ -42,14 +42,13 @@ class dabParams;
 class ficHandler : public fibDecoder {
     Q_OBJECT
   public:
-    ficHandler(RadioInterface *, uint8_t);
+    ficHandler(RadioInterface *, dabParams *);
     ~ficHandler();
     void process_ficBlock(std::vector<int16_t>, int16_t);
     void stop();
     void reset();
 
   private:
-    dabParams params;
     viterbiSpiral myViterbi;
     uint8_t bitBuffer_out[768];
     int16_t ofdm_input[2304];
@@ -66,6 +65,6 @@ class ficHandler : public fibDecoder {
     uint8_t PRBS[768];
     //	uint8_t		shiftRegister	[9];
   signals:
-    void show_ficSuccess(bool);
+    void showFicSuccess(bool);
 };
 #endif

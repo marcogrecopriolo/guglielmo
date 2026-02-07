@@ -35,13 +35,11 @@ static inline int16_t valueFor(int16_t b) {
 
 static std::complex<float> oscillatorTable[INPUT_RATE];
 
-sampleReader::sampleReader(RadioInterface *mr, deviceHandler *theRig,
-                           RingBuffer<std::complex<float>> *spectrumBuffer) {
+sampleReader::sampleReader(RadioInterface *mr, deviceHandler *theRig) {
     int i;
     this->theRig = theRig;
     this->myRadioInterface = mr;
     bufferSize = 32768;
-    this->spectrumBuffer = spectrumBuffer;
     localBuffer.resize(bufferSize);
     localCounter = 0;
     currentPhase = 0;
@@ -60,6 +58,18 @@ sampleReader::sampleReader(RadioInterface *mr, deviceHandler *theRig,
 }
 
 sampleReader::~sampleReader() {}
+
+void sampleReader::reset(void) {
+    localCounter = 0;
+    currentPhase = 0;
+    sLevel = 0;
+    sampleCount = 0;
+    bufferContent = 0;
+    corrector = 0;
+    dumpfilePointer.store(nullptr);
+    dumpIndex = 0;
+    dumpScale = valueFor(theRig->bitDepth());
+}
 
 void sampleReader::setRunning(bool b) { running.store(b); }
 
@@ -110,12 +120,8 @@ std::complex<float> sampleReader::getSample(int32_t phaseOffset) {
     sLevel = 0.00001 * fastMagnitude(temp) + (1 - 0.00001) * sLevel;
 #define N 5
     if (++sampleCount > INPUT_RATE / N) {
-        show_Corrector(corrector);
+        emit showCorrector(corrector);
         sampleCount = 0;
-        if (spectrumBuffer != nullptr) {
-            spectrumBuffer->putDataIntoBuffer(localBuffer.data(), localCounter);
-            emit show_Spectrum(bufferSize);
-        }
         localCounter = 0;
     }
     return temp;
@@ -170,11 +176,7 @@ void sampleReader::getSamples(std::complex<float> *v, int32_t n,
 
     sampleCount += n;
     if (sampleCount > INPUT_RATE / N) {
-        show_Corrector(corrector);
-        if (spectrumBuffer != nullptr) {
-            spectrumBuffer->putDataIntoBuffer(localBuffer.data(), bufferSize);
-            emit show_Spectrum(bufferSize);
-        }
+        emit showCorrector(corrector);
         localCounter = 0;
         sampleCount = 0;
     }

@@ -516,7 +516,6 @@ void RadioInterface::resetSwAgc() {
 void RadioInterface::makeDABprocessor() {
     if (inputDevice == nullptr)
 	return;
-    DABglobals.spectrumBuffer = nullptr;
     DABglobals.iqBuffer = &iqBuffer;
     DABglobals.responseBuffer = &responseBuffer;
     DABglobals.tiiBuffer = &tiiBuffer;
@@ -782,7 +781,7 @@ void RadioInterface::changeInConfiguration() {
 	}
 
 	// checking for the main service
-	if (s.serviceName != DABprocessor->findService(s. SId, s.SCIds)) {
+	if (s.serviceName != DABprocessor->findService(s.SId, s.SCIds)) {
 	    warning(this, tr(BAD_SERVICE));
 	    return;
 	}
@@ -919,10 +918,13 @@ QPixmap RadioInterface::getIcon(uint SId) {
 
 void RadioInterface::addToEnsemble(const QString &serviceName, uint SId) {
     serviceId ed;
-    uint32_t lastId = 0;
     QString lastName = "";
-    bool inserted = false;
+    int insertRow = -1;
     std::vector<serviceId>::iterator i;
+
+    // just in case as we switched to FM before we picked this signal from the queue
+    if (isFM)
+       return;
 
     log(LOG_EVENT, LOG_MIN, "received service %s %i", qPrintable(serviceName), SId);
     if (!DABprocessor->is_audioService(serviceName)) {
@@ -938,43 +940,32 @@ void RadioInterface::addToEnsemble(const QString &serviceName, uint SId) {
 
     if (serviceList.size() == 0)
 	ensembleModel.clear();
-    else if (serviceOrder == ID_BASED) {
-	for (i=serviceList.begin(); i<serviceList.end(); i++) {
-	    if (lastId < SId && SId <= i->SId) {
-	    	serviceList.insert(i, ed);
-		inserted = true;
-		break;
-	    }
-	    lastId = i->SId;
-	}
-    } else {
-	for (i=serviceList.begin(); i<serviceList.end(); i++) {
-	    if (lastName < serviceName && serviceName <= i->name) {
-	    	serviceList.insert(i, ed);
-		inserted = true;
-		break;
-	    }
-	    lastName = i->name;
-	}
-    }
-    if (!inserted) {
-	int row = ensembleModel.rowCount();
-	serviceList.push_back(ed);
-	ensembleModel.appendRow(new QStandardItem(ed.name));
-	if (cache->imageCount() > 0)
-	    ensembleModel.item(row)->setIcon(getIcon(ed.SId));
-    } else {
-	int row = 0;
-	bool hasIcons = (cache->imageCount() > 0);
 
-	ensembleModel.clear();
-	for (const auto &serv: serviceList) {
-	    ensembleModel.appendRow(new QStandardItem(serv.name));
-	    if (hasIcons)
-		ensembleModel.item(row)->setIcon(getIcon(serv.SId));
-	    row++;
+    if (serviceOrder == ID_BASED) {
+	for (i = serviceList.begin(); i < serviceList.end(); ++i) {
+	    if (SId <= i->SId) {
+		insertRow = std::distance(serviceList.begin(), i);
+		break;
+	    }
+	}
+    } else {
+	for (i = serviceList.begin(); i < serviceList.end(); ++i) {
+	    if (serviceName <= i->name) {
+		insertRow = std::distance(serviceList.begin(), i);
+		break;
+	    }
 	}
     }
+
+    if (insertRow == -1) {
+	insertRow = serviceList.size();
+	serviceList.push_back(ed);
+    } else
+	serviceList.insert(serviceList.begin() + insertRow, ed);
+    ensembleModel.insertRow(insertRow, new QStandardItem(ed.name));
+    if (cache->imageCount() > 0)
+	ensembleModel.item(insertRow)->setIcon(getIcon(ed.SId));
+
     for (int i = 0; i < ensembleModel.rowCount(); i++)
 	if (currentService.valid && serviceList.at(i).name == currentService.serviceName) {
 	    ensembleDisplay->setCurrentIndex(ensembleModel.index(i, 0));
@@ -1003,6 +994,10 @@ void RadioInterface::nameOfEnsemble(int id, const QString &v) {
 
 void RadioInterface::ensembleLoaded(int count) {
     int i = 0;
+
+    // just in case we switched to FM just prior to handlig this signal
+    if (isFM)
+	return;
 
     // we are loading a scan list, no need to start a service
     if (scanning) {
@@ -1174,7 +1169,7 @@ bool checkImageData(QByteArray data, const char *type, QString pictureName) {
     QImageReader reader(&buffer);
 
     if (!reader.canRead()) {
-        return false;
+	return false;
     }
 
     QString found = reader.format();
@@ -1751,7 +1746,7 @@ void RadioInterface::startDAB() {
     player.setPlaybackStatus(Mpris::Stopped);
 #endif
     inputDevice->restartReader(tunedFrequency);
-    DABprocessor->start(tunedFrequency);
+    DABprocessor->start();
 }
 
 void RadioInterface::startDataService(QString serviceName, uint SId) {
@@ -1775,7 +1770,6 @@ void RadioInterface::startDataService(QString serviceName, uint SId) {
 #else
     (void) serviceName;
     (void) SId;
-    (void) SCIDs;
 #endif
 }
 

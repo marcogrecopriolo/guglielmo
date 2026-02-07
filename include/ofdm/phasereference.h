@@ -27,7 +27,6 @@
 #ifndef PHASEREFERENCE_H
 #define PHASEREFERENCE_H
 #include "constants.h"
-#include "dab-params.h"
 #include "fft-handler.h"
 #include "phasetable.h"
 #include "process-params.h"
@@ -40,7 +39,7 @@
 class phaseReference : public QObject, public phaseTable {
     Q_OBJECT
   public:
-    phaseReference(processParams *);
+    phaseReference(processParams *, dabParams *);
     ~phaseReference();
     int32_t findIndex(std::vector<std::complex<float>>, int);
     int16_t estimate_CarrierOffset(std::vector<std::complex<float>>);
@@ -51,7 +50,6 @@ class phaseReference : public QObject, public phaseTable {
     std::vector<std::complex<float>> refTable;
 
   private:
-    dabParams params;
     fftHandler my_fftHandler;
     RingBuffer<float> *response;
     std::vector<float> phaseDifferences;

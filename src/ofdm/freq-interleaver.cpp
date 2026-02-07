@@ -25,7 +25,6 @@
  */
 
 #include "freq-interleaver.h"
-#include "dab-params.h"
 #include <cstdint>
 #include <cstdio>
 
@@ -56,13 +55,13 @@ void interLeaver::createMapper(int16_t T_u, int16_t V1, int16_t lwb,
     }
 }
 
-interLeaver::interLeaver(uint8_t mode) : p(mode) {
+interLeaver::interLeaver(dabParams *params) {
 
-    int32_t T_u = p.get_T_u();
-    int32_t carriers = p.get_carriers();
+    int32_t T_u = params->get_T_u();
+    int32_t carriers = params->get_carriers();
     permTable.resize(T_u);
 
-    switch (mode) {
+    switch (params->get_dabMode()) {
     case 1:
     default: // shouldn't happen
         createMapper(T_u, 511, 256, 256 + carriers, permTable.data());

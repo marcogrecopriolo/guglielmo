@@ -44,15 +44,14 @@
 
 dabProcessor::dabProcessor(RadioInterface *mr, deviceHandler *inputDevice,
                            processParams *p)
-    : params(p->dabMode), myReader(mr, inputDevice, p->spectrumBuffer),
-      my_ficHandler(mr, p->dabMode),
-      my_mscHandler(mr, p->dabMode, p->frameBuffer), phaseSynchronizer(p),
-      my_TII_Detector(p->dabMode, p->tii_depth),
-      my_ofdmDecoder(mr, p->dabMode, p->iqBuffer) {
+    : params(p->dabMode), myReader(mr, inputDevice),
+      my_ficHandler(mr, &params),
+      my_mscHandler(mr, &params, p->frameBuffer), phaseSynchronizer(p, &params),
+      my_TII_Detector(&params, p->dabMode, p->tii_depth),
+      my_ofdmDecoder(mr, &params, p->dabMode, p->iqBuffer) {
 
     this->myRadioInterface = mr;
     this->inputDevice = inputDevice;
-    this->frequency = 220000000; // default
     this->threshold = p->threshold;
     this->tiiBuffer = p->tiiBuffer;
     this->T_null = params.get_T_null();
@@ -86,17 +85,6 @@ dabProcessor::~dabProcessor() {
     if (isRunning()) {
 	log(LOG_DAB, LOG_MIN, "dab processor delete while thread running");
     }
-}
-
-void dabProcessor::start(int frequency) {
-    this->frequency = frequency;
-    my_ficHandler.reset();
-    transmitters.clear();
-    if (!scanMode)
-        my_mscHandler.reset_Channel();
-    log(LOG_DAB, LOG_MIN, "dab processor starting");
-    QThread::start();
-
 }
 
 void dabProcessor::stop() {
@@ -133,6 +121,18 @@ void dabProcessor::run() {
     coarseOffset = 0;
     correctionNeeded = true;
     attempts = 0;
+    tii_counter = 0;
+    goodFrames = 0;
+    badFrames = 0;
+    totalFrames = 0;
+    my_ficHandler.reset();
+    transmitters.clear();
+    myReader.reset();
+    my_TII_Detector.reset();
+
+    if (!scanMode)
+        my_mscHandler.reset_Channel();
+    log(LOG_DAB, LOG_MIN, "dab processor starting");
     myReader.setRunning(true); // useful after a restart
                                // to get some idea of the signal strength
 
@@ -147,7 +147,7 @@ void dabProcessor::run() {
         frameCount = 0;
         sampleCount = 0;
 
-        setSynced(false);
+        emit setSynced(false);
         my_TII_Detector.reset();
         switch (myTimeSyncer.sync(T_null, T_F)) {
         case TIMESYNC_ESTABLISHED:
@@ -155,7 +155,7 @@ void dabProcessor::run() {
 
         case NO_DIP_FOUND:
             if (++attempts >= 8) {
-                emit(No_Signal_Found());
+                emit(noSignalFound());
                 attempts = 0;
             }
             goto notSynced;
@@ -173,7 +173,7 @@ void dabProcessor::run() {
         startIndex = phaseSynchronizer.findIndex(ofdmBuffer, threshold);
         if (startIndex < 0) { // no sync, try again
             if (!correctionNeeded) {
-                setSyncLost();
+                emit setSyncLost();
             }
             badFrames++;
             goto notSynced;
@@ -186,7 +186,7 @@ void dabProcessor::run() {
         frameCount++;
         totalSamples += sampleCount;
         if (frameCount > 10) {
-            show_clockErr(totalSamples - frameCount * 196608);
+            emit showClockErr(totalSamples - frameCount * 196608);
             totalSamples = 0;
             frameCount = 0;
         }
@@ -199,7 +199,7 @@ void dabProcessor::run() {
         startIndex = phaseSynchronizer.findIndex(ofdmBuffer, 3 * threshold);
         if (startIndex < 0) { // no sync, try again
             if (!correctionNeeded) {
-                setSyncLost();
+                emit setSyncLost();
             }
             badFrames++;
             goto notSynced;
@@ -226,7 +226,7 @@ void dabProcessor::run() {
          *	is used as a reference for decoding the first datablock. We read the
          *	missing samples in the ofdm buffer
          */
-        setSynced(true);
+        emit setSynced(true);
         myReader.getSamples(&((ofdmBuffer.data())[ofdmBufferIndex]),
                             T_u - ofdmBufferIndex, coarseOffset + fineOffset);
         sampleCount += T_u;
@@ -329,7 +329,7 @@ void dabProcessor::run() {
                         uint8_t mainId = res >> 8;
                         uint8_t subId = res & 0xFF;
                         tiiBuffer->putDataIntoBuffer(ofdmBuffer.data(), T_u);
-                        show_tii(mainId, subId);
+                        emit showTii(mainId, subId);
                     }
                     tii_counter = 0;
                     my_TII_Detector.reset();

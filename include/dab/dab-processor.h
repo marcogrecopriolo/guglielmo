@@ -56,7 +56,6 @@ class dabProcessor : public QThread {
   public:
     dabProcessor(RadioInterface *, deviceHandler *, processParams *);
     ~dabProcessor();
-    void start(int32_t);
     void stop();
     void startDumping(SNDFILE *);
     void stopDumping();
@@ -87,7 +86,6 @@ class dabProcessor : public QThread {
     bool set_dataChannel(packetdata *, RingBuffer<uint8_t> *);
 
   private:
-    int frequency;
     int threshold;
     int totalFrames;
     int goodFrames;
@@ -129,11 +127,10 @@ class dabProcessor : public QThread {
 
   signals:
     void setSynced(bool);
-    void No_Signal_Found();
+    void noSignalFound();
     void setSyncLost();
-    void show_tii(int, int);
-    void show_Spectrum(int);
+    void showTii(int, int);
     void showStrength(float);
-    void show_clockErr(int);
+    void showClockErr(int);
 };
 #endif

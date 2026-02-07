@@ -146,7 +146,7 @@ class fibDecoder : public QObject {
     void nameOfEnsemble(int, const QString &);
     void ensembleLoaded(int);
     void clockTime(int, int, int, int, int);
-    void changeinConfiguration();
+    void changeInConfiguration();
     void startAnnouncement(const QString &, int);
     void stopAnnouncement(const QString &, int);
 };

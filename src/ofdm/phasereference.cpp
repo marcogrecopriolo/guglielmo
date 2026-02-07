@@ -35,30 +35,29 @@
  *	The class inherits from the phaseTable.
  */
 
-phaseReference::phaseReference(processParams *p)
-    : phaseTable(p->dabMode), params(p->dabMode), my_fftHandler(p->dabMode) {
+phaseReference::phaseReference(processParams *p, dabParams *params)
+    : phaseTable(p->dabMode), my_fftHandler(p->dabMode) {
     int32_t i;
     float Phi_k;
 
     this->response = p->responseBuffer;
     this->diff_length = p->diff_length;
-    this->diff_length = 128;
     this->depth = p->echo_depth;
-    this->T_u = params.get_T_u();
-    this->T_g = params.get_T_g();
-    this->carriers = params.get_carriers();
+    this->T_u = params->get_T_u();
+    this->T_g = params->get_T_g();
+    this->carriers = params->get_carriers();
 
     refTable.resize(T_u);
     phaseDifferences.resize(diff_length);
     fft_buffer = my_fftHandler.getVector();
 
-    framesperSecond = 2048000 / params.get_T_F();
+    framesperSecond = INPUT_RATE / params->get_T_F();
     displayCounter = 0;
 
     for (i = 0; i < T_u; i++)
         refTable[i] = std::complex<float>(0, 0);
 
-    for (i = 1; i <= params.get_carriers() / 2; i++) {
+    for (i = 1; i <= params->get_carriers() / 2; i++) {
         Phi_k = get_Phi(i);
         refTable[i] = std::complex<float>(cos(Phi_k), sin(Phi_k));
         Phi_k = get_Phi(-i);

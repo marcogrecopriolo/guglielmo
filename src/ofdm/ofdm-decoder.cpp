@@ -40,15 +40,15 @@
  *	will extract the Tu samples, do an FFT and extract the
  *	carriers and map them on (soft) bits
  */
-ofdmDecoder::ofdmDecoder(RadioInterface *mr, uint8_t dabMode,
+ofdmDecoder::ofdmDecoder(RadioInterface *mr, dabParams *params, uint8_t dabMode,
                          RingBuffer<std::complex<float>> *iqBuffer)
-    : params(dabMode), my_fftHandler(dabMode), myMapper(dabMode) {
+    : my_fftHandler(dabMode), myMapper(params) {
     this->myRadioInterface = mr;
     this->iqBuffer = iqBuffer;
-    this->T_s = params.get_T_s();
-    this->T_u = params.get_T_u();
-    this->nrBlocks = params.get_L();
-    this->carriers = params.get_carriers();
+    this->T_s = params->get_T_s();
+    this->T_u = params->get_T_u();
+    this->nrBlocks = params->get_L();
+    this->carriers = params->get_carriers();
 
     this->T_g = T_s - T_u;
     fft_buffer = my_fftHandler.getVector();
@@ -223,7 +223,7 @@ void ofdmDecoder::compute_frequencyOffset(std::complex<float> *r,
     }
 
     log(LOG_DAB, LOG_CHATTY, "frequency offset %f Hz",
-        arg(theta) / (2 * M_PI) * 2048000 / T_u);
+        arg(theta) / (2 * M_PI) * INPUT_RATE / T_u);
 }
 
 void ofdmDecoder::compute_clockOffset(std::complex<float> *r,

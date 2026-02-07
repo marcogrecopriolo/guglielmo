@@ -54,7 +54,7 @@ class mscHandler : public QThread {
 class mscHandler {
 #endif
   public:
-    mscHandler(RadioInterface *, uint8_t, RingBuffer<uint8_t> *);
+    mscHandler(RadioInterface *, dabParams *, RingBuffer<uint8_t> *);
     ~mscHandler();
     void processBlock_0(std::complex<float> *);
     void process_Msc(std::complex<float> *, int);
@@ -69,7 +69,7 @@ class mscHandler {
     RadioInterface *myRadioInterface;
     RingBuffer<uint8_t> *dataBuffer;
     RingBuffer<uint8_t> *frameBuffer;
-    dabParams params;
+    dabParams *params;
     fftHandler my_fftHandler;
     std::complex<float> *fft_buffer;
     std::vector<complex<float>> phaseReference;
