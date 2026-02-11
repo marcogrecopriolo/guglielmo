@@ -170,8 +170,8 @@ void dabProcessor::run() {
          *	Note that we probably already had 30 to 40 samples of the T_g
          *	part
          */
-        startIndex = phaseSynchronizer.findIndex(ofdmBuffer, threshold);
-        if (startIndex < 0) { // no sync, try again
+        startIndex = phaseSynchronizer.findIndex(&ofdmBuffer, threshold);
+        if (startIndex < 0 || (size_t) startIndex >= ofdmBuffer.size()) { // no sync, try again
             if (!correctionNeeded) {
                 emit setSyncLost();
             }
@@ -196,8 +196,8 @@ void dabProcessor::run() {
          *	period. We use a correlation that will find the first sample after the
          *	cyclic prefix.
          */
-        startIndex = phaseSynchronizer.findIndex(ofdmBuffer, 3 * threshold);
-        if (startIndex < 0) { // no sync, try again
+        startIndex = phaseSynchronizer.findIndex(&ofdmBuffer, 3 * threshold);
+        if (startIndex < 0 || (size_t) startIndex >= ofdmBuffer.size()) { // no sync, try again
             if (!correctionNeeded) {
                 emit setSyncLost();
             }
@@ -272,7 +272,7 @@ void dabProcessor::run() {
             for (int i = 0; i < (int)T_s; i++)
                 cLevel += abs(ofdmBuffer[i]);
             cCount += T_s;
-            my_ofdmDecoder.decode(ofdmBuffer, ofdmSymbolCount, ibits.data());
+            my_ofdmDecoder.decode(&ofdmBuffer, ofdmSymbolCount, ibits.data());
             my_ficHandler.process_ficBlock(ibits, ofdmSymbolCount);
             if (!scanMode)
                 my_mscHandler.process_Msc(&((ofdmBuffer.data())[T_g]),

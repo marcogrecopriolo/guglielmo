@@ -41,7 +41,7 @@ class phaseReference : public QObject, public phaseTable {
   public:
     phaseReference(processParams *, dabParams *);
     ~phaseReference();
-    int32_t findIndex(std::vector<std::complex<float>>, int);
+    int32_t findIndex(std::vector<std::complex<float>> *, int);
     int16_t estimate_CarrierOffset(std::vector<std::complex<float>>);
 
     float phase(std::vector<std::complex<float>>, int);

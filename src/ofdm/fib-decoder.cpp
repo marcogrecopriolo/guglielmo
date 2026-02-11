@@ -887,12 +887,12 @@ void fibDecoder::FIG1Extension1(uint8_t *d) {
     QString dataName =
         toQStringUsingCharset((const char *)label, (CharacterSet)charSet);
     serviceIndex = findService(dataName);
-    if (serviceIndex == -1)
+    if (serviceIndex < 0)
         createService(dataName, SId, 0);
-    else
+    else {
         ensemble->services[serviceIndex].SCIds = 0;
-
-    ensemble->services[serviceIndex].hasName = true;
+        ensemble->services[serviceIndex].hasName = true;
+    }
 }
 
 // service component label 8.1.14.3

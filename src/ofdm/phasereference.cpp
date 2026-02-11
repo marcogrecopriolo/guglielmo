@@ -83,7 +83,7 @@ phaseReference::~phaseReference() {}
  *	we believe that that indicates the first sample we were
  *	looking for.
  */
-int32_t phaseReference::findIndex(std::vector<std::complex<float>> v,
+int32_t phaseReference::findIndex(std::vector<std::complex<float>> *v,
                                   int threshold) {
     int32_t i;
     int32_t maxIndex = -1;
@@ -93,7 +93,7 @@ int32_t phaseReference::findIndex(std::vector<std::complex<float>> v,
     _VLA(float, mbuf, T_u / 2);
     std::vector<int> resultVector;
 
-    memcpy(fft_buffer, v.data(), T_u * sizeof(std::complex<float>));
+    memcpy(fft_buffer, v->data(), T_u * sizeof(std::complex<float>));
     my_fftHandler.do_FFT();
 
     //	into the frequency domain, now correlate

@@ -115,12 +115,12 @@ float ofdmDecoder::computeQuality(std::complex<float> *v) {
  */
 
 static int cnt = 0;
-void ofdmDecoder::decode(std::vector<std::complex<float>> buffer, int32_t blkno,
+void ofdmDecoder::decode(std::vector<std::complex<float>> *buffer, int32_t blkno,
                          int16_t *ibits) {
     int16_t i;
     _VLA(std::complex<float>, conjVector, T_u);
 
-    memcpy(fft_buffer, &((buffer.data())[T_g]),
+    memcpy(fft_buffer, &((buffer->data())[T_g]),
            T_u * sizeof(std::complex<float>));
 
     // fftlabel:
