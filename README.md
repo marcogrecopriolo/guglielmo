@@ -182,20 +182,22 @@ There is no need to specify both options: using -d on its own implies -v, and us
 
 Whether you are using an AppImage or your own build, you are expected to have installed the package(s)
 supporting the device you intend to use.
+
 The reason for this is that more often than not supporting individual devices is more complex than just
 copying a shared library (it certainly is on Windows, but on Linux, think Udev rules).
+
 As an exception, in an attempt to aid usability, Linux appimages ship both librtlsdr.so and libairspy.so.
+
 Should your device need a different shared library than the one that is shipped, you can install the
 correct package and then override the library using the DL_PRELOAD environmental variable, for instance
 
-LD_PRELOAD=librtlsdr.so ./guglielmo-x86_64-v0.7.AppImage
+    LD_PRELOAD=librtlsdr.so ./guglielmo-x86_64-v0.7.AppImage
 
 Should your device not be found, you can turn on logging using the -v option to see what the problem might be.
 For instance, if the correct package is not installed, you may see messages like
 
-LIME:   failed to open libLimeSuite.so - Error = libLimeSuite.so: cannot open shared object file: No such file or directory
-
-HACKRF: failed to open libhackrf.so - Error = libhackrf.so: cannot open shared object file: No such file or directory
+    LIME:   failed to open libLimeSuite.so - Error = libLimeSuite.so: cannot open shared object file: No such file or directory
+    HACKRF: failed to open libhackrf.so - Error = libhackrf.so: cannot open shared object file: No such file or directory
 
 The messages give you an indication of what shared libraries the binary is searching.
 
