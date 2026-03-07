@@ -19,6 +19,7 @@ cp build/guglielmo  appdir/usr/bin/guglielmo
 
 # look for local first, and quit after the first one
 cp `find -L /usr/local /usr -name librtlsdr.so -print -quit 2>&-`  appdir/usr/lib
+cp `find -L /usr/local /usr -name libairspy.so -print -quit 2>&-`  appdir/usr/lib
 cp `find -L /usr/local /usr -name libmpris-qt5.so.1 -print -quit 2>&-`  appdir/usr/lib
  
 cp etc/guglielmo.desktop appdir/usr/share/applications
