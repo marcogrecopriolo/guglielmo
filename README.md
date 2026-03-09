@@ -179,21 +179,29 @@ There is no need to specify both options: using -d on its own implies -v, and us
 
 ## Running
 
-Whether you are using an AppImage or your own build, you are expected to have installed the package(s)
+Whether you are using an AppImage or your own build, you may very well be expected to install the package(s)
 supporting the device you intend to use.
 
 The reason for this is that more often than not supporting individual devices is more complex than just
-copying a shared library (it certainly is on Windows, but on Linux, think Udev rules).
+copying a shared library: as an example, SDRplay V3 uses a daemon to manage device connections to individual
+processes, while RtlSdr installation on windows requires replacing the existing drivers using Zadig.
 
-As an exception, in an attempt to aid usability, Linux appimages ship both librtlsdr.so and libairspy.so.
+On Linux, even where a shared library suffices, you may still have to add new Udev rules to manage device permissions properly.
 
-Should your device need a different shared library than the one that is shipped, you can install the
+This is best handled the way your favourite distro intended: the appropriate package.
+
+As an exception, in an attempt to aid usability (yes, people have complained), Linux appimages and OSX dmgs
+ship both librtlsdr and libairspy shared libraries.
+
+On Linux, should your device need a different shared library than the one that is shipped, you can install the
 correct package and then override the library using the DL_PRELOAD environmental variable, for instance
 
     LD_PRELOAD=librtlsdr.so ./guglielmo-x86_64-v0.7.AppImage
 
-Should your device not be found, you can turn on logging using the -v option to see what the problem might be.
-For instance, if the correct package is not installed, you may see messages like
+OSX has similar functionality, but it uses the DYLD_INSERT_LIBRARIES environmental variable.
+
+Should your device not be loaded, you can turn on logging using the -v option to see what the problem might be.
+For instance, if the correct library is not found, you may see messages like
 
     LIME:   failed to open libLimeSuite.so - Error = libLimeSuite.so: cannot open shared object file: No such file or directory
     HACKRF: failed to open libhackrf.so - Error = libhackrf.so: cannot open shared object file: No such file or directory
