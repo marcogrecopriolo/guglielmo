@@ -151,8 +151,8 @@ int airspyHandler::devices(deviceStrings *devs, int max) {
     // fails if the device is opened already, so we have to check the current device too.
     if (!found && currentId > 0) {
         *devs[count].description = '\0';
-        sprintf((char *) &devs[count].name, "%" PRIx64, deviceList[count]);
-        sprintf((char *) &devs[count].id, "%" PRIx64, deviceList[count]);
+        sprintf((char *) &devs[count].name, "%" PRIx64, currentId);
+        sprintf((char *) &devs[count].id, "%" PRIx64, currentId);
         log(DEV_AIRSPY, LOG_CHATTY, "found device %i %s", count, (char *) &devs[count].id);
 	count++;
     }
