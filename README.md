@@ -137,9 +137,8 @@ This tab offers a combo box selecting any of the available devices, and for each
 - LNA gain (if the device is equipped with a low noise amplifier)
 
 Note that not all device drivers have the ability to choose individual devices (as an example, all
-the devices that I have not tested, or the windows AirSpy driver): if this is the case, the combo
-box selecting the individual device will be disabled, and the first available device will be
-implictly selected.
+the devices that I have not tested): if this is the case, the combo box selecting the individual
+device will be disabled, and the first available device will be implictly selected.
 
 AGC has up to four supported modes: Off, On, Software and Combined.
 The supported modes are device dependent.
@@ -268,6 +267,7 @@ amount of manual intervention.
 - debug verbosity (and logging in general)
 - cleanup the source, remove objects that are not needed, consolidate buffer usage
 - make loading settings more resilient to duff values
+- detect that devices have been added or removed in flight, detect wake ups after system suspends, etc.
 
 ## Acknowledgements, copyright, etc...
 
@@ -276,7 +276,7 @@ various other contributors.
 
 I have written the interface, integrated the two processors, rewritten the devices to work
 against the guglielmo interface, improved several things and fixed several bugs, most
-notably MOT handling, the FM and RDS subsystems, gain management and logging.
+notably MOT handling, the FM and RDS subsystems, the DAB processor, gain management and logging.
 
 Carl Laufer at rtl-sdr.com, Jon Hudson at sdrplay.com and Youssef Touil at AirSpy deserve
 a special mention for having provided hardware that I have used to develop the drivers.
