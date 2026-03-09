@@ -93,8 +93,8 @@ airspyHandler::airspyHandler() {
     }
 
     result = my_airspy_list_devices(&numId, 1);
-    if (result != 0) {
-	log(DEV_AIRSPY, LOG_MIN, "device count returned %i", result);
+    if (result <= 0) {
+	log(DEV_AIRSPY, LOG_MIN, "no device found");
         CLOSE_LIBRARY(Handle);
         throw(22);
     } 
