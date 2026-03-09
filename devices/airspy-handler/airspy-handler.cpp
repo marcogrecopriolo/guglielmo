@@ -92,7 +92,12 @@ airspyHandler::airspyHandler() {
         throw(21);
     }
 
-    (void) my_airspy_list_devices(&numId, 1);
+    result = my_airspy_list_devices(&numId, 1);
+    if (result != 0) {
+	log(DEV_AIRSPY, LOG_MIN, "device count returned %i", result);
+        CLOSE_LIBRARY(Handle);
+        throw(22);
+    } 
     if (!deviceOpen(numId)) {
         CLOSE_LIBRARY(Handle);
         throw(22);
@@ -183,7 +188,7 @@ bool airspyHandler::deviceOpen(uint64_t numId) {
 
     err = my_airspy_open_sn(&device, numId);
     if (err < 0) {
-        log(DEV_AIRSPY, LOG_MIN, "%" PRIx64 "open failed: %i", numId, err);
+        log(DEV_AIRSPY, LOG_MIN, "device %" PRIx64 " open failed: %i", numId, err);
         return false;
     }
     (void) my_airspy_set_sample_type(device, AIRSPY_SAMPLE_INT16_IQ);
