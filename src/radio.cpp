@@ -243,7 +243,7 @@ RadioInterface::RadioInterface(QSettings *Si, QWidget *parent):
     else if (FMfreq > MAX_FM)
 	FMfreq = MAX_FM;
     frequencyKnob->setValue(double(FMfreq));
-    frequencyLCD->display(int(FMfreq*1000));
+    frequencyLCD->display(qRound(FMfreq*1000));
 
     // presets
     presetSelector->addItem("Presets");
@@ -833,8 +833,8 @@ void RadioInterface::startFMscan(bool down) {
 #endif
     FMfreq = (FMfreq*10+scanIncrement)/10;
     frequencyKnob->setValue(double(FMfreq));
-    frequencyLCD->display(int(FMfreq*1000));
-    inputDevice->restartReader(int(FMfreq*1000000));
+    frequencyLCD->display(qRound(FMfreq*1000));
+    inputDevice->restartReader(qRound(FMfreq*1000000));
     FMprocessor->start();
     FMprocessor->startScan();
     scanTimer->start();
@@ -866,8 +866,8 @@ void RadioInterface::nextFrequency(void) {
 	inputDevice->stopReader();
 	FMfreq = (FMfreq*10+scanIncrement)/10;
 	frequencyKnob->setValue(double(FMfreq));
-	frequencyLCD->display(int(FMfreq*1000));
-	inputDevice->restartReader(int(FMfreq*1000000));
+	frequencyLCD->display(qRound(FMfreq*1000));
+	inputDevice->restartReader(qRound(FMfreq*1000000));
 	FMprocessor->start();
 	FMprocessor->startScan();
 	scanTimer->start();
@@ -878,7 +878,7 @@ void RadioInterface::scanDone(void) {
     log(LOG_EVENT, LOG_MIN, "fm station found");
     stopFMscan();
     playing = true;
-    startFM(int(FMfreq*1000000));
+    startFM(qRound(FMfreq*1000000));
     setPlaying();
     setRecording();
     setScanning();
@@ -1448,8 +1448,8 @@ void RadioInterface::handlePresetSelector(int index) {
 	if (ok && newFreq > MIN_FM && newFreq < MAX_FM) {
 		FMfreq = newFreq;
 		frequencyKnob->setValue(double(FMfreq));
-		frequencyLCD->display(int(FMfreq*1000));
-		startFM(int(FMfreq*1000000));
+		frequencyLCD->display(qRound(FMfreq*1000));
+		startFM(qRound(FMfreq*1000000));
 		playing = true;
 	} else {
 		warning(this, tr(BAD_PRESET));
@@ -2030,10 +2030,10 @@ void RadioInterface::setScanning() {
 void RadioInterface::handleFMfrequency(double freq) {
     log(LOG_UI, LOG_MIN, "new fm frequency %f", freq);
     FMfreq = freq;
-    frequencyLCD->display(int(FMfreq*1000));
+    frequencyLCD->display(qRound(FMfreq*1000));
     if (playing) {
 	stopFM();
-	startFM(int(FMfreq*1000000));
+	startFM(qRound(FMfreq*1000000));
     }
 }
 
@@ -2044,7 +2044,7 @@ void RadioInterface::handlePlayButton() {
     disconnect(playButton, SIGNAL(clicked(void)),
 		 this, SLOT(handlePlayButton(void)));
     if (isFM)
-	startFM(int(FMfreq*1000000));
+	startFM(qRound(FMfreq*1000000));
     else
 	startDABService(&currentService);
 }

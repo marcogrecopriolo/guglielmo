@@ -124,14 +124,17 @@ airspyHandler::~airspyHandler(void) {
 }
 
 int airspyHandler::devices(deviceStrings *devs, int max) {
-    uint64_t deviceList[max];
+    bool found = false;
+    _VLA(uint64_t, deviceList, max);
 
     int count = my_airspy_list_devices(deviceList, max);
-    if (count <= 0) {
+    if (count < 0) {
 	log(DEV_AIRSPY, LOG_MIN, "airspy_list_devices returned %i", count);
         return 0;
     }
     for (int i = 0; i < count; i++) {
+	if (currentId == deviceList[i])
+	    found = true;
         *devs[i].description = '\0';
         sprintf((char *) &devs[i].name, "%" PRIx64, deviceList[i]);
         sprintf((char *) &devs[i].id, "%" PRIx64, deviceList[i]);
@@ -142,6 +145,16 @@ int airspyHandler::devices(deviceStrings *devs, int max) {
 	// so we are just stuck with the serial number
         log(DEV_AIRSPY, LOG_CHATTY, "found device %i %s", i, (char *) &devs[i].id);
 
+    }
+
+    // airspy_list_devices() tries to open each individual device. On WinUSB this
+    // fails if the device is opened already, so we have to check the current device too.
+    if (!found && currentId > 0) {
+        *devs[count].description = '\0';
+        sprintf((char *) &devs[count].name, "%" PRIx64, deviceList[count]);
+        sprintf((char *) &devs[count].id, "%" PRIx64, deviceList[count]);
+        log(DEV_AIRSPY, LOG_CHATTY, "found device %i %s", count, (char *) &devs[count].id);
+	count++;
     }
     log(DEV_AIRSPY, LOG_MIN, "found %i devices", count);
     return count;
