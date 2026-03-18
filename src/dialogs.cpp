@@ -214,8 +214,7 @@ void RadioInterface::handleSettingsAction() {
 	if (FMfilter <= 0)
 	    settingsUi.fmFilterComboBox->setCurrentIndex(0);
 	else
-	    settingsUi.fmFilterComboBox->setCurrentText(QString::number(FMfilter/1000));
-	settingsUi.fmDegreeFilterSpinBox->setValue(FMdegree);
+	    settingsUi.fmFilterComboBox->setCurrentText(QString::number(FMfilter));
 	if (lowPassFilter <= 0)
 	    settingsUi.lowPassComboBox->setCurrentIndex(0);
 	else
@@ -227,8 +226,6 @@ void RadioInterface::handleSettingsAction() {
 		this, SLOT(setDeemphasis(int)));
 	settingsDialog->connect(settingsUi.fmFilterComboBox, SIGNAL(activated(int)),
 		this, SLOT(setFMFilter(int)));
-	settingsDialog->connect(settingsUi.fmDegreeFilterSpinBox, SIGNAL(valueChanged(int)),
-		this, SLOT(setFMDegree(int)));
 	settingsDialog->connect(settingsUi.lowPassComboBox, SIGNAL(activated(int)),
 		this, SLOT(setLowPassFilter(int)));
 	settingsDialog->connect(settingsUi.fmAudioGainSpinBox, SIGNAL(valueChanged(int)),
@@ -310,7 +307,6 @@ void RadioInterface::handleSettingsAction() {
     settingsUi.deemphasisComboBox->setEnabled(FMprocessor != nullptr);
     settingsUi.lowPassComboBox->setEnabled(FMprocessor != nullptr);
     settingsUi.fmFilterComboBox->setEnabled(FMprocessor != nullptr);
-    settingsUi.fmDegreeFilterSpinBox->setEnabled(FMprocessor != nullptr);
     settingsUi.lowPassComboBox->setEnabled(FMprocessor != nullptr);
     settingsUi.fmAudioGainSpinBox->setEnabled(FMprocessor != nullptr);
 
@@ -376,7 +372,6 @@ void RadioInterface::settingsClose(void) {
     // FM tab
     settings->beginGroup(GROUP_FM);
     settings->setValue(FM_FILTER, FMfilter);
-    settings->setValue(FM_DEGREE, FMdegree);
     settings->setValue(FM_DECODER, FMdecoder);
     settings->setValue(FM_DEEMPHASIS, deemphasis);
     settings->setValue(FM_LOW_PASS_FILTER, lowPassFilter);
@@ -436,8 +431,8 @@ void RadioInterface::startFullScan() {
 	player.setPlaybackStatus(Mpris::Stopped);
 #endif
 	frequencyKnob->setValue(double(FMfreq));
-	frequencyLCD->display(int(FMfreq*1000));
-	inputDevice->restartReader(int(FMfreq*1000000));
+	frequencyLCD->display(qRound(FMfreq*1000));
+	inputDevice->restartReader(qRound(FMfreq*1000000));
 	FMprocessor->start();
 	FMprocessor->startFullScan();
 	scanTimer->start();
@@ -494,7 +489,7 @@ void RadioInterface::stopFullScan() {
     currentService = saveService;
     if (isFM) {
 	toFM();
-	frequencyLCD->display(int(FMfreq*1000));
+	frequencyLCD->display(qRound(FMfreq*1000));
     } else {
 	toDAB();
 	currentService.valid = (currentService.serviceName != "");
@@ -516,8 +511,8 @@ void RadioInterface::nextFullScanFrequency(void) {
 	inputDevice->stopReader();
 	FMfreq = (FMfreq*10+scanIncrement)/10;
 	frequencyKnob->setValue(double(FMfreq));
-	frequencyLCD->display(int(FMfreq*1000));
-	inputDevice->restartReader(int(FMfreq*1000000));
+	frequencyLCD->display(qRound(FMfreq*1000));
+	inputDevice->restartReader(qRound(FMfreq*1000000));
 	log(LOG_EVENT, LOG_MIN, "fm full scan next frequency %f", FMfreq);
 	FMprocessor->start();
 	FMprocessor->startFullScan();
@@ -824,14 +819,8 @@ void RadioInterface::setFMFilter(int index) {
     if (v == "None")
 	FMfilter = 0;
     else
-	FMfilter = v.toInt()*1000;
-    FMprocessor->setBandwidth(FMfilter);
-}
-
-void RadioInterface::setFMDegree(int degree) {
-    log(LOG_UI, LOG_MIN, "fm degree %i", degree);
-    FMprocessor->setBandFilterDegree(degree);
-    FMdegree = degree;
+	FMfilter = v.toInt();
+    FMprocessor->setBandwidth(KHz(FMfilter));
 }
 
 void RadioInterface::setLowPassFilter(int index) {
@@ -889,7 +878,7 @@ void RadioInterface::setDevice(int d) {
 
     // do it all again for the new device
     settings->beginGroup(deviceType);
-    agc = settings->value(DEV_AGC, DEV_DEF_AGC).toInt();
+    agc = settings->value(DEV_AGC, defaultAgc()).toInt();
     qobject_cast<QListView*> (settingsUi.agcComboBox->view())->setRowHidden(AGC_ON, !(deviceUiControls & HW_AGC));
     qobject_cast<QListView*> (settingsUi.agcComboBox->view())->setRowHidden(AGC_SOFTWARE, !(deviceUiControls & SW_AGC));
     qobject_cast<QListView*> (settingsUi.agcComboBox->view())->setRowHidden(AGC_COMBINED, !(deviceUiControls & COMBO_AGC));

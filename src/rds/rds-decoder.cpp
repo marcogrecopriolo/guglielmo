@@ -86,7 +86,7 @@ rdsDecoder::rdsDecoder(RadioInterface* myRadio,
 
     // The matched filter is followed by a pretty sharp filter
     // to eliminate all remaining "noise".
-    sharpFilter = new BandPassIIR(9, RDS_BITCLK_HZ - 6,
+    sharpFilter = new BandPassIIR(7, RDS_BITCLK_HZ - 6,
         RDS_BITCLK_HZ + 6,
         rate, S_BUTTERWORTH);
     rdsLastSyncSlope = 0;

@@ -66,11 +66,10 @@ public:
 private:
     RadioInterface* MyRadioInterface;
 
-    void Handle_Basic_Tuning_and_Switching(RDSGroup*);
-    void Handle_RadioText(RDSGroup*);
-    void Handle_Time_and_Date(RDSGroup*);
-    void addtoStationLabel(uint32_t, uint32_t);
-    void additionalFrequencies(uint16_t);
+    void handleBasicTuning(RDSGroup*);
+    void handleRadioText(RDSGroup*);
+    void handleTimeAndDate(RDSGroup*);
+    void addtoStationLabel(uint32_t, uint32_t, int16_t);
     void addtoRadioText(uint16_t, uint16_t, uint16_t);
     QString prepareText(char*, int16_t);
     uint32_t m_piCode;
@@ -85,17 +84,13 @@ private:
 
     // group 2 members
     uint32_t textSegmentRegister;
+    int initialLen;
     int32_t textABflag;
-    char textBuffer[RADIOTEXT_LENGTH];
+    char textBuffer[RADIOTEXT_LENGTH+1];
 
 signals:
-    void setGroup(int);
     void setPTYCode(int);
-    void setMusicSpeechFlag(int);
-    void clearMusicSpeechFlag(void);
-    void setPiCode(int);
     void setStationLabel(const QString&);
     void setRadioText(const QString&);
-    void setAFDisplay(int);
 };
 #endif

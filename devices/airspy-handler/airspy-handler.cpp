@@ -232,7 +232,7 @@ bool airspyHandler::restartReader(int32_t frequency) {
     }
 
     running.store(true);
-    log(DEV_AIRSPY, LOG_MIN, "reader stopped");
+    log(DEV_AIRSPY, LOG_MIN, "reader started");
     return true;
 }
 

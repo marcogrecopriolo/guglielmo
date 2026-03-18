@@ -141,8 +141,11 @@ private:
     int deemphasis;
     int lowPassFilter;
     int FMfilter;
-    int FMdegree;
     int FMaudioGain;
+
+// RDS
+    int rdsDemodulator;
+    int rdsDecoder;
 
 // UI
     QDialog *settingsDialog;
@@ -257,6 +260,16 @@ private:
     void emptyArt(bool);
     QPixmap getIcon(uint);
 
+    int defaultAgc() {
+	if (deviceUiControls & COMBO_AGC)
+	    return AGC_COMBINED;
+	else if (deviceUiControls & SW_AGC)
+	    return AGC_SOFTWARE;
+	else if (deviceUiControls &HW_AGC)
+	    return AGC_ON;
+	return AGC_OFF;
+    }
+
 // MPRIS
 #ifdef HAVE_MPRIS
     void mprisLabelAndText(QString, QString);
@@ -273,6 +286,7 @@ public slots:
     void showQuality(bool);
     void showStrength(float);
     void showLabel(QString);
+    void setProgramType(int);
     void showText(QString);
     void showSoundMode(bool);
     void handleMotObject(QByteArray, QString, int, bool);
@@ -347,7 +361,6 @@ private slots:
     void setDeemphasis(int);
     void setLowPassFilter(int);
     void setFMFilter(int);
-    void setFMDegree(int);
     void setFMaudioGain(int);
 
     void setDevice(int);

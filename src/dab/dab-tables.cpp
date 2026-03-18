@@ -477,7 +477,7 @@ int16_t	i = 0;
 }
 
 //	from Table 12
-const char *getProgramType_Not_NorthAmerica (int16_t programType) {
+const char *getProgramTypeWorld(int16_t programType) {
 
 	switch (programType) {
 	   case 0:     return "No programme type";
@@ -517,7 +517,7 @@ const char *getProgramType_Not_NorthAmerica (int16_t programType) {
 }
 
 //	from Table 13
-const char *getProgramType_For_NorthAmerica (int16_t programType) {
+const char *getProgramTypeNorthAmerica (int16_t programType) {
 	switch (programType) {
 	   case 0:     return "No programme type";
 	   case 1:     return "News";
@@ -555,13 +555,13 @@ const char *getProgramType_For_NorthAmerica (int16_t programType) {
 	}
 }
 
-const char *getProgramType (bool gotInterTabId,
+const char *getProgramType(bool gotInterTabId,
 	                    uint8_t interTabId, int16_t programType) {
 	if (gotInterTabId &&  (interTabId == 1))
-	   return getProgramType_Not_NorthAmerica (programType);
+	   return getProgramTypeWorld(programType);
 	else
 	if (gotInterTabId && (interTabId == 2))
-	   return getProgramType_For_NorthAmerica (programType);
+	   return getProgramTypeNorthAmerica(programType);
 	else {
 	   switch (programType) {
 	      case 0:     return "unknown programme type 0";

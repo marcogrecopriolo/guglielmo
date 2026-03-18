@@ -50,20 +50,37 @@
 #define RDS_WIDTH		2400
 #define RDS_LP_WIDTH		1200		// as close to 1187.5 as we can get
 #define RDS_PLL_WIDTH		200
-#define RDS_SAMPLES		(fmRate*4)
-#define RDS_SKIP		fmRate
-#define RDS_MEAN_DRIFT_LIMIT	(2*M_PI/100.0)
-#define RDS_AVG_DRIFT_LIMIT	(2*M_PI/300.0)
+#define RDS_SAMPLES		(fmRate*8)
+#define RDS_SKIP		(fmRate*2)
+#define RDS_MEAN_DRIFT_LIMIT	(2*M_PI/300.0)
+#define RDS_MEDIAN_DRIFT_LIMIT	(2*M_PI/60.0)
 #define NOISE_FREQUENCY		70000
 #define NOISE_WIDTH		500
-#define	RDS_DECIMATOR		4
+#define RDS_DECIMATOR		4
 #define SIGNAL_SIZE		1024
+
+#define FM_FILTER_SIZE		15
+#define PILOT_FILTER_SIZE	31
+#define PILOT_FILTER_SIZE	31
+#define RDS_BAND_FILTER_SIZE	53
+#define HILBERT_SIZE		13
+#define RDS_LOWPASS_SIZE	89
+#define AUDIO_FILTER_SIZE	11
+#define FFT_SIZE		256
+#define LEVEL_SIZE		512
+#define LEVEL_FREQ		3
+
+#define PILOT_DELAY		((PILOT_FILTER_SIZE - 1)/2+1)
+#define RDS_PILOT_DELAY		(1)
+#define RDS_PLL_DELAY		((RDS_BAND_FILTER_SIZE + HILBERT_SIZE - 2)/2+1)
+
 #define BUFFER_SIZE		16384
+#define PHASE_BUFFER_SIZE	2048
+#define PILOT_BUFFER_SIZE	2048
 
 #define DEF_SIGNAL_GAIN		100
 #define DEF_AUDIO_GAIN		40
 #define DEF_AUDIO_BANDWIDTH	-1
-#define DEF_FILTER_DEGREE	15
 
 
 fmProcessor::fmProcessor(deviceHandler *device, RadioInterface *radioInterface, int32_t inputRate,
@@ -85,9 +102,8 @@ fmProcessor::fmProcessor(deviceHandler *device, RadioInterface *radioInterface, 
     signalFft = new common_fft(SIGNAL_SIZE);
     fmBandFilter = new DecimatingFIR(15*decimatingScale, fmRate/2, inputRate, decimatingScale);
     fmBandwidth = 0.95*fmRate;
-    fmFilterDegree = DEF_FILTER_DEGREE;
     fmFilter = NULL;
-    newFilter = false;
+    newFilter = true;
 
     // to isolate the pilot signal, we need a reasonable
     // filter. The filtered signal is beautified by a pll
@@ -95,7 +111,7 @@ fmProcessor::fmProcessor(deviceHandler *device, RadioInterface *radioInterface, 
     pilotBandFilter->setBand(PILOT_FREQUENCY-PILOT_WIDTH,
 			     PILOT_FREQUENCY+PILOT_WIDTH, fmRate);
     pilotPllFilter = new pilotPll(OMEGA_PILOT, 25*OMEGA_DEMOD, fastTrigTabs);
-    pilotDelay = (FFT_SIZE-PILOT_FILTER_SIZE)*OMEGA_PILOT;
+    pilotDelay = 0;
 
     // highest freq in message
     DSPFLOAT F_G = 0.65*fmRate/2;
@@ -192,11 +208,6 @@ void fmProcessor::setBandwidth(int32_t b) {
     newFilter = true;
 }
 
-void fmProcessor::setBandFilterDegree(int32_t d) {
-    fmFilterDegree = d;
-    newFilter = true;
-}
-
 void fmProcessor::setAudioBandwidth(int32_t bandwidth) {
     audioBandwidth = bandwidth;
 }
@@ -256,11 +267,13 @@ void fmProcessor::stopFullScan(void) {
 }
 
 void fmProcessor::setFMRDSSelector(rdsDecoder::RdsMode m) {
+    log(LOG_FM, LOG_MIN, "RDS mode %i", m);
     rdsMode = m;
 }
 
 void fmProcessor::setFMRDSDemod(rdsDemodMode m) {
     rdsDemod = m;
+    log(LOG_FM, LOG_MIN, "RDS demodulator %i", m);
     initRDS = true;
 }
 
@@ -282,11 +295,13 @@ DSPFLOAT getLevel(DSPCOMPLEX *v, int min, int max) {
     return sum/(max-min);
 }
 
-// In this variant, we have a separate thread for the fm processing
 void fmProcessor::run(void) {
     DSPCOMPLEX result;
-    DSPFLOAT rdsPhase = 0;
     DSPCOMPLEX dataBuffer[BUFFER_SIZE];
+    DSPFLOAT phaseBuffer[PHASE_BUFFER_SIZE];
+    int phaseInIndex = 0;
+    DSPFLOAT pilotBuffer[PILOT_BUFFER_SIZE];
+    int pilotInIndex = 0;
     int32_t signalPointer = 0;
     int32_t peakLevelCount = 0;
     DSPFLOAT peakLevel = -100;
@@ -310,7 +325,7 @@ void fmProcessor::run(void) {
     DSPFLOAT maxDrift = 0.0;
     int driftCount = 0;
     bool noPilot = true;
-    bool pilot = false;
+    bool usePilot = false;
     squelch squelchControl(1, workingRate/10, workingRate/20, workingRate);
     int16_t oldSquelchValue = -1;
     bool squelchOn = (squelchValue < 100);
@@ -320,6 +335,8 @@ void fmProcessor::run(void) {
     initRDS = true;
     running = true;
     scanning = false;
+    memset(phaseBuffer, 0, sizeof(phaseBuffer));
+    memset(pilotBuffer, 0, sizeof(pilotBuffer));
     audioGain = 0;
     audioDecimator->reset();
     if (audioConverter != NULL)
@@ -336,9 +353,14 @@ void fmProcessor::run(void) {
 	    if (fmFilter != NULL) {
 		delete fmFilter;
 		fmFilter = NULL;
+		pilotDelay = 0;
 	    }
-	    if (fmBandwidth > 0)
-		fmFilter = new LowPassFIR (fmFilterDegree, fmBandwidth/2, fmRate);
+	    if (fmBandwidth > 0) {
+		fmFilter = new LowPassFIR (FM_FILTER_SIZE, fmBandwidth/2, fmRate);
+		pilotDelay = (FM_FILTER_SIZE-1)/2;
+		log(LOG_FM, LOG_MIN, "New FM filter bandwidth %i delay %i", fmBandwidth, pilotDelay);
+	    } else
+		log(LOG_FM, LOG_MIN, "No FM filter delay %i", pilotDelay);
 	    newFilter = false;
 	}
 
@@ -367,10 +389,10 @@ void fmProcessor::run(void) {
 		maxDrift = 0.0;
 		minDrift = 2 * M_PI;
 		noPilot = true;
-		pilot = false;
+		usePilot = false;
 	    } else {
-		 noPilot = (rdsDemod == FM_RDS_PLL);
-		 pilot = (rdsDemod == FM_RDS_PILOT);
+		 noPilot = (rdsDemod == FM_RDS_NO_PILOT);
+		 usePilot = (rdsDemod == FM_RDS_PILOT);
 		 driftCount = 0;
 		 snrCount = 0;
 	    }
@@ -441,20 +463,20 @@ void fmProcessor::run(void) {
 		snrCount--;
 		signalBuffer [signalPointer ++] = v;
 		if (signalPointer >= SIGNAL_SIZE) {
-		    signalPointer	= 0;
-		    signalFft -> do_FFT ();
-	            DSPFLOAT noise	= getLevel (signalBuffer, noiseMinBin, noiseMaxBin);
-	            DSPFLOAT pilot	= getLevel (signalBuffer, pilotMinBin, pilotMaxBin);
+		    signalPointer = 0;
+		    signalFft -> do_FFT();
+	            DSPFLOAT noise = getLevel (signalBuffer, noiseMinBin, noiseMaxBin);
+	            DSPFLOAT pilot = getLevel (signalBuffer, pilotMinBin, pilotMaxBin);
 		    DSPFLOAT pilotDb = getDb(pilot, 256) - getDb(noise, 256);
 		    totPilotSnr += pilotDb;
 		    if (pilotDb >= PILOT_THRESHOLD) {
 			noPilot = false;
-			log(LOG_FM, LOG_MIN, "pilot %f usePilot %i", pilotDb, !noPilot);
+			log(LOG_FM, LOG_MIN, "pilot %f noPilot %i", pilotDb, noPilot);
 			snrCount = 0;
 		    } else if (snrCount == 0) {
 			DSPFLOAT avgPilotSnr = totPilotSnr / PILOT_SAMPLES;
 			noPilot = (avgPilotSnr < PILOT_MIN_THRESHOLD);
-			log(LOG_FM, LOG_MIN, "pilot %f snr  %f usePilot %i", pilotDb, avgPilotSnr, !noPilot);
+			log(LOG_FM, LOG_MIN, "pilot %f snr  %f noPilot %i", pilotDb, avgPilotSnr, noPilot);
 		    }
 		}
 	    }
@@ -462,10 +484,16 @@ void fmProcessor::run(void) {
 	    // demodulate and output
 	    DSPFLOAT demod = demodulator->demodulate(v);
 	    if (fmMode == FM_STEREO) {
+		pilotBuffer[pilotInIndex] = demod;
+		pilotInIndex = (pilotInIndex + 1) % PILOT_BUFFER_SIZE;
+                int pilotOutIndex = (pilotInIndex - pilotDelay - PILOT_DELAY + PILOT_BUFFER_SIZE) %
+			    PILOT_BUFFER_SIZE;
+		demod = pilotBuffer[pilotOutIndex];
 		DSPFLOAT currentPilotPhase = pilotPllFilter->doPll(5*pilotBandFilter->Pass(5*demod));
 		DSPFLOAT phaseForLRDiff	= 2*(currentPilotPhase+pilotDelay);
 		DSPFLOAT LRDiff	= fastTrigTabs->getCos(phaseForLRDiff)*demod;
-		rdsPhase = 3*(currentPilotPhase+pilotDelay);
+		phaseBuffer[phaseInIndex] = currentPilotPhase;
+		phaseInIndex = (phaseInIndex + 1) % PHASE_BUFFER_SIZE;
 		xkm1 = (demod-xkm1)*alpha+xkm1;
 		ykm1 = (LRDiff-ykm1)*alpha+ykm1;
 		result = DSPCOMPLEX(xkm1+ykm1, xkm1-ykm1);
@@ -517,12 +545,18 @@ void fmProcessor::run(void) {
 		    rdsData = rdsLowPassFilter->Pass(rdsDelay*demod);
 
 		// if there's a pilot and the phase doesn't shift, we use it
-		} else if (pilot) {
+		} else if (usePilot) {
+                    int phaseOutIndex = (phaseInIndex - RDS_PILOT_DELAY + PHASE_BUFFER_SIZE) %
+			    PHASE_BUFFER_SIZE;
+		    DSPFLOAT rdsPhase = 3*phaseBuffer[phaseOutIndex];
 		    DSPFLOAT mixerValue	= fastTrigTabs->getSin(rdsPhase);
 		    rdsData = rdsLowPassFilter->Pass(mixerValue*demod);
 
 		// otherwise we PLL using the pilot phase
 		} else {
+                    int phaseOutIndex = (phaseInIndex - RDS_PLL_DELAY + PHASE_BUFFER_SIZE) %
+			    PHASE_BUFFER_SIZE;
+		    DSPFLOAT rdsPhase = 3*phaseBuffer[phaseOutIndex];
 		    DSPCOMPLEX rdsBase = rdsBandFilter->Pass(DSPCOMPLEX(demod, demod));
 		    rdsBase = rdsHilbertFilter->Pass(rdsBase);
 		    rdsPhase = toBaseRadians(rdsPhase);
@@ -539,14 +573,15 @@ void fmProcessor::run(void) {
 			else if (drift > maxDrift)
 			    maxDrift = drift;
 			if (driftCount == 0) {
-			   DSPFLOAT avgDrift = totDrift/(RDS_SAMPLES-RDS_SKIP);
-			   DSPFLOAT meanDrift = (maxDrift+minDrift)/2;
-			   DSPFLOAT meanDriftDiff = (maxDrift-minDrift)/2;
-			   DSPFLOAT avgDriftDiff = abs(avgDrift-meanDrift);
+			   DSPFLOAT meanDrift = totDrift/(RDS_SAMPLES-RDS_SKIP);
+			   DSPFLOAT medianDrift = (maxDrift+minDrift)/2;
+			   DSPFLOAT meanDriftDiff = abs(medianDrift-meanDrift);
+			   DSPFLOAT medianDriftDiff = (maxDrift-minDrift)/2;
 
 			   // we check the max width and the distribution of drifts
-			   pilot = (meanDriftDiff < RDS_MEAN_DRIFT_LIMIT && avgDriftDiff < RDS_AVG_DRIFT_LIMIT); 
-			   log(LOG_FM, LOG_MIN, "pll drift avg %f%% mean %f%% pilot %i", 100*avgDriftDiff/2/M_PI, 100*meanDriftDiff/2/M_PI, pilot);
+			   usePilot = (meanDriftDiff < RDS_MEAN_DRIFT_LIMIT && medianDriftDiff < RDS_MEDIAN_DRIFT_LIMIT);
+			   log(LOG_FM, LOG_MIN, "pll drift median %f%% mean %f%% usePilot %i",
+				100*medianDriftDiff/2/M_PI, 100*meanDriftDiff/2/M_PI, usePilot);
 			}
 		    }
 		}

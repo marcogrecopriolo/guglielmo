@@ -50,7 +50,7 @@ public:
 	FM_RDS_AUTO	= 0,
 	FM_RDS_PILOT	= 1,
 	FM_RDS_PILOTPLL	= 2,
-	FM_RDS_PLL	= 3
+	FM_RDS_NO_PILOT	= 3
     };
     enum fmMode {
 	FM_STEREO	= 0,
@@ -74,7 +74,6 @@ public:
     void setSquelchValue(int16_t);
     void setAudioBandwidth(int32_t);
     void setBandwidth(int32_t);
-    void setBandFilterDegree(int32_t);
     void setSignalGain(int16_t);
     void setFMRDSSelector(rdsDecoder::RdsMode);
     void setFMRDSDemod(rdsDemodMode);
@@ -106,11 +105,10 @@ private:
     DecimatingFIR *fmBandFilter;
     bool newFilter;
     int32_t fmBandwidth;
-    int32_t fmFilterDegree;
     LowPassFIR *fmFilter;
     fftFilter *pilotBandFilter;
     pilotPll *pilotPllFilter;
-    DSPFLOAT pilotDelay;
+    int pilotDelay;
     fftFilter *rdsBandFilter;
     HilbertFilter *rdsHilbertFilter;
     pll *rdsPllDecoder;

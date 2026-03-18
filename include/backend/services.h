@@ -89,11 +89,11 @@ public:
     // TODO we should really check for country and return US program types if required
     void serviceInfo(char* buf, int len) {
 	if (language != 0 && programType != 0)
-            snprintf(buf, len, "%s - %s", getProgramType_Not_NorthAmerica(programType), getLanguage(language));
+            snprintf(buf, len, "%s - %s", getProgramTypeWorld(programType), getLanguage(language));
 	else if (language != 0)
             snprintf(buf, len, "%s", getLanguage(language));
 	else if (programType != 0)
-            snprintf(buf, len, "%s", getProgramType_Not_NorthAmerica(programType));
+            snprintf(buf, len, "%s", getProgramTypeNorthAmerica(programType));
 	else
             *buf = '\0';
     }

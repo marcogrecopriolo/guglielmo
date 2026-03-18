@@ -183,11 +183,16 @@ RadioInterface::RadioInterface(QSettings *Si, QWidget *parent):
     FMthreshold = settings->value(FM_THRESHOLD, FM_DEF_THRESHOLD).toInt();
 
     FMfilter = settings->value(FM_FILTER, FM_DEF_FILTER).toInt();
-    FMdegree = settings->value(FM_DEGREE, FM_DEF_DEGREE).toInt();
     FMdecoder = settings->value(FM_DECODER, FM_DEF_DECODER).toInt();
     deemphasis = settings->value(FM_DEEMPHASIS, FM_DEF_DEEMPHASIS).toInt();
     lowPassFilter = settings->value(FM_LOW_PASS_FILTER, FM_DEF_LOW_PASS_FILTER).toInt();
     FMaudioGain = settings->value(FM_AUDIO_GAIN, FM_DEF_AUDIO_GAIN).toInt();
+    settings->endGroup();
+
+    // RDS settings
+    settings->beginGroup(GROUP_RDS);
+    rdsDemodulator = settings->value(RDS_DEMODULATOR, RDS_DEF_DEMODULATOR).toInt();
+    rdsDecoder = settings->value(RDS_DECODER, RDS_DEF_DECODER).toInt();
     settings->endGroup();
 
     settings->beginGroup(GROUP_SOUND);
@@ -548,16 +553,15 @@ void RadioInterface::makeFMprocessor() {
     if (inputDevice == nullptr)
 	return;
     fmRate = mapRates(INPUT_RATE);
-    if (FMfilter <= 0)
-	FMfilter = 0.95*fmRate;
+    if (FMfilter < 0)
+	FMfilter = 0;
     FMprocessor = new fmProcessor(inputDevice, this, INPUT_RATE, fmRate,
 				  workingRate, audioRate, FMthreshold);
     FMprocessor->setSink(soundOut);
-    FMprocessor->setFMRDSSelector(rdsDecoder::RDS2);
-    FMprocessor->setFMRDSDemod(fmProcessor::FM_RDS_AUTO);
+    FMprocessor->setFMRDSSelector(rdsDecoder::RdsMode(rdsDecoder));
+    FMprocessor->setFMRDSDemod(fmProcessor::rdsDemodMode(rdsDemodulator));
     FMprocessor->setFMMode(true);
-    FMprocessor->setBandwidth(FMfilter);
-    FMprocessor->setBandFilterDegree(FMdegree);
+    FMprocessor->setBandwidth(KHz(FMfilter));
     FMprocessor->setFMDecoder(fmDemodulator::fm_demod(FMdecoder));
     FMprocessor->setDeemphasis(deemphasis);
     FMprocessor->setAudioBandwidth(lowPassFilter);
@@ -707,7 +711,7 @@ void RadioInterface::findDevices() {
 	    log(LOG_UI, LOG_CHATTY, "device name selection disabled for %s", qPrintable(deviceType));
 	inputDevice->getIfRange(&minIfGain, &maxIfGain);
 	inputDevice->getLnaRange(&minLnaGain, &maxLnaGain);
-	agc = settings->value(DEV_AGC, DEV_DEF_AGC).toInt();
+	agc = settings->value(DEV_AGC, defaultAgc()).toInt();
 	ifGain = settings->value(DEV_IF_GAIN, (minIfGain + maxIfGain) / 2).toInt();
 	lnaGain = settings->value(DEV_LNA_GAIN, minLnaGain).toInt();
 	settings->endGroup();
@@ -1086,6 +1090,15 @@ void RadioInterface::showLabel(const QString s) {
     metadata["xesam:artist"] = s;
     player.setMetadata(metadata);
 #endif
+}
+
+void RadioInterface::setProgramType(int code) {
+    log(LOG_EVENT, LOG_CHATTY, "program type %i", code);
+    if (code <= 0)
+	serviceLabel->setToolTip("");
+    else {
+	serviceLabel->setToolTip(getProgramTypeWorld(code));
+    }
 }
 
 #define BLACK_THRESHOLD 10
@@ -2277,6 +2290,7 @@ void RadioInterface::cleanScreen() {
     if (isFM)
 	ensembleId->clear();
     serviceLabel->clear();
+    serviceLabel->setToolTip("");
     dynamicLabel->clear();
     emptyArt(true);
     presetSelector->setCurrentIndex(0);

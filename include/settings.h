@@ -30,6 +30,7 @@
 #define	GROUP_SOUND	"sound"
 #define	GROUP_DAB	"dab"
 #define	GROUP_FM	"fm"
+#define	GROUP_RDS	"rds"
 #define	GROUP_PRESETS	"presets"	// this is an array, but still
 #define GROUP_DIALOGS	"dialogs"
 
@@ -54,7 +55,7 @@
 #define GEN_DEF_TUNER_MODE	"FM"
 #define GEN_DEF_CHANNEL		"12C"
 #define GEN_DEF_DAB_MODE	"stations"
-#define GEN_DEF_SCAN_INTERVAL	"1000"
+#define GEN_DEF_SCAN_INTERVAL	"2000"
 #define GEN_DEF_SCAN_RETRY	"4"
 
 #define GEN_FM			"FM"
@@ -91,21 +92,26 @@
 #define FM_THRESHOLD		"threshold"
 
 #define FM_FILTER		"filter"
-#define FM_DEGREE		"degree"
 #define FM_DECODER		"decoder"
 #define FM_DEEMPHASIS		"deemphasis"
 #define FM_LOW_PASS_FILTER	"lowPass"
 #define FM_AUDIO_GAIN		"audioGain"
+#define FM_STEP 		"step"
 
 #define FM_DEF_WORKING_RATE	"48000"
 #define FM_DEF_THRESHOLD	"20"
-
-#define FM_DEF_FILTER		"0"
-#define FM_DEF_DEGREE		"15"
 #define FM_DEF_DECODER		"3"
 #define FM_DEF_DEEMPHASIS	"50"
-#define FM_DEF_LOW_PASS_FILTER	"0"
+#define FM_DEF_FILTER		"190"
+#define FM_DEF_LOW_PASS_FILTER	"20000"
 #define FM_DEF_AUDIO_GAIN	"75"
+#define FM_DEF_STEP		"100"
+
+#define RDS_DEMODULATOR		"demodulator"
+#define RDS_DECODER		"decoder"
+
+#define RDS_DEF_DEMODULATOR	"0"
+#define RDS_DEF_DECODER		"1"
 
 // sound
 #define SOUND_MODE		"soundMode"
