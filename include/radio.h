@@ -133,6 +133,7 @@ private:
 
 // FM
     double FMfreq;
+    int32_t FMstep;
     int32_t workingRate;
     int32_t audioRate;
     int16_t FMthreshold;
@@ -160,6 +161,7 @@ private:
     QString theme;
     QString skin;
     bool skinIsLocal;
+    bool silenceFrequencyChange;
     QSettings *settings;
     std::vector<serviceId> serviceList;
     std::vector<deviceDescriptor> deviceList;
@@ -200,6 +202,7 @@ private:
     int dabDisplay;
     bool isFM;
     bool playing;
+    bool restorePlaying;
     bool recording;
     bool scanning;
     int16_t ficBlocks;
@@ -220,6 +223,7 @@ private:
     bool saveIsFM;
     double saveFMfreq;
     int saveChannel;
+    int saveDabDisplay;
     dabService saveService;
 
 // operation
@@ -306,7 +310,8 @@ private slots:
     void handleScanDown();
     void handleScanUp();
     void handleStopScan();
-    void handleFMfrequency(double);
+    void handleFMfrequencyChange(double);
+    void handleFMfrequencyRelease();
     void handleFMButton();
     void handleAddDABPreset();
     void handleDeleteDABPreset();
@@ -362,6 +367,7 @@ private slots:
     void setLowPassFilter(int);
     void setFMFilter(int);
     void setFMaudioGain(int);
+    void setFMStep(int);
 
     void setDevice(int);
     void setDeviceName(int);

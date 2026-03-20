@@ -158,6 +158,7 @@ RadioInterface::RadioInterface(QSettings *Si, QWidget *parent):
 	QApplication::setStyle(theme);
     }
     skin = settings->value(UI_SKIN, UI_DEF_SKIN).toString();
+    silenceFrequencyChange = settings->value(UI_MUTE_FREQ_KNOB, UI_DEF_MUTE_FREQ_KNOB).toInt() != 0;
     skinIsLocal = settings->value(UI_SKIN_LOCAL, UI_DEF_SKIN_LOCAL).toInt() != 0;
     settings->endGroup();
     qApp->setStyleSheet(loadSkin());
@@ -179,6 +180,7 @@ RadioInterface::RadioInterface(QSettings *Si, QWidget *parent):
     FMprocessor = nullptr;
     scanTimer = nullptr;
     settings->beginGroup(GROUP_FM);
+    FMstep = settings->value(FM_STEP, FM_DEF_STEP).toInt();
     workingRate = settings->value(FM_WORKING_RATE, FM_DEF_WORKING_RATE).toInt();
     FMthreshold = settings->value(FM_THRESHOLD, FM_DEF_THRESHOLD).toInt();
 
@@ -248,7 +250,8 @@ RadioInterface::RadioInterface(QSettings *Si, QWidget *parent):
     else if (FMfreq > MAX_FM)
 	FMfreq = MAX_FM;
     frequencyKnob->setValue(double(FMfreq));
-    frequencyLCD->display(qRound(FMfreq*1000));
+    frequencyKnob->setTotalSteps((MHz(MAX_FM)- MHz(MIN_FM))/KHz(FMstep));
+    frequencyLCD->display(qRound(KHz(FMfreq)));
 
     // presets
     presetSelector->addItem("Presets");
@@ -273,6 +276,7 @@ RadioInterface::RadioInterface(QSettings *Si, QWidget *parent):
     }
 
     playing = false;
+    restorePlaying = false;
     recording = false;
     scanning = false;
     isFM = (settings->value(GEN_TUNER_MODE, GEN_DEF_TUNER_MODE).toString() == GEN_FM);
@@ -314,7 +318,11 @@ RadioInterface::RadioInterface(QSettings *Si, QWidget *parent):
     connect(DABButton, SIGNAL(clicked(void)),
 		this, SLOT(handleDABButton(void)));
     connect(frequencyKnob, SIGNAL(valueChanged(double)),
-		this, SLOT(handleFMfrequency(double)));
+		this, SLOT(handleFMfrequencyChange(double)));
+    connect(frequencyKnob, SIGNAL(sliderReleased()),
+		this, SLOT(handleFMfrequencyRelease()));
+    connect(frequencyKnob, SIGNAL(keyFinished()),
+		this, SLOT(handleFMfrequencyRelease()));
     connect(scanBackButton, SIGNAL(clicked(void)),
 		this, SLOT(handleScanDown(void)));
     connect(scanForwardButton, SIGNAL(clicked(void)),
@@ -835,10 +843,10 @@ void RadioInterface::startFMscan(bool down) {
     mprisLabelAndText("FM", "Scanning");
     player.setPlaybackStatus(Mpris::Stopped);
 #endif
-    FMfreq = (FMfreq*10+scanIncrement)/10;
+    FMfreq = (FMfreq*KHz(1)+FMstep*scanIncrement)/KHz(1);
     frequencyKnob->setValue(double(FMfreq));
-    frequencyLCD->display(qRound(FMfreq*1000));
-    inputDevice->restartReader(qRound(FMfreq*1000000));
+    frequencyLCD->display(qRound(KHz(FMfreq)));
+    inputDevice->restartReader(qRound(MHz(FMfreq)));
     FMprocessor->start();
     FMprocessor->startScan();
     scanTimer->start();
@@ -868,10 +876,10 @@ void RadioInterface::nextFrequency(void) {
 	FMprocessor->stopScan();
 	FMprocessor->stop();
 	inputDevice->stopReader();
-	FMfreq = (FMfreq*10+scanIncrement)/10;
+	FMfreq = (FMfreq*KHz(1)+FMstep*scanIncrement)/KHz(1);
 	frequencyKnob->setValue(double(FMfreq));
-	frequencyLCD->display(qRound(FMfreq*1000));
-	inputDevice->restartReader(qRound(FMfreq*1000000));
+	frequencyLCD->display(qRound(KHz(FMfreq)));
+	inputDevice->restartReader(qRound(MHz(FMfreq)));
 	FMprocessor->start();
 	FMprocessor->startScan();
 	scanTimer->start();
@@ -882,7 +890,7 @@ void RadioInterface::scanDone(void) {
     log(LOG_EVENT, LOG_MIN, "fm station found");
     stopFMscan();
     playing = true;
-    startFM(qRound(FMfreq*1000000));
+    startFM(qRound(MHz(FMfreq)));
     setPlaying();
     setRecording();
     setScanning();
@@ -1461,8 +1469,8 @@ void RadioInterface::handlePresetSelector(int index) {
 	if (ok && newFreq > MIN_FM && newFreq < MAX_FM) {
 		FMfreq = newFreq;
 		frequencyKnob->setValue(double(FMfreq));
-		frequencyLCD->display(qRound(FMfreq*1000));
-		startFM(qRound(FMfreq*1000000));
+		frequencyLCD->display(qRound(KHz(FMfreq)));
+		startFM(qRound(MHz(FMfreq)));
 		playing = true;
 	} else {
 		warning(this, tr(BAD_PRESET));
@@ -1613,6 +1621,8 @@ void RadioInterface::handleSelectService(int ind) {
 }
 
 void RadioInterface::handleStationsAction() {
+    if (dabDisplay == DD_STATIONS)
+	return;
     log(LOG_UI, LOG_MIN, "switching to dab stations");
     dabDisplayOff();
     dabDisplay = DD_STATIONS;
@@ -1620,6 +1630,8 @@ void RadioInterface::handleStationsAction() {
 }
 
 void RadioInterface::handleSlidesAction() {
+    if (dabDisplay == DD_SLIDES)
+	return;
     log(LOG_UI, LOG_MIN, "switching to dab slides");
     dabDisplayOff();
     dabDisplay = DD_SLIDES;
@@ -1973,6 +1985,7 @@ void RadioInterface::startFM(int32_t freq) {
     soundOut->restart();
     FMprocessor->start();
     playing = true;
+    restorePlaying = false;
     recording = false;
     setPlaying();
     setRecording();
@@ -1994,6 +2007,7 @@ void RadioInterface::stopFM() {
     soundOut->stop();
     inputDevice->stopReader();
     playing = false;
+    restorePlaying = false;
     scanning = false;
     stopRecording();
     setPlaying();
@@ -2040,13 +2054,21 @@ void RadioInterface::setScanning() {
     }
 }
 
-void RadioInterface::handleFMfrequency(double freq) {
+void RadioInterface::handleFMfrequencyChange(double freq) {
     log(LOG_UI, LOG_MIN, "new fm frequency %f", freq);
     FMfreq = freq;
-    frequencyLCD->display(qRound(FMfreq*1000));
-    if (playing) {
+    frequencyLCD->display(qRound(KHz(FMfreq)));
+    if (playing && silenceFrequencyChange) {
 	stopFM();
-	startFM(qRound(FMfreq*1000000));
+	restorePlaying = true;
+    }
+}
+
+void RadioInterface::handleFMfrequencyRelease() {
+    if (playing || restorePlaying) {
+	restorePlaying = false;
+	stopFM();
+	startFM(qRound(MHz(FMfreq)));
     }
 }
 
@@ -2057,7 +2079,7 @@ void RadioInterface::handlePlayButton() {
     disconnect(playButton, SIGNAL(clicked(void)),
 		 this, SLOT(handlePlayButton(void)));
     if (isFM)
-	startFM(qRound(FMfreq*1000000));
+	startFM(qRound(MHz(FMfreq)));
     else
 	startDABService(&currentService);
 }
@@ -2126,7 +2148,7 @@ void RadioInterface::handleRecordButton() {
     SF_INFO sfInfo;
 
     if (isFM)
-	baseFileName = "FM:" + QString::number(FMfreq*1000);
+	baseFileName = "FM:" + QString::number(KHz(FMfreq));
     else if (currentService.valid)
 	baseFileName = currentService.serviceName;
     else
@@ -2208,6 +2230,7 @@ void RadioInterface::handleDABButton() {
     stopFM();
     stopRecording();
     playing = false;
+    restorePlaying = false;
     scanning = false;
     toDAB();
     currentService.valid = (currentService.serviceName != "");
@@ -2242,6 +2265,7 @@ void RadioInterface::handleFMButton() {
     stopDAB();
     stopRecording();
     playing = false;
+    restorePlaying = false;
     toFM();
     setPlaying();
     setRecording();

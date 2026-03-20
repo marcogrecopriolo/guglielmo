@@ -241,7 +241,7 @@
      <height>300</height>
     </rect>
    </property>
-   <widget class="QwtKnob" name="frequencyKnob">
+   <widget class="Knob" name="frequencyKnob">
     <property name="geometry">
      <rect>
       <x>30</x>
@@ -720,6 +720,11 @@
   </widget>
  </widget>
  <customwidgets>
+  <customwidget>
+   <class>Knob</class>
+   <extends>QwtKnob</extends>
+   <header>knob.h</header>
+  </customwidget>
   <customwidget>
    <class>QwtKnob</class>
    <extends>QWidget</extends>

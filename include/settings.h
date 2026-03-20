@@ -65,11 +65,14 @@
 
 // ui
 #define UI_THEME		"theme"
-#define UI_DEF_THEME		""
 #define UI_SKIN			"skin"
-#define UI_DEF_SKIN		"base"
 #define UI_SKIN_LOCAL		"local"
+#define UI_MUTE_FREQ_KNOB	"mute_freq_knob"
+
+#define UI_DEF_THEME		""
+#define UI_DEF_SKIN		"base"
 #define UI_DEF_SKIN_LOCAL	1
+#define UI_DEF_MUTE_FREQ_KNOB	1
 
 // dab
 #define DAB_THRESHOLD		"threshold"
@@ -90,7 +93,6 @@
 // fm
 #define FM_WORKING_RATE		"workingRate"
 #define FM_THRESHOLD		"threshold"
-
 #define FM_FILTER		"filter"
 #define FM_DECODER		"decoder"
 #define FM_DEEMPHASIS		"deemphasis"

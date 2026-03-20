@@ -218,6 +218,7 @@ HEADERS += ./include/radio.h \
 	   ./include/settings.h \
 	   ./include/combobox.h \
 	   ./include/listwidget.h \
+	   ./include/knob.h \
 	   ./include/dab/dab-processor.h \
 	   ./include/dab/dab-tables.h \
 	   ./include/fm/fm-demodulator.h \

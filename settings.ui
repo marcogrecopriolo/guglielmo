@@ -530,7 +530,7 @@
     <widget class="QComboBox" name="decoderComboBox">
      <property name="geometry">
       <rect>
-       <x>120</x>
+       <x>130</x>
        <y>10</y>
        <width>200</width>
        <height>40</height>
@@ -594,7 +594,7 @@
     <widget class="QComboBox" name="deemphasisComboBox">
      <property name="geometry">
       <rect>
-       <x>120</x>
+       <x>130</x>
        <y>60</y>
        <width>70</width>
        <height>40</height>
@@ -645,7 +645,7 @@
     <widget class="QComboBox" name="lowPassComboBox">
      <property name="geometry">
       <rect>
-       <x>120</x>
+       <x>130</x>
        <y>160</y>
        <width>70</width>
        <height>40</height>
@@ -719,7 +719,7 @@
     <widget class="QComboBox" name="fmFilterComboBox">
      <property name="geometry">
       <rect>
-       <x>120</x>
+       <x>130</x>
        <y>110</y>
        <width>70</width>
        <height>40</height>
@@ -798,7 +798,7 @@
     <widget class="QSpinBox" name="fmAudioGainSpinBox">
      <property name="geometry">
       <rect>
-       <x>120</x>
+       <x>130</x>
        <y>210</y>
        <width>60</width>
        <height>40</height>
@@ -818,6 +818,58 @@
      <property name="value">
       <number>75</number>
      </property>
+    </widget>
+    <widget class="QLabel" name="fmStepLabel">
+     <property name="geometry">
+      <rect>
+       <x>10</x>
+       <y>260</y>
+       <width>110</width>
+       <height>40</height>
+      </rect>
+     </property>
+     <property name="font">
+      <font>
+       <pointsize>11</pointsize>
+      </font>
+     </property>
+     <property name="text">
+      <string>Frequency step</string>
+     </property>
+    </widget>
+    <widget class="QComboBox" name="fmStepComboBox">
+     <property name="geometry">
+      <rect>
+       <x>130</x>
+       <y>260</y>
+       <width>60</width>
+       <height>40</height>
+      </rect>
+     </property>
+     <property name="font">
+      <font>
+       <pointsize>11</pointsize>
+      </font>
+     </property>
+     <property name="currentText">
+      <string>100</string>
+     </property>
+     <property name="currentIndex">
+      <number>1</number>
+     </property>
+     <property name="maxCount">
+      <number>2</number>
+     </property>
+     <item>
+      <property name="text">
+       <string>50</string>
+      </property>
+     </item>
+     <item>
+      <property name="text">
+       <string>100</string>
+      </property>
+     </item>
     </widget>
    </widget>
    <widget class="QWidget" name="deviceTab">

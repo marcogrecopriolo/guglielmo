@@ -219,6 +219,7 @@ void RadioInterface::handleSettingsAction() {
 	    settingsUi.lowPassComboBox->setCurrentIndex(0);
 	else
 	    settingsUi.lowPassComboBox->setCurrentText(QString::number(lowPassFilter));
+	settingsUi.fmStepComboBox->setCurrentText(QString::number(FMstep));
 	settingsUi.fmAudioGainSpinBox->setValue(FMaudioGain);
 	settingsDialog->connect(settingsUi.decoderComboBox, SIGNAL(activated(int)),
 		this, SLOT(setDecoder(int)));
@@ -230,6 +231,8 @@ void RadioInterface::handleSettingsAction() {
 		this, SLOT(setLowPassFilter(int)));
 	settingsDialog->connect(settingsUi.fmAudioGainSpinBox, SIGNAL(valueChanged(int)),
 		this, SLOT(setFMaudioGain(int)));
+	settingsDialog->connect(settingsUi.fmStepComboBox, SIGNAL(activated(int)),
+		this, SLOT(setFMStep(int)));
 
 	// Device tab
 	for (const auto &dev: deviceList) {
@@ -309,6 +312,7 @@ void RadioInterface::handleSettingsAction() {
     settingsUi.fmFilterComboBox->setEnabled(FMprocessor != nullptr);
     settingsUi.lowPassComboBox->setEnabled(FMprocessor != nullptr);
     settingsUi.fmAudioGainSpinBox->setEnabled(FMprocessor != nullptr);
+    settingsUi.fmStepComboBox->setEnabled(FMprocessor != nullptr);
 
     settingsDialog->show();
 }
@@ -376,6 +380,7 @@ void RadioInterface::settingsClose(void) {
     settings->setValue(FM_DEEMPHASIS, deemphasis);
     settings->setValue(FM_LOW_PASS_FILTER, lowPassFilter);
     settings->setValue(FM_AUDIO_GAIN, FMaudioGain);
+    settings->setValue(FM_STEP, FMstep);
     settings->endGroup();
 
     // Device tab
@@ -402,6 +407,7 @@ void RadioInterface::startFullScan() {
     saveFMfreq = FMfreq;
     saveChannel = channelSelector->currentIndex();
     saveService = currentService;
+    saveDabDisplay = dabDisplay;
     if (playing) {
 	if (isFM)
 	    stopFM();
@@ -431,13 +437,14 @@ void RadioInterface::startFullScan() {
 	player.setPlaybackStatus(Mpris::Stopped);
 #endif
 	frequencyKnob->setValue(double(FMfreq));
-	frequencyLCD->display(qRound(FMfreq*1000));
-	inputDevice->restartReader(qRound(FMfreq*1000000));
+	frequencyLCD->display(qRound(KHz(FMfreq)));
+	inputDevice->restartReader(qRound(MHz(FMfreq)));
 	FMprocessor->start();
 	FMprocessor->startFullScan();
 	scanTimer->start();
     } else if (scanType == "DAB") {
 	handleDABButton();
+	handleStationsAction();
 	stopDAB();
 	if (scanTimer == nullptr) {
 	    scanTimer = new QTimer();
@@ -476,6 +483,8 @@ void RadioInterface::stopFullScan() {
 	FMprocessor->stopFullScan();
 	stopFM();
     } else {
+	if (saveDabDisplay == DD_SLIDES)
+	    handleSlidesAction();
 	log(LOG_UI, LOG_MIN, "stop full DAB scan");
 	stopDAB();
 	disconnect(scanTimer, SIGNAL(timeout()),
@@ -489,7 +498,7 @@ void RadioInterface::stopFullScan() {
     currentService = saveService;
     if (isFM) {
 	toFM();
-	frequencyLCD->display(qRound(FMfreq*1000));
+	frequencyLCD->display(qRound(KHz(FMfreq)));
     } else {
 	toDAB();
 	currentService.valid = (currentService.serviceName != "");
@@ -509,10 +518,11 @@ void RadioInterface::nextFullScanFrequency(void) {
 	FMprocessor->stopFullScan();
 	FMprocessor->stop();
 	inputDevice->stopReader();
-	FMfreq = (FMfreq*10+scanIncrement)/10;
+	cleanScreen();
+	FMfreq = (FMfreq*KHz(1)+FMstep*scanIncrement)/KHz(1);
 	frequencyKnob->setValue(double(FMfreq));
-	frequencyLCD->display(qRound(FMfreq*1000));
-	inputDevice->restartReader(qRound(FMfreq*1000000));
+	frequencyLCD->display(qRound(MHz(FMfreq)));
+	inputDevice->restartReader(qRound(MHz(FMfreq)));
 	log(LOG_EVENT, LOG_MIN, "fm full scan next frequency %f", FMfreq);
 	FMprocessor->start();
 	FMprocessor->startFullScan();
@@ -746,7 +756,7 @@ void RadioInterface::setSoundMode(int index) {
     soundOut->setVolume(volumeKnob->value()/100);
     if (stop) {
 	if (isFM)
-	    startFM(int(FMfreq*1000000));
+	    startFM(int(MHz(FMfreq)));
 	else
 	    startDABService(&currentService);
     }
@@ -787,7 +797,7 @@ void RadioInterface::setLatency(int newLatency) {
     settingsUi.outputComboBox->setCurrentIndex(soundChannel);
     if (stop) {
 	if (isFM)
-	    startFM(int(FMfreq*1000000));
+	    startFM(int(MHz(FMfreq)));
 	else
 	    startDABService(&currentService);
     }
@@ -816,8 +826,7 @@ void RadioInterface::setFMFilter(int index) {
     QString v = settingsUi.fmFilterComboBox->itemText(index);
 
     log(LOG_UI, LOG_MIN, "fm filter %s", qPrintable(v));
-    if (v == "None")
-	FMfilter = 0;
+
     else
 	FMfilter = v.toInt();
     FMprocessor->setBandwidth(KHz(FMfilter));
@@ -838,6 +847,13 @@ void RadioInterface::setFMaudioGain(int gain) {
     log(LOG_UI, LOG_MIN, "fm audio gain %i", gain);
     FMprocessor->setAudioGain(gain);
     FMaudioGain = gain;
+}
+
+void RadioInterface::setFMStep(int index) {
+    QString v = settingsUi.fmStepComboBox->itemText(index);
+
+    log(LOG_UI, LOG_MIN, "fm frequency step %s", qPrintable(v));
+    FMstep = v.toInt();
 }
 
 void RadioInterface::setDevice(int d) {
