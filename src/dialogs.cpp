@@ -827,6 +827,8 @@ void RadioInterface::setFMFilter(int index) {
 
     log(LOG_UI, LOG_MIN, "fm filter %s", qPrintable(v));
 
+    if (v == "None")
+	FMfilter = 0;
     else
 	FMfilter = v.toInt();
     FMprocessor->setBandwidth(KHz(FMfilter));
