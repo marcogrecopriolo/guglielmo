@@ -18,6 +18,7 @@
  *    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 #include <QSettings>
+#include <QSystemTrayIcon>
 #include <QMenu>
 #include <QStringList>
 #include <QCloseEvent>
@@ -158,6 +159,8 @@ RadioInterface::RadioInterface(QSettings *Si, QWidget *parent):
 	QApplication::setStyle(theme);
     }
     skin = settings->value(UI_SKIN, UI_DEF_SKIN).toString();
+    useTray = settings->value(UI_USE_TRAY, UI_DEF_USE_TRAY).toInt() != 0;
+    fastExit = settings->value(UI_FAST_EXIT, UI_DEF_FAST_EXIT).toInt() != 0;
     silenceFrequencyChange = settings->value(UI_MUTE_FREQ_KNOB, UI_DEF_MUTE_FREQ_KNOB).toInt() != 0;
     skinIsLocal = settings->value(UI_SKIN_LOCAL, UI_DEF_SKIN_LOCAL).toInt() != 0;
     settings->endGroup();
@@ -290,6 +293,26 @@ RadioInterface::RadioInterface(QSettings *Si, QWidget *parent):
     else
 	toDAB();
 
+    if (useTray) {
+	trayIcon = new QSystemTrayIcon(this);
+	trayIcon->setIcon(QIcon(MAIN_ICON_PATH));
+	trayIcon->setToolTip(TARGET);
+	QAction *restoreAction = new QAction("Restore", this);
+	QAction *quitAction = new QAction("Quit", this);
+	QMenu *trayMenu = new QMenu(this);
+	trayMenu->addAction(restoreAction);
+	trayMenu->addAction(quitAction);
+	trayIcon->setContextMenu(trayMenu);
+	connect(trayIcon, &QSystemTrayIcon::activated, this,
+	    [this](QSystemTrayIcon::ActivationReason reason) {
+	    log(LOG_UI, LOG_MIN, "tray clicked %i", reason);
+	    if (reason == QSystemTrayIcon::Trigger)
+		restoreWindow();
+	});
+	connect(restoreAction, SIGNAL(triggered(bool)), this, SLOT(restoreWindow()));
+	connect(quitAction, SIGNAL(triggered(bool)), this, SLOT(terminate()));
+	trayIcon->show();
+    }
     qApp->installEventFilter(this);
     connect(aboutAction, SIGNAL(triggered(bool)),
 		this, SLOT(handleAboutAction()));
@@ -1354,15 +1377,32 @@ void RadioInterface::handleMotObject(QByteArray result,
     }
 }
 
+void RadioInterface::restoreWindow() {
+    showNormal();
+    raise();
+    activateWindow();
+}
+
 void RadioInterface::closeEvent(QCloseEvent *event) {
     log(LOG_UI, LOG_MIN, "close window received");
-    if (yesNo(this)) {
+    if (useTray)
+	event->accept();
+    else if (fastExit || yesNo(this)) {
 	log(LOG_UI, LOG_MIN, "close window accepted");
 	terminateProcess();
 	event->accept();
     } else {
 	log(LOG_UI, LOG_MIN, "close window denied");
 	event->ignore();
+    }
+}
+
+void RadioInterface::terminate() {
+    log(LOG_UI, LOG_MIN, "quit request received");
+    if (fastExit || yesNo(this)) {
+	log(LOG_UI, LOG_MIN, "quit request accepted");
+	terminateProcess();
+	qApp->quit();
     }
 }
 
@@ -2060,14 +2100,20 @@ void RadioInterface::handleFMfrequencyChange(double freq) {
     frequencyLCD->display(qRound(KHz(FMfreq)));
     if (playing && silenceFrequencyChange) {
 	stopFM();
+	disconnect(playButton, SIGNAL(clicked(void)),
+		 this, SLOT(handlePlayButton(void)));
 	restorePlaying = true;
     }
 }
 
 void RadioInterface::handleFMfrequencyRelease() {
-    if (playing || restorePlaying) {
-	restorePlaying = false;
+    if (playing) {
 	stopFM();
+	disconnect(playButton, SIGNAL(clicked(void)),
+		 this, SLOT(handlePlayButton(void)));
+	startFM(qRound(MHz(FMfreq)));
+    } else if (restorePlaying) {
+	restorePlaying = false;
 	startFM(qRound(MHz(FMfreq)));
     }
 }
@@ -2078,6 +2124,7 @@ void RadioInterface::handlePlayButton() {
     log(LOG_UI, LOG_MIN, "play");
     disconnect(playButton, SIGNAL(clicked(void)),
 		 this, SLOT(handlePlayButton(void)));
+    log(LOG_UI, LOG_MIN, "button play disconnected");
     if (isFM)
 	startFM(qRound(MHz(FMfreq)));
     else
@@ -2088,6 +2135,7 @@ void RadioInterface::handlePauseButton() {
     log(LOG_UI, LOG_MIN, "pause");
     disconnect(playButton, SIGNAL(clicked(void)),
 	this, SLOT(handlePauseButton(void)));
+    log(LOG_UI, LOG_MIN, "button pause disconnected");
     if (isFM)
 	stopFM();
     else
@@ -2100,11 +2148,13 @@ void RadioInterface::setPlaying() {
 	if (playing) {
 	    connect(playButton, SIGNAL(clicked(void)),
 			this, SLOT(handlePauseButton(void)));
+	    log(LOG_UI, LOG_MIN, "button pause connected");
 	    playButton->setIcon(style()->standardIcon(QStyle::SP_MediaStop));
 	    playButton->setToolTip("Pause playback");
 	} else {
 	    connect(playButton, SIGNAL(clicked(void)),
 			this, SLOT(handlePlayButton(void)));
+	    log(LOG_UI, LOG_MIN, "button play connected");
 	    playButton->setIcon(style()->standardIcon(QStyle::SP_MediaPlay));
 	    playButton->setToolTip("Start playback");
 	}
@@ -2120,15 +2170,19 @@ void RadioInterface::setPlaying() {
 
 void RadioInterface::setIconAndTitle() {
     QString title;
+    QIcon icon;
 
     if (isMinimized()) {
 	if (playing)
-	    setWindowIcon(PLAY_ICON_PATH);
+	    icon = PLAY_ICON_PATH;
 	else
-	    setWindowIcon(PAUSE_ICON_PATH);
-	if (isFM)
+	    icon = PAUSE_ICON_PATH;
+	setWindowIcon(icon);
+	if (useTray)
+	    trayIcon->setIcon(icon);
+	if (isFM && FMprocessor != NULL)
 	    title = QString().asprintf("%3.3f", FMfreq);
-	else if (currentService.serviceName != "")
+	else if (currentService.serviceName != "" && DABprocessor != NULL)
 	    title = currentService.serviceName;
 	else
 	    title = originalTitle;
@@ -2138,6 +2192,8 @@ void RadioInterface::setIconAndTitle() {
 	    title.prepend(PAUSED);
     }
     setWindowTitle(title);
+    if (useTray)
+	trayIcon->setToolTip(title);
 }
 
 void RadioInterface::handleRecordButton() {

@@ -23,6 +23,7 @@
 #define RADIO_H
 
 #include <QMainWindow>
+#include <QSystemTrayIcon>
 #include <QStringList>
 #include <QStandardItemModel>
 #include <QComboBox>
@@ -149,6 +150,7 @@ private:
     int rdsDecoder;
 
 // UI
+    QSystemTrayIcon *trayIcon;
     QDialog *settingsDialog;
     Ui::settings settingsUi;
     QAction *aboutAction;
@@ -162,6 +164,8 @@ private:
     QString skin;
     bool skinIsLocal;
     bool silenceFrequencyChange;
+    bool useTray;
+    bool fastExit;
     QSettings *settings;
     std::vector<serviceId> serviceList;
     std::vector<deviceDescriptor> deviceList;
@@ -337,6 +341,8 @@ private slots:
 
 // UI
     void changeSkin(QString);
+    void restoreWindow();
+    void terminate();
 
 // settings
     void settingsClose(void);

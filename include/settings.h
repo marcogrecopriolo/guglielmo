@@ -68,11 +68,15 @@
 #define UI_SKIN			"skin"
 #define UI_SKIN_LOCAL		"local"
 #define UI_MUTE_FREQ_KNOB	"mute_freq_knob"
+#define UI_USE_TRAY		"use_tray"
+#define UI_FAST_EXIT		"use_trayt_exit"
 
 #define UI_DEF_THEME		""
 #define UI_DEF_SKIN		"base"
 #define UI_DEF_SKIN_LOCAL	1
 #define UI_DEF_MUTE_FREQ_KNOB	1
+#define UI_DEF_USE_TRAY		0
+#define UI_DEF_FAST_EXIT	0
 
 // dab
 #define DAB_THRESHOLD		"threshold"

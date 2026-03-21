@@ -51,6 +51,7 @@ int main(int argc, char **argv) {
     configFile = QDir::homePath();
     configFile.append("/");
     configFile.append(QString(DEFAULT_CFG));
+    QGuiApplication::setDesktopFileName(TARGET);
     QCoreApplication::setOrganizationName(ORGNAME);
     QCoreApplication::setOrganizationDomain(ORGDOMAIN);
     QCoreApplication::setApplicationName(TARGET);
@@ -104,6 +105,8 @@ int main(int argc, char **argv) {
     QLocale::setDefault(QLocale((const QString&)locale));
 
     QApplication a(argc, argv);
+    a.setOrganizationName(ORGNAME);
+    a.setApplicationName(TARGET);
     a.setWindowIcon(MAIN_ICON_PATH);
     radioInterface = new RadioInterface(settings);
     radioInterface->show();

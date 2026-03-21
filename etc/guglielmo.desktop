@@ -6,3 +6,4 @@ Icon=guglielmo
 Type=Application
 Categories=AudioVideo;
 Comment=A FM, DAB/DAB+ decoder using Qt and C++
+StartupWMClass=guglielmo
