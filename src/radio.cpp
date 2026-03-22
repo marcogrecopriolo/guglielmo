@@ -198,6 +198,7 @@ RadioInterface::RadioInterface(QSettings *Si, QWidget *parent):
     settings->beginGroup(GROUP_RDS);
     rdsDemodulator = settings->value(RDS_DEMODULATOR, RDS_DEF_DEMODULATOR).toInt();
     rdsDecoder = settings->value(RDS_DECODER, RDS_DEF_DECODER).toInt();
+    rdsPartialText = settings->value(RDS_PARTIAL_TEXT, RDS_DEF_PARTIAL_TEXT).toInt();
     settings->endGroup();
 
     settings->beginGroup(GROUP_SOUND);
@@ -589,7 +590,7 @@ void RadioInterface::makeFMprocessor() {
     FMprocessor = new fmProcessor(inputDevice, this, INPUT_RATE, fmRate,
 				  workingRate, audioRate, FMthreshold);
     FMprocessor->setSink(soundOut);
-    FMprocessor->setFMRDSSelector(rdsDecoder::RdsMode(rdsDecoder));
+    FMprocessor->setFMRDSSelector(rdsDecoder::RdsMode(rdsDecoder), rdsPartialText);
     FMprocessor->setFMRDSDemod(fmProcessor::rdsDemodMode(rdsDemodulator));
     FMprocessor->setFMMode(true);
     FMprocessor->setBandwidth(KHz(FMfilter));

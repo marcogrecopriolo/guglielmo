@@ -280,7 +280,7 @@ rdsBlockSynchronizer::pushBitinBlockA(bool b, RDSGroup* rdsGrp) {
     // go for the next block
     rdsBitsinBlock = 0;
     setNextBlock();
-    setRDSisSynchronized(false);
+//    setRDSisSynchronized(false);
     return RDS_BUFFERING;
 }
 

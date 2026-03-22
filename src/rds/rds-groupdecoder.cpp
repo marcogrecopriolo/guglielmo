@@ -44,7 +44,7 @@
 #define ALL_NAME_SEGMENTS ((uint32_t)(1 << NUMBER_OF_NAME_SEGMENTS) - 1)
 #define ALL_TEXT_SEGMENTS ((uint32_t)(1 << NUMBER_OF_TEXT_SEGMENTS) - 1)
 
-rdsGroupDecoder::rdsGroupDecoder(RadioInterface* RI) {
+rdsGroupDecoder::rdsGroupDecoder(RadioInterface* RI, bool p) {
     MyRadioInterface = RI;
     connect(this, SIGNAL(setStationLabel(const QString&)),
 	MyRadioInterface, SLOT(showLabel(const QString&)));
@@ -52,10 +52,15 @@ rdsGroupDecoder::rdsGroupDecoder(RadioInterface* RI) {
 	MyRadioInterface, SLOT(showText(const QString&)));
     connect(this, SIGNAL(setPTYCode(int)),
 	MyRadioInterface, SLOT(setProgramType(int)));
+    partialText = p;
     reset();
 }
 
 rdsGroupDecoder::~rdsGroupDecoder(void) {
+}
+
+void rdsGroupDecoder::setPartialText(bool p) {
+    partialText = p;
 }
 
 void rdsGroupDecoder::reset(void) {
@@ -210,8 +215,9 @@ void rdsGroupDecoder::handleRadioText(RDSGroup* grp) {
     log(LOG_RDS, LOG_VERBOSE, "radio text (%.4s) %i %i %x %s", (char *) &textBuffer[start], end, initialLen,
 		    textSegmentRegister, (char *) &textBuffer);
 
-    if (end || textSegmentRegister == ALL_TEXT_SEGMENTS) {
+    if ((partialText && initialLen > 0) || end || textSegmentRegister == ALL_TEXT_SEGMENTS)
 	setRadioText(prepareText(textBuffer, initialLen));
+    if (end || textSegmentRegister == ALL_TEXT_SEGMENTS) {
 	textSegmentRegister = 0;
 	initialLen = 0;
 	memset(textBuffer, ' ', RADIOTEXT_LENGTH);

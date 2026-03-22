@@ -148,6 +148,7 @@ private:
 // RDS
     int rdsDemodulator;
     int rdsDecoder;
+    bool rdsPartialText;
 
 // UI
     QSystemTrayIcon *trayIcon;

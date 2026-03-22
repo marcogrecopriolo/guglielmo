@@ -46,8 +46,9 @@ class rdsGroupDecoder: public QObject {
     Q_OBJECT
 
 public:
-    rdsGroupDecoder(RadioInterface*);
+    rdsGroupDecoder(RadioInterface*, bool);
     ~rdsGroupDecoder(void);
+    void setPartialText(bool);
     bool decode(RDSGroup*);
     void reset(void);
 
@@ -87,6 +88,8 @@ private:
     int initialLen;
     int32_t textABflag;
     char textBuffer[RADIOTEXT_LENGTH+1];
+
+    bool partialText;
 
 signals:
     void setPTYCode(int);

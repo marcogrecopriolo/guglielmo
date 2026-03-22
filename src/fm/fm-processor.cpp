@@ -120,7 +120,7 @@ fmProcessor::fmProcessor(deviceHandler *device, RadioInterface *radioInterface, 
     DSPFLOAT K_FM = B_FM*M_PI/F_G;
     demodulator = new fmDemodulator(fmRate, fastTrigTabs, K_FM);
 
-    rdsDataDecoder = new rdsDecoder(radioInterface, fmRate / RDS_DECIMATOR, fastTrigTabs);
+    rdsDataDecoder = new rdsDecoder(radioInterface, false, fmRate / RDS_DECIMATOR, fastTrigTabs);
     rdsLowPassFilter = new fftFilter(FFT_SIZE, RDS_LOWPASS_SIZE);
     rdsLowPassFilter->setLowPass(RDS_LP_WIDTH, fmRate);
     rdsBandFilter = new fftFilter(FFT_SIZE, RDS_BAND_FILTER_SIZE);
@@ -266,9 +266,10 @@ void fmProcessor::stopFullScan(void) {
 	    radioInterface, SLOT(scanFound(void)));
 }
 
-void fmProcessor::setFMRDSSelector(rdsDecoder::RdsMode m) {
-    log(LOG_FM, LOG_MIN, "RDS mode %i", m);
+void fmProcessor::setFMRDSSelector(rdsDecoder::RdsMode m, bool p) {
+    log(LOG_FM, LOG_MIN, "RDS mode %i %i", m, p);
     rdsMode = m;
+    rdsDataDecoder->setPartialText(p);
 }
 
 void fmProcessor::setFMRDSDemod(rdsDemodMode m) {

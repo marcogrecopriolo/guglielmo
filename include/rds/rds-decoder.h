@@ -53,13 +53,14 @@ class rdsDecoder: public QObject {
     Q_OBJECT
 
 public:
-    rdsDecoder(RadioInterface*, int32_t, trigTabs*);
+    rdsDecoder(RadioInterface*, bool, int32_t, trigTabs*);
     ~rdsDecoder(void);
     enum RdsMode {
         NO_RDS = 0,
         RDS1 = 1,
         RDS2 = 2
     };
+    void setPartialText(bool);
     void doDecode(DSPFLOAT, DSPFLOAT*, RdsMode);
     void reset(void);
 

@@ -42,6 +42,7 @@ const DSPFLOAT RDS_BITCLK_HZ = 1187.5;
  * Notice that mixing to zero IF has been done
  */
 rdsDecoder::rdsDecoder(RadioInterface* myRadio,
+    bool partialText,
     int32_t rate,
     trigTabs* fastTrigTabs) {
     DSPFLOAT synchronizerSamples;
@@ -100,7 +101,7 @@ rdsDecoder::rdsDecoder(RadioInterface* myRadio,
     my_rdsGroup->clear();
     my_rdsBlockSync = new rdsBlockSynchronizer(MyRadioInterface);
     my_rdsBlockSync->setFecEnabled(true);
-    my_rdsGroupDecoder = new rdsGroupDecoder(MyRadioInterface);
+    my_rdsGroupDecoder = new rdsGroupDecoder(MyRadioInterface, partialText);
 }
 
 rdsDecoder::~rdsDecoder(void) {
@@ -115,6 +116,10 @@ rdsDecoder::~rdsDecoder(void) {
 
 void rdsDecoder::reset(void) {
     my_rdsGroupDecoder->reset();
+}
+
+void rdsDecoder::setPartialText(bool p) {
+    my_rdsGroupDecoder->setPartialText(p);
 }
 
 DSPFLOAT rdsDecoder::Match(DSPFLOAT v) {
