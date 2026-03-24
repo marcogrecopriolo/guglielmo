@@ -1506,6 +1506,9 @@ void RadioInterface::handlePresetSelector(int index) {
 	} else
 	    stopFM();
 
+	disconnect(playButton, SIGNAL(clicked(void)),
+		 this, SLOT(handlePlayButton(void)));
+	log(LOG_UI, LOG_CHATTY, "button play disconnected");
 	newFreq = list.at(1).toDouble(&ok);
 	if (ok && newFreq > MIN_FM && newFreq < MAX_FM) {
 		FMfreq = newFreq;
@@ -1525,8 +1528,10 @@ void RadioInterface::handlePresetSelector(int index) {
     QString channel = list.at(0);
     QString service = list.at(1);
 
+    if (isFM)
+	stopFM();
     // preset is current channel
-    if (!isFM && channel == channelSelector->currentText()) {
+    else if (!isFM && channel == channelSelector->currentText()) {
 	dabService s;
 
 	stopDABService();
@@ -1541,6 +1546,11 @@ void RadioInterface::handlePresetSelector(int index) {
 	startDABService(&s);
 	return;
     }
+
+
+    disconnect(playButton, SIGNAL(clicked(void)),
+	 this, SLOT(handlePlayButton(void)));
+    log(LOG_UI, LOG_CHATTY, "button play disconnected");
 
     // have to start channel first
     disconnect(channelSelector, SIGNAL(activated(int)),
@@ -2103,6 +2113,7 @@ void RadioInterface::handleFMfrequencyChange(double freq) {
 	stopFM();
 	disconnect(playButton, SIGNAL(clicked(void)),
 		 this, SLOT(handlePlayButton(void)));
+	log(LOG_UI, LOG_CHATTY, "button play disconnected");
 	restorePlaying = true;
     }
 }
@@ -2112,6 +2123,7 @@ void RadioInterface::handleFMfrequencyRelease() {
 	stopFM();
 	disconnect(playButton, SIGNAL(clicked(void)),
 		 this, SLOT(handlePlayButton(void)));
+	log(LOG_UI, LOG_CHATTY, "button play disconnected");
 	startFM(qRound(MHz(FMfreq)));
     } else if (restorePlaying) {
 	restorePlaying = false;
@@ -2125,7 +2137,7 @@ void RadioInterface::handlePlayButton() {
     log(LOG_UI, LOG_MIN, "play");
     disconnect(playButton, SIGNAL(clicked(void)),
 		 this, SLOT(handlePlayButton(void)));
-    log(LOG_UI, LOG_MIN, "button play disconnected");
+    log(LOG_UI, LOG_CHATTY, "button play disconnected");
     if (isFM)
 	startFM(qRound(MHz(FMfreq)));
     else
@@ -2136,7 +2148,7 @@ void RadioInterface::handlePauseButton() {
     log(LOG_UI, LOG_MIN, "pause");
     disconnect(playButton, SIGNAL(clicked(void)),
 	this, SLOT(handlePauseButton(void)));
-    log(LOG_UI, LOG_MIN, "button pause disconnected");
+    log(LOG_UI, LOG_CHATTY, "button pause disconnected");
     if (isFM)
 	stopFM();
     else
@@ -2149,13 +2161,13 @@ void RadioInterface::setPlaying() {
 	if (playing) {
 	    connect(playButton, SIGNAL(clicked(void)),
 			this, SLOT(handlePauseButton(void)));
-	    log(LOG_UI, LOG_MIN, "button pause connected");
+	    log(LOG_UI, LOG_CHATTY, "button pause connected");
 	    playButton->setIcon(style()->standardIcon(QStyle::SP_MediaStop));
 	    playButton->setToolTip("Pause playback");
 	} else {
 	    connect(playButton, SIGNAL(clicked(void)),
 			this, SLOT(handlePlayButton(void)));
-	    log(LOG_UI, LOG_MIN, "button play connected");
+	    log(LOG_UI, LOG_CHATTY, "button play connected");
 	    playButton->setIcon(style()->standardIcon(QStyle::SP_MediaPlay));
 	    playButton->setToolTip("Start playback");
 	}

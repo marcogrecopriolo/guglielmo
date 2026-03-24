@@ -940,9 +940,11 @@ void RadioInterface::setDevice(int d) {
 	ifGain = settings->value(DEV_IF_GAIN, (minIfGain + maxIfGain) / 2).toInt();
 	checkIfGain();
 	inputDevice->setIfGain(ifGain);
+	settingsUi.gainSpinBox->blockSignals(true);
 	settingsUi.gainSpinBox->setMinimum(minIfGain);
 	settingsUi.gainSpinBox->setMaximum(maxIfGain);
 	settingsUi.gainSpinBox->setValue(ifGain);
+	settingsUi.gainSpinBox->blockSignals(false);
     } else {
 	settingsUi.gainSpinBox->setEnabled(false);
 	settingsUi.gainSpinBox->setValue(0);
@@ -951,9 +953,11 @@ void RadioInterface::setDevice(int d) {
 	lnaGain = settings->value(DEV_LNA_GAIN, minLnaGain).toInt();
 	checkLnaGain();
 	inputDevice->setLnaGain(lnaGain);
+	settingsUi.lnaSpinBox->blockSignals(true);
 	settingsUi.lnaSpinBox->setMinimum(minLnaGain);
 	settingsUi.lnaSpinBox->setMaximum(maxLnaGain);
 	settingsUi.lnaSpinBox->setValue(lnaGain);
+	settingsUi.lnaSpinBox->blockSignals(false);
     } else {
 	settingsUi.lnaSpinBox->setEnabled(false);
 	settingsUi.lnaSpinBox->setValue(0);

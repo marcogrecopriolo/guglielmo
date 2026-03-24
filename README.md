@@ -125,8 +125,17 @@ Choose the sound plugin (Qt or Portaudio), and in case of PortAudio, the output 
 This controls some of the FM settings, most notably
 
 - the FM decoder
+- the IF FM filter
 - the de-emphasis filter (use 50µs unless you are in the US)
 - the parameters for the low pass filter
+
+By and large all defaults should work out of the box, however, you may want to consider using
+
+- a narrower FM filter in case of weak signals, adjacent station interference (ie a station
+in a nearby frequency is so powerful that it bleeds through) or pultipath distortion (where
+the same signal reaches the aerial via a direct line *and* bouncing on some obstacle - a
+building - thereby showing as multiple slightly out of phase signals)
+- a narrower low pass audio filter if you have hiss due to weak signals, or pilot tone bleed
 
 #### Device
 
@@ -136,15 +145,23 @@ This tab offers a combo box selecting any of the available devices, and for each
 - Device gain
 - LNA gain (if the device is equipped with a low noise amplifier)
 
+Again, the defaults set on the first run should be good enough.
+
 Note that not all device drivers have the ability to choose individual devices (as an example, all
 the devices that I have not tested): if this is the case, the combo box selecting the individual
-device will be disabled, and the first available device will be implictly selected.
+device will be disabled, and the first available device will be implictly selected. This is not
+a defect!
 
 AGC has up to four supported modes: Off, On, Software and Combined.
 The supported modes are device dependent.
 
 Off and On are self explanatory, while Software and Combined turn on software based AGC.
 For devices that support it, Combined uses both Hardware and Software AGC at the same time.
+
+You should use Combined if available, if not, Software in preference to On.
+
+If you suffer from adjacet station or multipath interference, or weak signal, or poor SNR,
+you may want to turn off AGC altogether, and set IF (and LNA if available) gain manually.
 
 The gains range depends on the device, and may either be in percentiles (with the actual device
 gains remapped) or the actual device gains.
