@@ -90,6 +90,7 @@ pilotPll::pilotPll(DSPFLOAT omega, DSPFLOAT gain, trigTabs *table) {
     this->omega = omega;
     this->gain = gain;
     this->fastTrigTabs = table;
+    this->env = 0.01;
     pilotOscillatorPhase = 0;
 }
 
@@ -97,12 +98,19 @@ pilotPll::~pilotPll(void) {
 }
 
 DSPFLOAT pilotPll::doPll(DSPFLOAT pilot) {
-    DSPFLOAT currentPhase;
-    DSPFLOAT oscillatorValue = fastTrigTabs->getCos(pilotOscillatorPhase);
-    DSPFLOAT PhaseError = pilot*oscillatorValue;
+    // signal normalisation
+    env = (0.98 * env) + (0.02 * abs(pilot));
+    DSPFLOAT normPilot = pilot / (env + 1e-9);
 
-    pilotOscillatorPhase += PhaseError*gain;
-    currentPhase = toBaseRadians(pilotOscillatorPhase);
-    pilotOscillatorPhase = toBaseRadians(pilotOscillatorPhase+omega);
+    DSPFLOAT oscillatorValue = fastTrigTabs->getCos(pilotOscillatorPhase);
+    DSPFLOAT phaseError = normPilot*oscillatorValue;
+    DSPFLOAT kp = gain;
+    DSPFLOAT ki = gain*0.005;
+
+    freqAccumulator += phaseError*ki;
+    pilotOscillatorPhase += (phaseError*kp)+freqAccumulator;
+
+    DSPFLOAT currentPhase = toBaseRadians(pilotOscillatorPhase);
+    pilotOscillatorPhase = toBaseRadians(pilotOscillatorPhase + omega);
     return currentPhase;
 }

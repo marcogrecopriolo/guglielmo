@@ -34,6 +34,8 @@
 #include "rds-blocksynchronizer.h"
 #include "radio.h"
 
+#define  MAX_SYNC_ERRORS 3
+
 rdsBlockSynchronizer::rdsBlockSynchronizer(RadioInterface* RI) {
     MyRadioInterface = RI;
     crcFecEnabled = true;
@@ -56,7 +58,6 @@ void rdsBlockSynchronizer::reset(void) {
     rdsBitstream = 0;
     rdsIsSynchronized = false;
     rdsCurrentBlock = RDSGroup::BLOCK_A;
-    rdsbitErrorRate = 0;
     rdsBitsinBlock = 0;
     rdsBitsProcessed = 0;
     rdsNumofBitErrors = 0;
@@ -83,12 +84,8 @@ void rdsBlockSynchronizer::setNextBlock(void) {
     }
 }
 
-int16_t rdsBlockSynchronizer::getNumSyncErrors(void) {
-    return rdsNumofSyncErrors;
-}
-
-DSPFLOAT rdsBlockSynchronizer::getBitErrorRate(void) {
-    return rdsbitErrorRate;
+bool rdsBlockSynchronizer::reSynchronise(void) {
+    return (rdsNumofSyncErrors > MAX_SYNC_ERRORS);
 }
 
 void rdsBlockSynchronizer::resync(void) {
@@ -100,10 +97,6 @@ void rdsBlockSynchronizer::resync(void) {
 
 void rdsBlockSynchronizer::resetResyncErrorCounter(void) {
     rdsNumofSyncErrors = 0;
-}
-
-int16_t rdsBlockSynchronizer::getNumCRCErrors(void) {
-    return rdsNumofCRCErrors;
 }
 
 void rdsBlockSynchronizer::resetCRCErrorCounter(void) {
@@ -156,8 +149,6 @@ bool rdsBlockSynchronizer::decodeBlock(RDSGroup::RdsBlock b,
         rdsNumofBitErrors += NUM_BITS_BLOCK_PAYLOAD;
 
     // calc BER
-    rdsbitErrorRate = (DSPFLOAT)rdsNumofBitErrors / rdsBitsProcessed;
-    setbitErrorRate(rdsbitErrorRate);
     if (rdsBitsProcessed >= NUM_BITS_BER_CALC_RESET) {
         rdsNumofBitErrors = 0;
         rdsBitsProcessed = 0;
@@ -218,7 +209,7 @@ rdsBlockSynchronizer::pushBit(bool b, RDSGroup* rdsGrp) {
 
     // not synchronized, distinguish block A from the rest
     if (rdsCurrentBlock == RDSGroup::BLOCK_A)
-        return pushBitinBlockA(b, rdsGrp);
+        return pushBitInBlockA(b, rdsGrp);
     else
         return pushBitNotSynchronized(b, rdsGrp);
 }
@@ -255,7 +246,7 @@ rdsBlockSynchronizer::pushBitSynchronized(bool b, RDSGroup* rdsGrp) {
 // The first block is block-a. We keep shifting bits
 // until we have a valid block a
 rdsBlockSynchronizer::SyncResult
-rdsBlockSynchronizer::pushBitinBlockA(bool b, RDSGroup* rdsGrp) {
+rdsBlockSynchronizer::pushBitInBlockA(bool b, RDSGroup* rdsGrp) {
     uint32_t offsetWord = 0;
     uint32_t syndrome = 0;
 

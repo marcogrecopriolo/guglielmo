@@ -61,10 +61,10 @@ public:
 
     void clear(void);
     uint16_t getBlock(RdsBlock) const;
-    uint16_t getBlock_A(void) const;
-    uint16_t getBlock_B(void) const;
-    uint16_t getBlock_C(void) const;
-    uint16_t getBlock_D(void) const;
+    uint16_t getBlockA(void) const;
+    uint16_t getBlockB(void) const;
+    uint16_t getBlockC(void) const;
+    uint16_t getBlockD(void) const;
     void setBlock(RdsBlock, uint16_t);
     uint16_t getPiCode(void);
     uint16_t getGroupType(void);

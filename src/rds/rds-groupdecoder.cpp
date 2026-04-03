@@ -44,19 +44,21 @@
 #define ALL_NAME_SEGMENTS ((uint32_t)(1 << NUMBER_OF_NAME_SEGMENTS) - 1)
 #define ALL_TEXT_SEGMENTS ((uint32_t)(1 << NUMBER_OF_TEXT_SEGMENTS) - 1)
 
-rdsGroupDecoder::rdsGroupDecoder(RadioInterface* RI, bool p) {
-    MyRadioInterface = RI;
+rdsGroupDecoder::rdsGroupDecoder(RadioInterface* radioInterface, bool p) {
+    this->radioInterface = radioInterface;
     connect(this, SIGNAL(setStationLabel(const QString&)),
-	MyRadioInterface, SLOT(showLabel(const QString&)));
+	radioInterface, SLOT(showLabel(const QString&)));
     connect(this, SIGNAL(setRadioText(const QString&)),
-	MyRadioInterface, SLOT(showText(const QString&)));
-    connect(this, SIGNAL(setPTYCode(int)),
-	MyRadioInterface, SLOT(setProgramType(int)));
+	radioInterface, SLOT(showText(const QString&)));
     partialText = p;
     reset();
 }
 
 rdsGroupDecoder::~rdsGroupDecoder(void) {
+    disconnect(this, SIGNAL(setStationLabel(const QString&)),
+	radioInterface, SLOT(showLabel(const QString&)));
+    disconnect(this, SIGNAL(setRadioText(const QString&)),
+	radioInterface, SLOT(showText(const QString&)));
 }
 
 void rdsGroupDecoder::setPartialText(bool p) {
@@ -64,12 +66,12 @@ void rdsGroupDecoder::setPartialText(bool p) {
 }
 
 void rdsGroupDecoder::reset(void) {
-    m_piCode = 0;
+    piCode = 0;
     alphabet = tabG0;
 
     // Initialize Group 1 members
     memset(stationLabel, ' ', STATION_LABEL_LENGTH);
-    m_grp1_diCode = 0;
+    grp1DiCode = 0;
     stationNameSegmentRegister = 0;
 
     // Initialize Group 2 members
@@ -80,7 +82,6 @@ void rdsGroupDecoder::reset(void) {
     initialLen = 0;
     setRadioText("");
     setStationLabel("");
-    setPTYCode(0);
 }
 
 bool rdsGroupDecoder::decode(RDSGroup* grp) {
@@ -88,9 +89,9 @@ bool rdsGroupDecoder::decode(RDSGroup* grp) {
 
     // PI-code has changed -> new station received
     // Reset the decoder
-    if (grp->getPiCode() != m_piCode) {
+    if (grp->getPiCode() != piCode) {
 	reset();
-	m_piCode = grp->getPiCode();
+	piCode = grp->getPiCode();
     }
 
     // Cannot decode B type groups
@@ -140,16 +141,16 @@ bool rdsGroupDecoder::decode(RDSGroup* grp) {
 }
 
 void rdsGroupDecoder::handleBasicTuning(RDSGroup* grp) {
-    uint32_t segIndex = grp->getBlock_B() & 0x3;
-    uint32_t charsforStationName = grp->getBlock_D() & 0xFFFF;
+    uint32_t segIndex = grp->getBlockB() & 0x3;
+    uint32_t charsforStationName = grp->getBlockD() & 0xFFFF;
 
-    addtoStationLabel(segIndex, charsforStationName, grp->getProgrammeType());
+    addToStationLabel(segIndex, charsforStationName, grp->getProgrammeType());
 
     // Fill DI code
-    m_grp1_diCode |= ((grp->getBlock_B() >> 2) & 1) << segIndex;
+    grp1DiCode |= ((grp->getBlockB() >> 2) & 1) << segIndex;
 }
 
-void rdsGroupDecoder::addtoStationLabel(uint32_t index,
+void rdsGroupDecoder::addToStationLabel(uint32_t index,
     uint32_t name, int16_t pty) {
     uint32_t i = index * 2;
 
@@ -161,15 +162,15 @@ void rdsGroupDecoder::addtoStationLabel(uint32_t index,
 	qPrintable(prepareText(stationLabel, STATION_LABEL_LENGTH)));
     if (stationNameSegmentRegister == ALL_NAME_SEGMENTS) {
 	setStationLabel(prepareText(stationLabel, STATION_LABEL_LENGTH));
-	setPTYCode(pty);
 	stationNameSegmentRegister = 0;
+	(void) pty;
 	memset(stationLabel, ' ', STATION_LABEL_LENGTH);
     }
 }
 
 void rdsGroupDecoder::handleRadioText(RDSGroup* grp) {
-    const uint16_t new_txtABflag = (grp->getBlock_B() >> 4) & 1;
-    const uint32_t currentSegment = (grp->getBlock_B()) & 0xF;
+    const uint16_t new_txtABflag = (grp->getBlockB() >> 4) & 1;
+    const uint32_t currentSegment = (grp->getBlockB()) & 0xF;
     int start = CHARS_PER_RTXT_SEGMENT * currentSegment;
     uint32_t segmentRegister;
     uint16_t textPart1, textPart2;
@@ -185,8 +186,8 @@ void rdsGroupDecoder::handleRadioText(RDSGroup* grp) {
 	memset(textBuffer, ' ', RADIOTEXT_LENGTH);
     }
 
-    textPart1 = grp->getBlock_C();
-    textPart2 = grp->getBlock_D();
+    textPart1 = grp->getBlockC();
+    textPart2 = grp->getBlockD();
 
     // Store the received data
     i = start;
@@ -225,10 +226,10 @@ void rdsGroupDecoder::handleRadioText(RDSGroup* grp) {
 }
 
 void rdsGroupDecoder::handleTimeAndDate(RDSGroup* grp) {
-    // uint16_t Hours	= (grp -> getBlock_D () >> 12) & 0xF;
-    // uint16_t Minutes	= (grp -> getBlock_D () >> 6) & 0x3F;
-    // uint16_t Days	= grp -> getBlock_C ();
-    // uint16_t offset	= (grp -> getBlock_D ()) & 0x4F;
+    // uint16_t Hours	= (grp -> getBlockD () >> 12) & 0xF;
+    // uint16_t Minutes	= (grp -> getBlockD () >> 6) & 0x3F;
+    // uint16_t Days	= grp -> getBlockC ();
+    // uint16_t offset	= (grp -> getBlockD ()) & 0x4F;
 
     (void)grp;
 }

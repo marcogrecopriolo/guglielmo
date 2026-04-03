@@ -45,19 +45,19 @@ uint16_t RDSGroup::getBlock(RdsBlock b) const {
     return rdsBlocks[b];
 }
 
-uint16_t RDSGroup::getBlock_A() const {
+uint16_t RDSGroup::getBlockA() const {
     return rdsBlocks[BLOCK_A];
 }
 
-uint16_t RDSGroup::getBlock_B() const {
+uint16_t RDSGroup::getBlockB() const {
     return rdsBlocks[BLOCK_B];
 }
 
-uint16_t RDSGroup::getBlock_C() const {
+uint16_t RDSGroup::getBlockC() const {
     return rdsBlocks[BLOCK_C];
 }
 
-uint16_t RDSGroup::getBlock_D() const {
+uint16_t RDSGroup::getBlockD() const {
     return rdsBlocks[BLOCK_D];
 }
 

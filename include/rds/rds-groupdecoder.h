@@ -65,22 +65,21 @@ public:
     static const char END_OF_RADIO_TEXT = 0x0D;
 
 private:
-    RadioInterface* MyRadioInterface;
+    RadioInterface* radioInterface;
 
     void handleBasicTuning(RDSGroup*);
     void handleRadioText(RDSGroup*);
     void handleTimeAndDate(RDSGroup*);
-    void addtoStationLabel(uint32_t, uint32_t, int16_t);
-    void addtoRadioText(uint16_t, uint16_t, uint16_t);
+    void addToStationLabel(uint32_t, uint32_t, int16_t);
     QString prepareText(char*, int16_t);
-    uint32_t m_piCode;
+    uint32_t piCode;
     uint16_t* alphabet;
     bool alphabetSwitcher(uint8_t, uint8_t);
     uint16_t* setAlphabetTo(uint8_t, uint8_t);
 
     // group 1 members
     char stationLabel[STATION_LABEL_LENGTH];
-    int8_t m_grp1_diCode;
+    int8_t grp1DiCode;
     uint32_t stationNameSegmentRegister;
 
     // group 2 members
@@ -92,7 +91,6 @@ private:
     bool partialText;
 
 signals:
-    void setPTYCode(int);
     void setStationLabel(const QString&);
     void setRadioText(const QString&);
 };

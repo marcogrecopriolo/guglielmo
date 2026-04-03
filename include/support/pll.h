@@ -63,9 +63,11 @@ public:
     DSPFLOAT doPll(DSPFLOAT pilot);
 
 private:
+    DSPFLOAT freqAccumulator;
     DSPFLOAT pilotOscillatorPhase;
     DSPFLOAT omega;
     DSPFLOAT gain;
+    DSPFLOAT env;
     trigTabs* fastTrigTabs;
 };
 #endif /* _PLL_H */

@@ -41,7 +41,7 @@ const DSPFLOAT RDS_BITCLK_HZ = 1187.5;
  * samples per bit.
  * Notice that mixing to zero IF has been done
  */
-rdsDecoder::rdsDecoder(RadioInterface* myRadio,
+rdsDecoder::rdsDecoder(RadioInterface* radioInterface,
     bool partialText,
     int32_t rate,
     trigTabs* fastTrigTabs) {
@@ -49,7 +49,6 @@ rdsDecoder::rdsDecoder(RadioInterface* myRadio,
     int16_t i;
     int16_t length;
 
-    this->MyRadioInterface = myRadio;
     this->sampleRate = rate;
     this->fastTrigTabs = fastTrigTabs;
     omegaRDS = (2 * M_PI * RDS_BITCLK_HZ) / (DSPFLOAT)rate;
@@ -60,12 +59,11 @@ rdsDecoder::rdsDecoder(RadioInterface* myRadio,
     symbolFloor = floor(synchronizerSamples);
     syncBuffer = new DSPFLOAT[symbolCeiling];
     memset(syncBuffer, 0, symbolCeiling * sizeof(DSPFLOAT));
-    p = 0;
+    inputIndex = 0;
     bitIntegrator = 0;
     bitClkPhase = 0;
-    prev_clkState = 0;
+    prevClkState = 0;
     prevBit = 0;
-    Resync = true;
 
     // The matched filter is a borrowed from the cuteRDS, who in turn
     // borrowed it from course material
@@ -73,96 +71,90 @@ rdsDecoder::rdsDecoder(RadioInterface* myRadio,
     // Note that the formula down has a discontinuity for
     // two values of x, we better make the symbollength odd
     length = (symbolCeiling & ~01) + 1;
-    rdsfilterSize = 2 * length + 1;
-    rdsBuffer = new DSPFLOAT[rdsfilterSize];
-    memset(rdsBuffer, 0, rdsfilterSize * sizeof(DSPFLOAT));
-    ip = 0;
-    rdsKernel = new DSPFLOAT[rdsfilterSize];
+    rdsFilterSize = 2 * length + 1;
+    rdsBuffer = new DSPFLOAT[rdsFilterSize];
+    memset(rdsBuffer, 0, rdsFilterSize * sizeof(DSPFLOAT));
+    matchIndex = 0;
+    rdsKernel = new DSPFLOAT[rdsFilterSize];
     rdsKernel[length] = 0;
     for (i = 1; i <= length; i++) {
         DSPFLOAT x = ((DSPFLOAT)i) / rate * RDS_BITCLK_HZ;
-        rdsKernel[length + i] = 0.75 * cos(4 * M_PI * x) * ((1.0 / (1.0 / x - 64 * x)) - ((1.0 / (9.0 / x - 64 * x))));
-        rdsKernel[length - i] = -0.75 * cos(4 * M_PI * x) * ((1.0 / (1.0 / x - 64 * x)) - ((1.0 / (9.0 / x - 64 * x))));
+        rdsKernel[length+i] = 0.75*cos(4*M_PI*x)*((1.0/(1.0/x-64*x))-((1.0/(9.0/x-64*x))));
+        rdsKernel[length-i] = -0.75*cos(4*M_PI*x)*((1.0/(1.0/x-64*x))-((1.0/(9.0/x-64*x))));
     }
 
     // The matched filter is followed by a pretty sharp filter
     // to eliminate all remaining "noise".
-    sharpFilter = new BandPassIIR(7, RDS_BITCLK_HZ - 6,
-        RDS_BITCLK_HZ + 6,
-        rate, S_BUTTERWORTH);
+    sharpFilter = new BandPassIIR(7, RDS_BITCLK_HZ-6, RDS_BITCLK_HZ+6, rate, S_BUTTERWORTH);
     rdsLastSyncSlope = 0;
     rdsLastSync = 0;
     rdsLastData = 0;
-    rdsPrevSync = 0;
     rdsPrevData = 0;
     previousBit = false;
 
-    my_rdsGroup = new RDSGroup();
-    my_rdsGroup->clear();
-    my_rdsBlockSync = new rdsBlockSynchronizer(MyRadioInterface);
-    my_rdsBlockSync->setFecEnabled(true);
-    my_rdsGroupDecoder = new rdsGroupDecoder(MyRadioInterface, partialText);
+    rdsGroup = new RDSGroup();
+    rdsGroup->clear();
+    blockSynchroniser = new rdsBlockSynchronizer(radioInterface);
+    blockSynchroniser->setFecEnabled(true);
+    groupDecoder = new rdsGroupDecoder(radioInterface, partialText);
 }
 
 rdsDecoder::~rdsDecoder(void) {
     delete [] syncBuffer;
-    delete my_rdsGroupDecoder;
-    delete my_rdsGroup;
-    delete my_rdsBlockSync;
+    delete groupDecoder;
+    delete rdsGroup;
+    delete blockSynchroniser;
     delete [] rdsKernel;
     delete [] rdsBuffer;
     delete sharpFilter;
 }
 
 void rdsDecoder::reset(void) {
-    my_rdsGroupDecoder->reset();
+    groupDecoder->reset();
 }
 
 void rdsDecoder::setPartialText(bool p) {
-    my_rdsGroupDecoder->setPartialText(p);
+    groupDecoder->setPartialText(p);
 }
 
-DSPFLOAT rdsDecoder::Match(DSPFLOAT v) {
+DSPFLOAT rdsDecoder::match(DSPFLOAT v) {
     int16_t i;
     DSPFLOAT tmp = 0;
 
-    rdsBuffer[ip] = v;
-    for (i = 0; i < rdsfilterSize; i++) {
-        int16_t index = (ip - i);
-        if (index < 0)
-            index += rdsfilterSize;
-        tmp += rdsBuffer[index] * rdsKernel[i];
+    rdsBuffer[matchIndex] = v;
+    for (i = 0; i<rdsFilterSize; i++) {
+        int16_t index = (matchIndex-i);
+        if (index<0)
+            index += rdsFilterSize;
+        tmp += rdsBuffer[index]*rdsKernel[i];
     }
 
-    ip = (ip + 1) % rdsfilterSize;
+    matchIndex = (matchIndex+1)%rdsFilterSize;
     return tmp;
 }
 
 /*
  * Signal (i.e. "v") is already downconverted and lowpass filtered
- * when entering this stage. The return value stored in "*m" is used
- * to display things to the user
+ * when entering this stage.
  */
-void rdsDecoder::doDecode(DSPFLOAT v, DSPFLOAT* m, RdsMode mode) {
+void rdsDecoder::doDecode(DSPFLOAT v, RdsMode mode) {
     if (mode == NO_RDS)
         return; // should not happen
 
     if (mode == RDS1)
-        doDecode1(v, m);
+        doDecode1(v);
     else
-        doDecode2(v, m);
+        doDecode2(v);
 }
 
-void rdsDecoder::doDecode1(DSPFLOAT v, DSPFLOAT* m) {
+void rdsDecoder::doDecode1(DSPFLOAT v) {
     DSPFLOAT rdsMag;
     DSPFLOAT rdsSlope = 0;
     bool bit, prevBit, thisBit;
 
-    v = Match(v);
+    v = match(v);
     rdsMag = sharpFilter->Pass(v * v);
-    *m = (20 * rdsMag + 1.0);
     rdsSlope = rdsMag - rdsLastSync;
-    rdsPrevSync = rdsLastSync;
     rdsLastSync = rdsMag;
     if ((rdsSlope < 0.0) && (rdsLastSyncSlope >= 0.0)) {
 
@@ -182,41 +174,38 @@ void rdsDecoder::doDecode1(DSPFLOAT v, DSPFLOAT* m) {
     rdsPrevData = rdsLastData;
     rdsLastData = v;
     rdsLastSyncSlope = rdsSlope;
-    my_rdsBlockSync->resetResyncErrorCounter();
 }
 
-void rdsDecoder::doDecode2(DSPFLOAT v, DSPFLOAT* mag) {
+void rdsDecoder::doDecode2(DSPFLOAT v) {
     DSPFLOAT clkState;
 
-    syncBuffer[p] = v;
-    *mag = syncBuffer[p] + 1;
-    p = (p + 1) % symbolCeiling;
-    v = syncBuffer[p];			// an old one
+    syncBuffer[inputIndex] = v;
+    inputIndex = (inputIndex+1)%symbolCeiling;
+    v = match(v);
 
-    if (Resync || (my_rdsBlockSync->getNumSyncErrors() > 3)) {
-        synchronizeOnBitClk(syncBuffer, p);
-        my_rdsBlockSync->resync();
-        my_rdsBlockSync->resetResyncErrorCounter();
-        Resync = false;
+    if ((blockSynchroniser->reSynchronise())) {
+        synchronizeOnBitClk(syncBuffer, inputIndex);
+        blockSynchroniser->resync();
+        blockSynchroniser->resetResyncErrorCounter();
     }
 
     clkState = fastTrigTabs->getSin(bitClkPhase);
-    bitIntegrator += v * clkState;
+    bitIntegrator += v*clkState;
 
     // rising edge -> look at integrator
-    if (prev_clkState <= 0 && clkState > 0) {
+    if (prevClkState <= 0 && clkState > 0) {
         bool currentBit = bitIntegrator >= 0;
-        processBit(currentBit ^ previousBit);
+        processBit(currentBit^previousBit);
         bitIntegrator = 0;		// we start all over
         previousBit = currentBit;
     }
 
-    prev_clkState = clkState;
-    bitClkPhase = fmod(bitClkPhase + omegaRDS, 2 * M_PI);
+    prevClkState = clkState;
+    bitClkPhase = fmod(bitClkPhase+omegaRDS, 2*M_PI);
 }
 
 void rdsDecoder::processBit(bool bit) {
-    switch (my_rdsBlockSync->pushBit(bit, my_rdsGroup)) {
+    switch (blockSynchroniser->pushBit(bit, rdsGroup)) {
     case rdsBlockSynchronizer::RDS_WAITING_FOR_BLOCK_A:
         break; // still waiting in block A
 
@@ -226,21 +215,19 @@ void rdsDecoder::processBit(bool bit) {
     case rdsBlockSynchronizer::RDS_NO_SYNC:
 
         // resync if the last sync failed
-        setSyncErrors(my_rdsBlockSync->getNumSyncErrors());
-        my_rdsBlockSync->resync();
+        blockSynchroniser->resync();
         break;
 
     case rdsBlockSynchronizer::RDS_NO_CRC:
-        setCRCErrors(my_rdsBlockSync->getNumCRCErrors());
-        my_rdsBlockSync->resync();
+        blockSynchroniser->resync();
         break;
 
     case rdsBlockSynchronizer::RDS_COMPLETE_GROUP:
-        if (!my_rdsGroupDecoder->decode(my_rdsGroup)) {
+        if (!groupDecoder->decode(rdsGroup)) {
             ; // error decoding the rds group
         }
 
-        my_rdsGroup->clear();
+        rdsGroup->clear();
         break;
     }
 }

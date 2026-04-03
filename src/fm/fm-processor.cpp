@@ -72,7 +72,9 @@
 
 #define PILOT_DELAY		((PILOT_FILTER_SIZE - 1)/2+1)
 #define RDS_PILOT_DELAY		(1)
-#define RDS_PLL_DELAY		((RDS_BAND_FILTER_SIZE + HILBERT_SIZE - 2)/2+1)
+#define RDS_PLL_DELAY		((RDS_BAND_FILTER_SIZE + HILBERT_SIZE - 2)/2+3)
+#define RDS_GAIN		(1000)
+
 
 #define BUFFER_SIZE		16384
 #define PHASE_BUFFER_SIZE	128 // (PILOT_FILTER_SIZE + FM_FILTER_SIZE)
@@ -537,6 +539,8 @@ void fmProcessor::run(void) {
 	    if ((rdsMode != rdsDecoder::NO_RDS)) {
 		DSPFLOAT rdsData;
 
+		// TODO AGC?
+		demod *= RDS_GAIN;
 		// if there's no pilot we band pass the RDS signal
 		// beautify with a Hilbert filter, PLL and low pass
 		if (noPilot) {
@@ -588,9 +592,7 @@ void fmProcessor::run(void) {
 		}
 
 		if (++rdsCount >= RDS_DECIMATOR) {
-		    DSPFLOAT mag;
-
-	            rdsDataDecoder -> doDecode (rdsData, &mag, rdsMode);
+	            rdsDataDecoder->doDecode(rdsData, rdsMode);
 	            rdsCount = 0;
 	         }
 	    }

@@ -61,48 +61,39 @@ public:
         RDS2 = 2
     };
     void setPartialText(bool);
-    void doDecode(DSPFLOAT, DSPFLOAT*, RdsMode);
+    void doDecode(DSPFLOAT, RdsMode);
     void reset(void);
 
 private:
     void processBit(bool);
-    void doDecode1(DSPFLOAT, DSPFLOAT*);
-    void doDecode2(DSPFLOAT, DSPFLOAT*);
+    void doDecode1(DSPFLOAT);
+    void doDecode2(DSPFLOAT);
+    DSPFLOAT match(DSPFLOAT);
+    void synchronizeOnBitClk(DSPFLOAT*, int16_t);
     int32_t sampleRate;
-    int32_t numofFrames;
     trigTabs* fastTrigTabs;
-    RadioInterface* MyRadioInterface;
-    RDSGroup* my_rdsGroup;
-    rdsBlockSynchronizer* my_rdsBlockSync;
-    rdsGroupDecoder* my_rdsGroupDecoder;
+    RDSGroup* rdsGroup;
+    rdsBlockSynchronizer* blockSynchroniser;
+    rdsGroupDecoder* groupDecoder;
     DSPFLOAT omegaRDS;
     int32_t symbolCeiling;
     int32_t symbolFloor;
     bool prevBit;
     DSPFLOAT bitIntegrator;
     DSPFLOAT bitClkPhase;
-    DSPFLOAT prev_clkState;
-    bool Resync;
+    DSPFLOAT prevClkState;
 
     DSPFLOAT* rdsBuffer;
     DSPFLOAT* rdsKernel;
-    int16_t ip;
-    int16_t rdsfilterSize;
-    DSPFLOAT Match(DSPFLOAT);
+    int16_t matchIndex;
+    int16_t rdsFilterSize;
     BandPassIIR* sharpFilter;
     DSPFLOAT rdsLastSyncSlope;
     DSPFLOAT rdsLastSync;
-    DSPFLOAT rdsPrevSync;
     DSPFLOAT rdsLastData;
     DSPFLOAT rdsPrevData;
     bool previousBit;
     DSPFLOAT* syncBuffer;
-    int16_t p;
-    void synchronizeOnBitClk(DSPFLOAT*, int16_t);
-
-signals:
-    void setCRCErrors(int);
-    void setSyncErrors(int);
-    void setbitErrorRate(int);
+    int16_t inputIndex;
 };
 #endif

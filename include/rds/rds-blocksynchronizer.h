@@ -51,19 +51,16 @@ public:
     void reset(void);
     SyncResult pushBit(bool, RDSGroup*);
     SyncResult pushBitSynchronized(bool, RDSGroup*);
-    SyncResult pushBitinBlockA(bool, RDSGroup*);
+    SyncResult pushBitInBlockA(bool, RDSGroup*);
     SyncResult pushBitNotSynchronized(bool, RDSGroup*);
-    int16_t getNumSyncErrors(void);
+    bool reSynchronise(void);
     void resetResyncErrorCounter(void);
     void resetCRCErrorCounter(void);
-    int16_t getNumCRCErrors(void);
     void resync(void);
-    DSPFLOAT getBitErrorRate(void);
 
 private:
     RadioInterface* MyRadioInterface;
-    bool decodeBlock(RDSGroup::RdsBlock,
-        uint32_t, bool);
+    bool decodeBlock(RDSGroup::RdsBlock, uint32_t, bool);
     uint32_t getSyndrome(uint32_t, uint32_t);
     void setNextBlock(void);
     uint32_t doMeggit(uint32_t);
@@ -78,6 +75,7 @@ private:
     static const uint32_t OFFSET_WORD_BLOCK_C1 = 0x168;
     static const uint32_t OFFSET_WORD_BLOCK_C2 = 0x350;
     static const uint32_t OFFSET_WORD_BLOCK_D = 0x1B4;
+ 
     //x^10 + x^8 + x^7 + x^5 + x^4 + x^3 + 1
     static const uint32_t CRC_POLY = 0x5B9;
     static const uint32_t REMAINDER_POLY = 0x31B;
@@ -88,7 +86,6 @@ private:
     uint32_t rdsBitstream; // only interested in 26 bits
     bool rdsIsSynchronized;
     RDSGroup::RdsBlock rdsCurrentBlock;
-    DSPFLOAT rdsbitErrorRate;
     uint16_t rdsBitsinBlock;
     uint16_t rdsBitsProcessed;
     uint16_t rdsNumofSyncErrors;
@@ -97,6 +94,5 @@ private:
 
 signals:
     void setRDSisSynchronized(bool);
-    void setbitErrorRate(double);
 };
 #endif
