@@ -35,28 +35,28 @@ public:
     RDSGroup(void);
     ~RDSGroup(void);
     enum RdsBlock {
-        BLOCK_A = 0,
-        BLOCK_B = 1,
-        BLOCK_C = 2,
-        BLOCK_D = 3
+	BLOCK_A = 0,
+	BLOCK_B = 1,
+	BLOCK_C = 2,
+	BLOCK_D = 3
     };
 
     enum GroupType {
-        BASIC_TUNING_AND_SWITCHING = 0,
-        SLOW_LABELING_CODES = 1,
-        RADIO_TEXT = 2,
-        OPEN_DATA = 3,
-        CLOCKTIME_AND_DATE = 4,
-        ODA = 5,
-        ODA_2 = 6,
-        RADIO_PAGING = 7,
-        TMC_DATA = 8,
-        EMERGENCY_WARNING = 9,
-        PROGRAM_TYPE_NAME = 10,
-        ODA_3 = 11,
-        ODA_4 = 12,
-        ENHANCED_PAGING = 13,
-        ENHANCED_OTHER_NETWORKS_INFO = 14
+	BASIC_TUNING_AND_SWITCHING = 0,
+	SLOW_LABELING_CODES = 1,
+	RADIO_TEXT = 2,
+	OPEN_DATA = 3,
+	CLOCKTIME_AND_DATE = 4,
+	ODA = 5,
+	ODA_2 = 6,
+	RADIO_PAGING = 7,
+	TMC_DATA = 8,
+	EMERGENCY_WARNING = 9,
+	PROGRAM_TYPE_NAME = 10,
+	ODA_3 = 11,
+	ODA_4 = 12,
+	ENHANCED_PAGING = 13,
+	ENHANCED_OTHER_NETWORKS_INFO = 14
     };
 
     void clear(void);

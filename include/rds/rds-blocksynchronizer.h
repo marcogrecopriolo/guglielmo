@@ -26,11 +26,37 @@
 
 #ifndef RDS_BLOCK_SYNCHRONIZER_H
 #define RDS_BLOCK_SYNCHRONIZER_H
-
 #include "constants.h"
 #include "rds-group.h"
 #include <QObject>
+#include <array>
+#include <unordered_map>
+
 class RadioInterface;
+
+// RDS (26,16) cyclic code constants
+static const uint32_t NUM_BITS_CRC = 10;
+static const uint32_t NUM_BITS_BLOCK_PAYLOAD = 16;
+static const uint32_t NUM_BITS_PER_BLOCK = NUM_BITS_CRC + NUM_BITS_BLOCK_PAYLOAD;
+static const uint32_t BLOCK_MASK = (1U << NUM_BITS_PER_BLOCK) - 1U;
+static const uint32_t OFFSET_WORD_BLOCK_A = 0xFC;
+static const uint32_t OFFSET_WORD_BLOCK_B = 0x198;
+static const uint32_t OFFSET_WORD_BLOCK_C1 = 0x168;
+static const uint32_t OFFSET_WORD_BLOCK_C2 = 0x350;
+static const uint32_t OFFSET_WORD_BLOCK_D = 0x1B4;
+// x^10 + x^8 + x^7 + x^5 + x^4 + x^3 + 1
+static const uint32_t CRC_POLY = 0x5B9;
+static const uint32_t REMAINDER_POLY = 0x31B;
+static const uint32_t NUM_BITS_BER_CALC_RESET = 4000;
+
+// Precomputed burst error correction lookup table.
+// Maps syndrome -> error_vector for 1-bit and 2-bit contiguous burst errors
+// at every bit position in the 26-bit block, for each of the 5 offset words.
+// Built once at startup, used for O(1) correction in decodeBlock.
+struct BurstErrorTable {
+    std::unordered_map<uint32_t, uint32_t> table[5]; // 0=A, 1=B, 2=C1, 3=C2, 4=D
+    BurstErrorTable();
+};
 
 class rdsBlockSynchronizer: public QObject {
     Q_OBJECT
@@ -39,15 +65,13 @@ public:
     rdsBlockSynchronizer(RadioInterface*);
     ~rdsBlockSynchronizer(void);
     void setFecEnabled(bool);
-
     enum SyncResult {
-        RDS_WAITING_FOR_BLOCK_A,
-        RDS_BUFFERING,
-        RDS_NO_SYNC,
-        RDS_NO_CRC,
-        RDS_COMPLETE_GROUP
+	RDS_WAITING_FOR_BLOCK_A,
+	RDS_BUFFERING,
+	RDS_NO_SYNC,
+	RDS_NO_CRC,
+	RDS_COMPLETE_GROUP
     };
-
     void reset(void);
     SyncResult pushBit(bool, RDSGroup*);
     SyncResult pushBitSynchronized(bool, RDSGroup*);
@@ -63,27 +87,12 @@ private:
     bool decodeBlock(RDSGroup::RdsBlock, uint32_t, bool);
     uint32_t getSyndrome(uint32_t, uint32_t);
     void setNextBlock(void);
-    uint32_t doMeggit(uint32_t);
+    uint32_t correctBurstErrors(uint32_t syndrome, RDSGroup::RdsBlock b, bool isTypeBGroup);
     uint32_t getOffset(RDSGroup::RdsBlock, bool);
     bool crcFecEnabled;
-
-    static const uint32_t NUM_BITS_CRC = 10;
-    static const uint32_t NUM_BITS_BLOCK_PAYLOAD = 16;
-    static const uint32_t NUM_BITS_PER_BLOCK = NUM_BITS_CRC + NUM_BITS_BLOCK_PAYLOAD;
-    static const uint32_t OFFSET_WORD_BLOCK_A = 0xFC;
-    static const uint32_t OFFSET_WORD_BLOCK_B = 0x198;
-    static const uint32_t OFFSET_WORD_BLOCK_C1 = 0x168;
-    static const uint32_t OFFSET_WORD_BLOCK_C2 = 0x350;
-    static const uint32_t OFFSET_WORD_BLOCK_D = 0x1B4;
- 
-    //x^10 + x^8 + x^7 + x^5 + x^4 + x^3 + 1
-    static const uint32_t CRC_POLY = 0x5B9;
-    static const uint32_t REMAINDER_POLY = 0x31B;
-    static const uint32_t NUM_BITS_BER_CALC_RESET = 4000;
-
     static const RDSGroup::RdsBlock SYNC_END_BLOCK = RDSGroup::BLOCK_C;
-
-    uint32_t rdsBitstream; // only interested in 26 bits
+    uint32_t rdsBitstream;
+    uint32_t rdsBitCount;
     bool rdsIsSynchronized;
     RDSGroup::RdsBlock rdsCurrentBlock;
     uint16_t rdsBitsinBlock;

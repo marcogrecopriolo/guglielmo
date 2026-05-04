@@ -27,7 +27,7 @@
  *    a rewrite and local adaptation of FMSTACK software
  *    Technical University of Munich, Institute for Integrated Systems (LIS)
  *    FMSTACK Copyright (C) 2010 Michael Feilen
- * 
+ *
  *    Author(s)       : Michael Feilen (michael.feilen@tum.de)
  *    Initial release : 01.09.2009
  *    Last changed    : 09.03.2010

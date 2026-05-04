@@ -27,7 +27,7 @@
  *	various sources. Two in particular:
  *	
  *    FMSTACK Copyright (C) 2010 Michael Feilen
- * 
+ *
  *    Author(s)       : Michael Feilen (michael.feilen@tum.de)
  *    Initial release : 01.09.2009
  *    Last changed    : 09.03.2010
@@ -56,9 +56,9 @@ public:
     rdsDecoder(RadioInterface*, bool, int32_t, trigTabs*);
     ~rdsDecoder(void);
     enum RdsMode {
-        NO_RDS = 0,
-        RDS1 = 1,
-        RDS2 = 2
+	NO_RDS = 0,
+	RDS1 = 1,
+	RDS2 = 2
     };
     void setPartialText(bool);
     void doDecode(DSPFLOAT, RdsMode);
@@ -78,7 +78,6 @@ private:
     DSPFLOAT omegaRDS;
     int32_t symbolCeiling;
     int32_t symbolFloor;
-    bool prevBit;
     DSPFLOAT bitIntegrator;
     DSPFLOAT bitClkPhase;
     DSPFLOAT prevClkState;
@@ -90,10 +89,15 @@ private:
     BandPassIIR* sharpFilter;
     DSPFLOAT rdsLastSyncSlope;
     DSPFLOAT rdsLastSync;
-    DSPFLOAT rdsLastData;
-    DSPFLOAT rdsPrevData;
     bool previousBit;
     DSPFLOAT* syncBuffer;
     int16_t inputIndex;
+    DSPFLOAT sampleWindow[3];
+    int sampleWindowIndex;
+
+    DSPFLOAT phaseAcc;
+    DSPFLOAT period;
+
+    DSPFLOAT gardnerSample;
 };
 #endif
