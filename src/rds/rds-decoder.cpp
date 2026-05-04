@@ -63,7 +63,6 @@ rdsDecoder::rdsDecoder(RadioInterface* radioInterface,
     bitIntegrator = 0;
     bitClkPhase = 0;
     prevClkState = 0;
-    prevBit = 0;
 
     // The matched filter is a borrowed from the cuteRDS, who in turn
     // borrowed it from course material
@@ -78,9 +77,9 @@ rdsDecoder::rdsDecoder(RadioInterface* radioInterface,
     rdsKernel = new DSPFLOAT[rdsFilterSize];
     rdsKernel[length] = 0;
     for (i = 1; i <= length; i++) {
-        DSPFLOAT x = ((DSPFLOAT)i) / rate * RDS_BITCLK_HZ;
-        rdsKernel[length+i] = 0.75*cos(4*M_PI*x)*((1.0/(1.0/x-64*x))-((1.0/(9.0/x-64*x))));
-        rdsKernel[length-i] = -0.75*cos(4*M_PI*x)*((1.0/(1.0/x-64*x))-((1.0/(9.0/x-64*x))));
+	DSPFLOAT x = ((DSPFLOAT)i) / rate * RDS_BITCLK_HZ;
+	rdsKernel[length+i] = 0.75*cos(4*M_PI*x)*((1.0/(1.0/x-64*x))-((1.0/(9.0/x-64*x))));
+	rdsKernel[length-i] = -0.75*cos(4*M_PI*x)*((1.0/(1.0/x-64*x))-((1.0/(9.0/x-64*x))));
     }
 
     // The matched filter is followed by a pretty sharp filter
@@ -88,9 +87,15 @@ rdsDecoder::rdsDecoder(RadioInterface* radioInterface,
     sharpFilter = new BandPassIIR(7, RDS_BITCLK_HZ-6, RDS_BITCLK_HZ+6, rate, S_BUTTERWORTH);
     rdsLastSyncSlope = 0;
     rdsLastSync = 0;
-    rdsLastData = 0;
-    rdsPrevData = 0;
     previousBit = false;
+
+    memset(sampleWindow, 0, sizeof(sampleWindow));
+    sampleWindowIndex = 0;
+
+    phaseAcc = 0;
+    period = sampleRate / RDS_BITCLK_HZ;
+
+    gardnerSample = 0;
 
     rdsGroup = new RDSGroup();
     rdsGroup->clear();
@@ -123,10 +128,10 @@ DSPFLOAT rdsDecoder::match(DSPFLOAT v) {
 
     rdsBuffer[matchIndex] = v;
     for (i = 0; i<rdsFilterSize; i++) {
-        int16_t index = (matchIndex-i);
-        if (index<0)
-            index += rdsFilterSize;
-        tmp += rdsBuffer[index]*rdsKernel[i];
+	int16_t index = (matchIndex-i);
+	if (index<0)
+	    index += rdsFilterSize;
+	tmp += rdsBuffer[index]*rdsKernel[i];
     }
 
     matchIndex = (matchIndex+1)%rdsFilterSize;
@@ -139,40 +144,54 @@ DSPFLOAT rdsDecoder::match(DSPFLOAT v) {
  */
 void rdsDecoder::doDecode(DSPFLOAT v, RdsMode mode) {
     if (mode == NO_RDS)
-        return; // should not happen
+	return; // should not happen
 
     if (mode == RDS1)
-        doDecode1(v);
+	doDecode1(v);
     else
-        doDecode2(v);
+	doDecode2(v);
 }
 
 void rdsDecoder::doDecode1(DSPFLOAT v) {
     DSPFLOAT rdsMag;
     DSPFLOAT rdsSlope = 0;
-    bool bit, prevBit, thisBit;
+    bool bit;
 
     v = match(v);
+
+    sampleWindow[sampleWindowIndex] = v;
+    sampleWindowIndex = (sampleWindowIndex + 1) % 3;
+
     rdsMag = sharpFilter->Pass(v * v);
     rdsSlope = rdsMag - rdsLastSync;
     rdsLastSync = rdsMag;
+
+    // Continuous phase correction
+    // The peak of rdsMag marks the bit boundary. The slope zero crossing
+    // tells us when the peak occurred relative to our phase accumulator.
+    // If the peak arrives early, are we running slow? nudge period down.
+    // If the peak arrives late, are we running fast? nudge period up.
     if ((rdsSlope < 0.0) && (rdsLastSyncSlope >= 0.0)) {
+	DSPFLOAT phaseError = phaseAcc - period;
+	DSPFLOAT nominalPeriod = sampleRate / RDS_BITCLK_HZ;
 
-        // top of the sine wave: get the data
-        bit = rdsLastData >= 0;
+	period -= 0.01 * phaseError;
+	if (period < nominalPeriod * 0.95)
+	    period = nominalPeriod * 0.95;
+	if (period > nominalPeriod * 1.05)
+	    period = nominalPeriod * 1.05;
+	phaseAcc = 0;
 
-        // vote on the bit using the previous and next sample
-        thisBit = v >= 0;
-        prevBit = rdsPrevData >= 0;
-        if (bit != prevBit && bit != thisBit)
-            bit = prevBit;
+	int votes = 0;
+	for (int i = 0; i < 3; i++)
+	    votes += (sampleWindow[i] >= 0)? 1: 0;
+	bit = votes >= 2;
 
-        processBit(bit ^ previousBit);
-        previousBit = bit;
+	processBit(bit ^ previousBit);
+	previousBit = bit;
     }
 
-    rdsPrevData = rdsLastData;
-    rdsLastData = v;
+    phaseAcc += 1.0;
     rdsLastSyncSlope = rdsSlope;
 }
 
@@ -184,20 +203,54 @@ void rdsDecoder::doDecode2(DSPFLOAT v) {
     v = match(v);
 
     if ((blockSynchroniser->reSynchronise())) {
-        synchronizeOnBitClk(syncBuffer, inputIndex);
-        blockSynchroniser->resync();
-        blockSynchroniser->resetResyncErrorCounter();
+	synchronizeOnBitClk(syncBuffer, inputIndex);
+	blockSynchroniser->resync();
+	blockSynchroniser->resetResyncErrorCounter();
     }
 
     clkState = fastTrigTabs->getSin(bitClkPhase);
     bitIntegrator += v*clkState;
 
+    sampleWindow[sampleWindowIndex] = v;
+    sampleWindowIndex = (sampleWindowIndex + 1) % 3;
+
+    // Capture the half-symbol sample for Gardner TED (improvement 2):
+    // The Gardner timing error detector needs the sample at the midpoint
+    // between bit boundaries, i.e. at the falling edge of clkState.
+    if (prevClkState >= 0 && clkState < 0)
+	gardnerSample = v;
+
     // rising edge -> look at integrator
     if (prevClkState <= 0 && clkState > 0) {
-        bool currentBit = bitIntegrator >= 0;
-        processBit(currentBit^previousBit);
-        bitIntegrator = 0;		// we start all over
-        previousBit = currentBit;
+	// Base bit decision from integrator
+	bool currentBit = bitIntegrator >= 0;
+
+	int votes = 0;
+	for (int i = 0; i < 3; i++)
+	    votes += (sampleWindow[i] >= 0)? 1: 0;
+	bool votedBit = votes >= 2;
+
+	// If integrator and majority vote agree, use integrator result.
+	// If they disagree, use the majority vote as a tiebreaker.
+	if (currentBit != votedBit)
+	    currentBit = votedBit;
+
+	// Gardner timing error detector
+	// e = x[n-0.5] * (x[n] - x[n-1])
+	// where x[n] is the current bit sample, x[n-1] the previous,
+	// and x[n-0.5] the half-symbol sample captured at the falling edge.
+	// This is more robust than the early-late gate under low SNR.
+	DSPFLOAT gardnerError = gardnerSample *
+	    ((currentBit? 1.0: -1.0) - (previousBit? 1.0: -1.0));
+	bitClkPhase += 0.005 * gardnerError;
+
+	bitClkPhase = fmod(bitClkPhase, 2*M_PI);
+	if (bitClkPhase < 0)
+	    bitClkPhase += 2*M_PI;
+
+	processBit(currentBit^previousBit);
+	bitIntegrator = 0;
+	previousBit = currentBit;
     }
 
     prevClkState = clkState;
@@ -207,28 +260,28 @@ void rdsDecoder::doDecode2(DSPFLOAT v) {
 void rdsDecoder::processBit(bool bit) {
     switch (blockSynchroniser->pushBit(bit, rdsGroup)) {
     case rdsBlockSynchronizer::RDS_WAITING_FOR_BLOCK_A:
-        break; // still waiting in block A
+	break; // still waiting in block A
 
     case rdsBlockSynchronizer::RDS_BUFFERING:
-        break; // just buffer
+	break; // just buffer
 
     case rdsBlockSynchronizer::RDS_NO_SYNC:
 
-        // resync if the last sync failed
-        blockSynchroniser->resync();
-        break;
+	// resync if the last sync failed
+	blockSynchroniser->resync();
+	break;
 
     case rdsBlockSynchronizer::RDS_NO_CRC:
-        blockSynchroniser->resync();
-        break;
+	blockSynchroniser->resync();
+	break;
 
     case rdsBlockSynchronizer::RDS_COMPLETE_GROUP:
-        if (!groupDecoder->decode(rdsGroup)) {
-            ; // error decoding the rds group
-        }
+	if (!groupDecoder->decode(rdsGroup)) {
+	    ; // error decoding the rds group
+	}
 
-        rdsGroup->clear();
-        break;
+	rdsGroup->clear();
+	break;
     }
 }
 
@@ -243,29 +296,29 @@ void rdsDecoder::synchronizeOnBitClk(DSPFLOAT* v, int16_t first) {
 
     // synchronizerSamples = sampleRate / (DSPFLOAT)RDS_BITCLK_HZ;
     for (i = 0; i < symbolCeiling; i++) {
-        phase = fmod(i * (omegaRDS / 2), 2 * M_PI);
+	phase = fmod(i * (omegaRDS / 2), 2 * M_PI);
 
-        // reset index on phase change
-        if (fastTrigTabs->getSin(phase) > 0 && !isHigh) {
-            isHigh = true;
-            k = 0;
-        } else if (fastTrigTabs->getSin(phase) < 0 && isHigh) {
-            isHigh = false;
-            k = 0;
-        }
+	// reset index on phase change
+	if (fastTrigTabs->getSin(phase) > 0 && !isHigh) {
+	    isHigh = true;
+	    k = 0;
+	} else if (fastTrigTabs->getSin(phase) < 0 && isHigh) {
+	    isHigh = false;
+	    k = 0;
+	}
 
-        correlationVector[k++] += v[(first + i) % symbolCeiling];
+	correlationVector[k++] += v[(first + i) % symbolCeiling];
     }
 
     // detect rising edge in correlation window
     int32_t iMin = 0;
     while (iMin < symbolFloor && correlationVector[iMin++] > 0)
-        ;
+	;
     while (iMin < symbolFloor && correlationVector[iMin++] < 0)
-        ;
+	;
 
     // set the phase, previous sample (iMin - 1) is obviously the one
     bitClkPhase = fmod(-omegaRDS * (iMin - 1), 2 * M_PI);
     while (bitClkPhase < 0)
-        bitClkPhase += 2 * M_PI;
+	bitClkPhase += 2 * M_PI;
 }
