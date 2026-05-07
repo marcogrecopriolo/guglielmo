@@ -61,7 +61,8 @@ rdsGroupDecoder::~rdsGroupDecoder(void) {
 	radioInterface, SLOT(showText(const QString&)));
 }
 
-void rdsGroupDecoder::setPartialText(bool p) {
+void rdsGroupDecoder::setParameters(bool p) {
+    log(LOG_RDS, LOG_MIN, "partial text is %i", p);
     partialText = p;
 }
 

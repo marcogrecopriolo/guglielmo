@@ -75,7 +75,7 @@ public:
     void setAudioBandwidth(int32_t);
     void setBandwidth(int32_t);
     void setSignalGain(int16_t);
-    void setFMRDSSelector(rdsDecoder::RdsMode, bool);
+    void setFMRDSSelector(rdsDecoder::RdsMode, bool, int32_t, int32_t);
     void setFMRDSDemod(rdsDemodMode);
     void resetRDS(void);
     void setSink(audioBase *);

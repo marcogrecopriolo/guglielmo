@@ -36,12 +36,13 @@
  */
 #include "rds-blocksynchronizer.h"
 #include "radio.h"
-
-#define  MAX_SYNC_ERRORS 3
+#include "logging.h"
 
 rdsBlockSynchronizer::rdsBlockSynchronizer(RadioInterface* RI) {
     MyRadioInterface = RI;
     crcFecEnabled = true;
+    maxSyncErrors = 3;
+    maxBlerErrors = 3;
 
     this->reset();
     connect(this, SIGNAL(setRDSisSynchronized(bool)),
@@ -53,58 +54,69 @@ rdsBlockSynchronizer::~rdsBlockSynchronizer(void) {
 	MyRadioInterface, SLOT(showQuality(bool)));
 }
 
-void rdsBlockSynchronizer::setFecEnabled(bool b) {
-    crcFecEnabled = b;
+void rdsBlockSynchronizer::setParameters(bool c, int32_t s, int32_t b) {
+    crcFecEnabled = c;
+    maxSyncErrors = s;
+    maxBlerErrors = b;
+    log(LOG_RDS, LOG_MIN, "parameters e/c %i sync %i bler %i", c, s, b);
 }
 
 void rdsBlockSynchronizer::reset(void) {
-    rdsBitstream = 0;
-    rdsNumofSyncErrors = 0;
-    rdsIsSynchronized = false;
-    rdsCurrentBlock = RDSGroup::BLOCK_A;
-    rdsBitsinBlock = 0;
-    rdsBitsProcessed = 0;
-    rdsNumofBitErrors = 0;
+    bitStream = 0;
+    syncErrors = 0;
+    isSynchronized = false;
+    currentBlock = RDSGroup::BLOCK_A;
+    bitsInBlock = 0;
+    bitsProcessed = 0;
+    bitErrors = 0;
 
     resetCRCErrorCounter();
     resetResyncErrorCounter();
     setRDSisSynchronized(false);
+
+    blerHead = 0;
+    blerErrors = 0;
+    memset(blerWindow, 0, sizeof(blerWindow));
 }
 
 void rdsBlockSynchronizer::setNextBlock(void) {
-    switch (rdsCurrentBlock) {
+    switch (currentBlock) {
     case RDSGroup::BLOCK_A:
-	rdsCurrentBlock = RDSGroup::BLOCK_B;
+	currentBlock = RDSGroup::BLOCK_B;
 	break;
     case RDSGroup::BLOCK_B:
-	rdsCurrentBlock = RDSGroup::BLOCK_C;
+	currentBlock = RDSGroup::BLOCK_C;
 	break;
     case RDSGroup::BLOCK_C:
-	rdsCurrentBlock = RDSGroup::BLOCK_D;
+	currentBlock = RDSGroup::BLOCK_D;
 	break;
     case RDSGroup::BLOCK_D:
-	rdsCurrentBlock = RDSGroup::BLOCK_A;
+	currentBlock = RDSGroup::BLOCK_A;
 	break;
     }
 }
 
 bool rdsBlockSynchronizer::reSynchronise(void) {
-    return (rdsNumofSyncErrors > MAX_SYNC_ERRORS);
+    return (syncErrors > maxSyncErrors);
 }
 
 void rdsBlockSynchronizer::resync(void) {
-    rdsCurrentBlock = RDSGroup::BLOCK_A;
-    rdsIsSynchronized = false;
+    currentBlock = RDSGroup::BLOCK_A;
+    isSynchronized = false;
     setRDSisSynchronized(false);
-    rdsBitsinBlock = 0;
+    bitsInBlock = 0;
+
+    blerHead = 0;
+    blerErrors = 0;
+    memset(blerWindow, 0, sizeof(blerWindow));
 }
 
 void rdsBlockSynchronizer::resetResyncErrorCounter(void) {
-    rdsNumofSyncErrors = 0;
+    syncErrors = 0;
 }
 
 void rdsBlockSynchronizer::resetCRCErrorCounter(void) {
-    rdsNumofCRCErrors = 0;
+    CRCErrors = 0;
 }
 
 uint32_t rdsBlockSynchronizer::getSyndrome(uint32_t bits,
@@ -138,11 +150,11 @@ bool rdsBlockSynchronizer::decodeBlock(RDSGroup::RdsBlock b,
 
     // During synchronization we allow zero errors,
     // thus we check the syndrome register directly here
-    if (!rdsIsSynchronized)
+    if (!isSynchronized)
 	return syndrome == 0;
 
     // Increment for BER calculations
-    rdsBitsProcessed += NUM_BITS_BLOCK_PAYLOAD;
+    bitsProcessed += NUM_BITS_BLOCK_PAYLOAD;
 
     if (syndrome != 0 && crcFecEnabled)
 	syndrome = correctBurstErrors(syndrome, b, isTypeBGroup);
@@ -150,18 +162,18 @@ bool rdsBlockSynchronizer::decodeBlock(RDSGroup::RdsBlock b,
     // if the syndrome is not equal to zero there was an error in the crc
     // When no fec is used, we mark all bits as erroneous
     if (syndrome != 0)
-	rdsNumofBitErrors += NUM_BITS_BLOCK_PAYLOAD;
+	bitErrors += NUM_BITS_BLOCK_PAYLOAD;
 
     // calc BER
-    if (rdsBitsProcessed >= NUM_BITS_BER_CALC_RESET) {
-	rdsNumofBitErrors = 0;
-	rdsBitsProcessed = 0;
+    if (bitsProcessed >= NUM_BITS_BER_CALC_RESET) {
+	bitErrors = 0;
+	bitsProcessed = 0;
     }
 
     return syndrome == 0;
 }
 
-// Precomputed syndrome -> error vector lookup table for burst error correction.
+// Precomputed syndrome: error vector lookup table for burst error correction.
 // Implements IEC 62106 / EN 50067 Annex B burst error correction.
 // For each offset word, we precompute the syndrome produced by every possible
 // 1-bit and 2-bit contiguous burst error at every bit position in the 26-bit block.
@@ -169,7 +181,6 @@ bool rdsBlockSynchronizer::decodeBlock(RDSGroup::RdsBlock b,
 // This correctly handles burst errors anywhere in the block including check bits,
 // and handles 2-bit bursts which Meggitt cannot.
 //
-// The table is built once at first use via a static local.
 // BurstErrorTable constructor ? builds the syndrome->error_vector lookup
 // for 1-bit and 2-bit contiguous burst errors at every bit position,
 // for each of the 5 RDS offset words.
@@ -244,8 +255,8 @@ uint32_t rdsBlockSynchronizer::correctBurstErrors(uint32_t syndrome,
     const auto& tbl = burstTable.table[idx];
     const auto it = tbl.find(syndrome);
     if (it != tbl.end()) {
-	rdsBitstream ^= it->second;
-	rdsNumofBitErrors++;
+	bitStream ^= it->second;
+	bitErrors++;
 	return 0;
     }
 
@@ -270,11 +281,11 @@ uint32_t rdsBlockSynchronizer::getOffset(RDSGroup::RdsBlock b,
 rdsBlockSynchronizer::SyncResult
 rdsBlockSynchronizer::pushBit(bool b, RDSGroup* rdsGrp) {
 
-    if (rdsIsSynchronized)
+    if (isSynchronized)
 	return pushBitSynchronized(b, rdsGrp);
 
     // not synchronized, distinguish block A from the rest
-    if (rdsCurrentBlock == RDSGroup::BLOCK_A)
+    if (currentBlock == RDSGroup::BLOCK_A)
 	return pushBitInBlockA(b, rdsGrp);
     else
 	return pushBitNotSynchronized(b, rdsGrp);
@@ -283,27 +294,43 @@ rdsBlockSynchronizer::pushBit(bool b, RDSGroup* rdsGrp) {
 rdsBlockSynchronizer::SyncResult
 rdsBlockSynchronizer::pushBitSynchronized(bool b, RDSGroup* rdsGrp) {
 
-    // assert rdsIsSynchronized == true
-    rdsBitstream = (rdsBitstream << 1) | (b ? 01 : 00);
-    if (++rdsBitsinBlock < NUM_BITS_PER_BLOCK)
+    // assert isSynchronized == true
+    bitStream = (bitStream << 1) | (b ? 01: 00);
+    if (++bitsInBlock < NUM_BITS_PER_BLOCK)
 	return RDS_BUFFERING;
 
-    rdsBitsinBlock = 0;
+    bitsInBlock = 0;
 
     // decode bitstream for current block
-    if (!decodeBlock(rdsCurrentBlock,
-	    rdsBitstream,
-	    rdsGrp->isTypeBGroup())) {
-	rdsNumofCRCErrors++;
-	return RDS_NO_CRC;
+    bool blockOk = decodeBlock(currentBlock,
+	    bitStream,
+	    rdsGrp->isTypeBGroup());
+    // update rolling BLER window
+    uint8_t incoming = blockOk? 0: 1;
+    blerErrors += incoming - blerWindow[blerHead];
+    blerWindow[blerHead] = incoming;
+    blerHead = (blerHead + 1) % BLER_WINDOW;
+
+    if (!blockOk) {
+        CRCErrors++;
+        if (blerErrors > maxBlerErrors)
+            return RDS_NO_CRC;
+
+	// tolerate the error but skip the payload
+        currentBlock = RDSGroup::BLOCK_A;
+	bitsInBlock = 0;
+
+	// that's a bit cheeky, but let's flag ourselves as synchronised
+	setRDSisSynchronized(true);
+        return RDS_SKIP_GROUP;
     }
 
     // Extract payload data
-    rdsGrp->setBlock(rdsCurrentBlock,
-	(uint16_t)(rdsBitstream >> NUM_BITS_CRC));
+    rdsGrp->setBlock(currentBlock,
+	(uint16_t)(bitStream >> NUM_BITS_CRC));
 
     // check to see whether we are at the end of the group
-    SyncResult result = (rdsCurrentBlock == RDSGroup::BLOCK_D) ? RDS_COMPLETE_GROUP : RDS_BUFFERING;
+    SyncResult result = (currentBlock == RDSGroup::BLOCK_D) ? RDS_COMPLETE_GROUP: RDS_BUFFERING;
     setNextBlock();
     setRDSisSynchronized(true);
     return result;
@@ -316,13 +343,13 @@ rdsBlockSynchronizer::pushBitInBlockA(bool b, RDSGroup* rdsGrp) {
     uint32_t offsetWord = 0;
     uint32_t syndrome = 0;
 
-    // assert rdsIsSynchronized != true and rdsCurrentBlock == BLOCK_A
-    rdsBitstream = (rdsBitstream << 1) | (b? 01: 00);
+    // assert isSynchronized != true and currentBlock == BLOCK_A
+    bitStream = (bitStream << 1) | (b? 01: 00);
     offsetWord = getOffset(RDSGroup::BLOCK_A,
 	rdsGrp->isTypeBGroup());
 
     // calculate  crc and get the syndrome
-    syndrome = getSyndrome(rdsBitstream & 0x3FFFFFF, offsetWord);
+    syndrome = getSyndrome(bitStream & 0x3FFFFFF, offsetWord);
 
     // During synchronization phase NO errors are allowed
     // in case of error, we continue shifting since we are in BLOCK_A
@@ -331,10 +358,10 @@ rdsBlockSynchronizer::pushBitInBlockA(bool b, RDSGroup* rdsGrp) {
 
     // syndrome == 0, extract the 16 bit data, we know it is block A
     rdsGrp->setBlock(RDSGroup::BLOCK_A,
-	(uint16_t)(rdsBitstream >> NUM_BITS_CRC));
+	(uint16_t)(bitStream >> NUM_BITS_CRC));
 
     // go for the next block
-    rdsBitsinBlock = 0;
+    bitsInBlock = 0;
     setNextBlock();
     return RDS_BUFFERING;
 }
@@ -344,44 +371,44 @@ rdsBlockSynchronizer::pushBitNotSynchronized(bool b, RDSGroup* rdsGrp) {
     uint32_t offsetWord = 0;
     uint32_t syndrome = 0;
 
-    // assert rdsIsSynchronized != true and rdsCurrentBlock != BLOCK_A
-    rdsBitstream = (rdsBitstream << 1) | (b? 01: 00);
-    if (rdsBitsinBlock < NUM_BITS_PER_BLOCK - 1) {
-	rdsBitsinBlock++;
+    // assert isSynchronized != true and currentBlock != BLOCK_A
+    bitStream = (bitStream << 1) | (b? 01: 00);
+    if (bitsInBlock < NUM_BITS_PER_BLOCK - 1) {
+	bitsInBlock++;
 	return RDS_BUFFERING;
     }
 
-    rdsBitsinBlock = 0;
+    bitsInBlock = 0;
 
-    offsetWord = getOffset(rdsCurrentBlock,
+    offsetWord = getOffset(currentBlock,
 	rdsGrp->isTypeBGroup());
 
     // calculate  crc and get the syndrome
-    syndrome = getSyndrome(rdsBitstream, offsetWord);
+    syndrome = getSyndrome(bitStream, offsetWord);
 
     // we want zero errors during synchronization
     if (syndrome != 0) {
-	rdsNumofSyncErrors++;
+	syncErrors++;
 	return RDS_NO_SYNC;
     }
 
     // Extract payload data
-    rdsGrp->setBlock(rdsCurrentBlock,
-	(uint16_t)(rdsBitstream >> NUM_BITS_CRC));
+    rdsGrp->setBlock(currentBlock,
+	(uint16_t)(bitStream >> NUM_BITS_CRC));
 
     // Look for next blocks in the group
-    if (rdsCurrentBlock < SYNC_END_BLOCK) {
+    if (currentBlock < SYNC_END_BLOCK) {
 	setNextBlock();
 	return RDS_BUFFERING;
     }
 
     // if we are here, we reached the end block and
     // are synchronized, show it to the world
-    rdsIsSynchronized = true;
+    isSynchronized = true;
     setRDSisSynchronized(true);
 
     // check to see whether sync was successful
-    SyncResult result = (rdsCurrentBlock == RDSGroup::BLOCK_D) ? RDS_COMPLETE_GROUP : RDS_BUFFERING;
+    SyncResult result = (currentBlock == RDSGroup::BLOCK_D) ? RDS_COMPLETE_GROUP: RDS_BUFFERING;
     setNextBlock();
     return result;
 }

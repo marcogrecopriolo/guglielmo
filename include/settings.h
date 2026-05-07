@@ -115,11 +115,15 @@
 
 #define RDS_DEMODULATOR		"demodulator"
 #define RDS_DECODER		"decoder"
-#define RDS_PARTIAL_TEXT	"partial_text"
+#define RDS_PARTIAL_TEXT	"partialText"
+#define RDS_MAX_BLER_ERRORS	"maxBlerErrors"
+#define RDS_MAX_SYNC_ERRORS	"maxSyncErrors"
 
 #define RDS_DEF_DEMODULATOR	"0"
 #define RDS_DEF_DECODER		"1"
 #define RDS_DEF_PARTIAL_TEXT	"0"
+#define RDS_DEF_MAX_BLER_ERRORS	"3"
+#define RDS_DEF_MAX_SYNC_ERRORS	"3"
 
 // sound
 #define SOUND_MODE		"soundMode"

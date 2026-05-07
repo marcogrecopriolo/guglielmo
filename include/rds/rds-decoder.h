@@ -60,7 +60,7 @@ public:
 	RDS1 = 1,
 	RDS2 = 2
     };
-    void setPartialText(bool);
+    void setParameters(bool, int32_t, int32_t);
     void doDecode(DSPFLOAT, RdsMode);
     void reset(void);
 

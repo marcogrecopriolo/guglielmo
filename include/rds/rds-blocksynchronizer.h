@@ -49,6 +49,8 @@ static const uint32_t CRC_POLY = 0x5B9;
 static const uint32_t REMAINDER_POLY = 0x31B;
 static const uint32_t NUM_BITS_BER_CALC_RESET = 4000;
 
+static const int BLER_WINDOW = 50;
+
 // Precomputed burst error correction lookup table.
 // Maps syndrome -> error_vector for 1-bit and 2-bit contiguous burst errors
 // at every bit position in the 26-bit block, for each of the 5 offset words.
@@ -64,12 +66,13 @@ class rdsBlockSynchronizer: public QObject {
 public:
     rdsBlockSynchronizer(RadioInterface*);
     ~rdsBlockSynchronizer(void);
-    void setFecEnabled(bool);
+    void setParameters(bool, int32_t, int32_t);
     enum SyncResult {
 	RDS_WAITING_FOR_BLOCK_A,
 	RDS_BUFFERING,
 	RDS_NO_SYNC,
 	RDS_NO_CRC,
+	RDS_SKIP_GROUP,
 	RDS_COMPLETE_GROUP
     };
     void reset(void);
@@ -91,15 +94,21 @@ private:
     uint32_t getOffset(RDSGroup::RdsBlock, bool);
     bool crcFecEnabled;
     static const RDSGroup::RdsBlock SYNC_END_BLOCK = RDSGroup::BLOCK_C;
-    uint32_t rdsBitstream;
-    uint32_t rdsBitCount;
-    bool rdsIsSynchronized;
-    RDSGroup::RdsBlock rdsCurrentBlock;
-    uint16_t rdsBitsinBlock;
-    uint16_t rdsBitsProcessed;
-    uint16_t rdsNumofSyncErrors;
-    uint16_t rdsNumofCRCErrors;
-    uint16_t rdsNumofBitErrors;
+    uint32_t bitStream;
+    uint32_t bitCount;
+    bool isSynchronized;
+    RDSGroup::RdsBlock currentBlock;
+    uint16_t bitsInBlock;
+    uint16_t bitsProcessed;
+    uint16_t syncErrors;
+    uint16_t CRCErrors;
+    uint16_t bitErrors;
+    uint32_t maxSyncErrors;
+
+    int8_t blerWindow[BLER_WINDOW];
+    uint16_t blerHead;
+    uint16_t blerErrors;
+    uint32_t maxBlerErrors;
 
 signals:
     void setRDSisSynchronized(bool);

@@ -285,7 +285,7 @@ void rtlsdrHandler::setAgcControl(int v) {
     rtlsdr_set_tuner_gain(device, gains[ifGain*gainsCount/GAIN_SCALE]);
 }
 
-int32_t	rtlsdrHandler::getSamples(std::complex<float> *V, int32_t size, agcStats *stats) {
+int32_t rtlsdrHandler::getSamples(std::complex<float> *V, int32_t size, agcStats *stats) {
     int32_t amount, in, out;
     int32_t overflow = 0, minVal = UCHAR_MAX, maxVal = 0;
     _VLA(uint8_t, tempBuffer, 2*size*sizeof(uint8_t));
@@ -312,8 +312,8 @@ int32_t	rtlsdrHandler::getSamples(std::complex<float> *V, int32_t size, agcStats
     return amount/2;
 }
 
-int32_t	rtlsdrHandler::Samples(void) {
-    return _I_Buffer. GetRingBufferReadAvailable () / 2;
+int32_t rtlsdrHandler::Samples(void) {
+    return _I_Buffer.GetRingBufferReadAvailable () / 2;
 }
 
 bool rtlsdrHandler::load_rtlFunctions(void) {
@@ -439,6 +439,6 @@ void rtlsdrHandler::resetBuffer(void) {
     _I_Buffer.FlushRingBuffer();
 }
 
-int16_t	rtlsdrHandler::bitDepth(void) {
+int16_t rtlsdrHandler::bitDepth(void) {
     return CHAR_BIT;
 }

@@ -100,7 +100,6 @@ rdsDecoder::rdsDecoder(RadioInterface* radioInterface,
     rdsGroup = new RDSGroup();
     rdsGroup->clear();
     blockSynchroniser = new rdsBlockSynchronizer(radioInterface);
-    blockSynchroniser->setFecEnabled(true);
     groupDecoder = new rdsGroupDecoder(radioInterface, partialText);
 }
 
@@ -118,8 +117,9 @@ void rdsDecoder::reset(void) {
     groupDecoder->reset();
 }
 
-void rdsDecoder::setPartialText(bool p) {
-    groupDecoder->setPartialText(p);
+void rdsDecoder::setParameters(bool p, int32_t s, int32_t b) {
+    groupDecoder->setParameters(p);
+    blockSynchroniser->setParameters(true, s, b);
 }
 
 DSPFLOAT rdsDecoder::match(DSPFLOAT v) {
@@ -169,8 +169,9 @@ void rdsDecoder::doDecode1(DSPFLOAT v) {
     // Continuous phase correction
     // The peak of rdsMag marks the bit boundary. The slope zero crossing
     // tells us when the peak occurred relative to our phase accumulator.
-    // If the peak arrives early, are we running slow? nudge period down.
-    // If the peak arrives late, are we running fast? nudge period up.
+    // If the peak arrives early, we might be running slow: nudge period down.
+    // If the peak arrives late, we might be running fast: nudge period up.
+    // Clamp the period to +/- 5%
     if ((rdsSlope < 0.0) && (rdsLastSyncSlope >= 0.0)) {
 	DSPFLOAT phaseError = phaseAcc - period;
 	DSPFLOAT nominalPeriod = sampleRate / RDS_BITCLK_HZ;
@@ -214,15 +215,12 @@ void rdsDecoder::doDecode2(DSPFLOAT v) {
     sampleWindow[sampleWindowIndex] = v;
     sampleWindowIndex = (sampleWindowIndex + 1) % 3;
 
-    // Capture the half-symbol sample for Gardner TED (improvement 2):
-    // The Gardner timing error detector needs the sample at the midpoint
-    // between bit boundaries, i.e. at the falling edge of clkState.
+    // half symbol sample for Gardner timing error detector
     if (prevClkState >= 0 && clkState < 0)
 	gardnerSample = v;
 
-    // rising edge -> look at integrator
+    // rising edge: look at integrator
     if (prevClkState <= 0 && clkState > 0) {
-	// Base bit decision from integrator
 	bool currentBit = bitIntegrator >= 0;
 
 	int votes = 0;
@@ -230,8 +228,6 @@ void rdsDecoder::doDecode2(DSPFLOAT v) {
 	    votes += (sampleWindow[i] >= 0)? 1: 0;
 	bool votedBit = votes >= 2;
 
-	// If integrator and majority vote agree, use integrator result.
-	// If they disagree, use the majority vote as a tiebreaker.
 	if (currentBit != votedBit)
 	    currentBit = votedBit;
 
@@ -239,7 +235,6 @@ void rdsDecoder::doDecode2(DSPFLOAT v) {
 	// e = x[n-0.5] * (x[n] - x[n-1])
 	// where x[n] is the current bit sample, x[n-1] the previous,
 	// and x[n-0.5] the half-symbol sample captured at the falling edge.
-	// This is more robust than the early-late gate under low SNR.
 	DSPFLOAT gardnerError = gardnerSample *
 	    ((currentBit? 1.0: -1.0) - (previousBit? 1.0: -1.0));
 	bitClkPhase += 0.005 * gardnerError;
@@ -260,26 +255,19 @@ void rdsDecoder::doDecode2(DSPFLOAT v) {
 void rdsDecoder::processBit(bool bit) {
     switch (blockSynchroniser->pushBit(bit, rdsGroup)) {
     case rdsBlockSynchronizer::RDS_WAITING_FOR_BLOCK_A:
-	break; // still waiting in block A
-
     case rdsBlockSynchronizer::RDS_BUFFERING:
-	break; // just buffer
-
-    case rdsBlockSynchronizer::RDS_NO_SYNC:
-
-	// resync if the last sync failed
-	blockSynchroniser->resync();
 	break;
-
+    case rdsBlockSynchronizer::RDS_NO_SYNC:
     case rdsBlockSynchronizer::RDS_NO_CRC:
 	blockSynchroniser->resync();
 	break;
-
+    case rdsBlockSynchronizer::RDS_SKIP_GROUP:
+	rdsGroup->clear();
+	break;
     case rdsBlockSynchronizer::RDS_COMPLETE_GROUP:
 	if (!groupDecoder->decode(rdsGroup)) {
-	    ; // error decoding the rds group
+	    ; // TODO error decoding the rds group
 	}
-
 	rdsGroup->clear();
 	break;
     }
@@ -294,9 +282,8 @@ void rdsDecoder::synchronizeOnBitClk(DSPFLOAT* v, int16_t first) {
 
     memset(correlationVector, 0, symbolCeiling * sizeof(DSPFLOAT));
 
-    // synchronizerSamples = sampleRate / (DSPFLOAT)RDS_BITCLK_HZ;
     for (i = 0; i < symbolCeiling; i++) {
-	phase = fmod(i * (omegaRDS / 2), 2 * M_PI);
+	phase = fmod(i * (omegaRDS / 1), 2 * M_PI);
 
 	// reset index on phase change
 	if (fastTrigTabs->getSin(phase) > 0 && !isHigh) {

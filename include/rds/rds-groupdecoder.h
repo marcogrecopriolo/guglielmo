@@ -48,7 +48,7 @@ class rdsGroupDecoder: public QObject {
 public:
     rdsGroupDecoder(RadioInterface*, bool);
     ~rdsGroupDecoder(void);
-    void setPartialText(bool);
+    void setParameters(bool);
     bool decode(RDSGroup*);
     void reset(void);
 

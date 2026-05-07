@@ -268,10 +268,10 @@ void fmProcessor::stopFullScan(void) {
 	    radioInterface, SLOT(scanFound(void)));
 }
 
-void fmProcessor::setFMRDSSelector(rdsDecoder::RdsMode m, bool p) {
+void fmProcessor::setFMRDSSelector(rdsDecoder::RdsMode m, bool p, int32_t s, int32_t b) {
     log(LOG_FM, LOG_MIN, "RDS mode %i %i", m, p);
     rdsMode = m;
-    rdsDataDecoder->setPartialText(p);
+    rdsDataDecoder->setParameters(p, s, b);
 }
 
 void fmProcessor::setFMRDSDemod(rdsDemodMode m) {
@@ -345,9 +345,6 @@ void fmProcessor::run(void) {
     if (audioConverter != NULL)
 	audioConverter->reset();
     while (running) {
-	while (running && device->Samples() < BUFFER_SIZE)
-	    sleep(1);
-	   
 	if (!running)
 	    break;
 
@@ -401,6 +398,9 @@ void fmProcessor::run(void) {
 	    }
 	    initRDS = false;
 	}
+ 
+	while (running && device->Samples() < BUFFER_SIZE)
+	    usleep(1);
 
 	// collect samples and process
 	agcStats stats;

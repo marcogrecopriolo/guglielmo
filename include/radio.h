@@ -149,6 +149,8 @@ private:
     int rdsDemodulator;
     int rdsDecoder;
     bool rdsPartialText;
+    int rdsMaxSyncErrors;
+    int rdsMaxBlerErrors;
 
 // UI
     QSystemTrayIcon *trayIcon;

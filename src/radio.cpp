@@ -199,6 +199,8 @@ RadioInterface::RadioInterface(QSettings *Si, QWidget *parent):
     rdsDemodulator = settings->value(RDS_DEMODULATOR, RDS_DEF_DEMODULATOR).toInt();
     rdsDecoder = settings->value(RDS_DECODER, RDS_DEF_DECODER).toInt();
     rdsPartialText = settings->value(RDS_PARTIAL_TEXT, RDS_DEF_PARTIAL_TEXT).toInt();
+    rdsMaxSyncErrors = settings->value(RDS_MAX_SYNC_ERRORS, RDS_DEF_MAX_SYNC_ERRORS).toInt();
+    rdsMaxBlerErrors = settings->value(RDS_MAX_BLER_ERRORS, RDS_DEF_MAX_BLER_ERRORS).toInt();
     settings->endGroup();
 
     settings->beginGroup(GROUP_SOUND);
@@ -590,7 +592,8 @@ void RadioInterface::makeFMprocessor() {
     FMprocessor = new fmProcessor(inputDevice, this, INPUT_RATE, fmRate,
 				  workingRate, audioRate, FMthreshold);
     FMprocessor->setSink(soundOut);
-    FMprocessor->setFMRDSSelector(rdsDecoder::RdsMode(rdsDecoder), rdsPartialText);
+    FMprocessor->setFMRDSSelector(rdsDecoder::RdsMode(rdsDecoder), rdsPartialText,
+	rdsMaxSyncErrors, rdsMaxBlerErrors);
     FMprocessor->setFMRDSDemod(fmProcessor::rdsDemodMode(rdsDemodulator));
     FMprocessor->setFMMode(true);
     FMprocessor->setBandwidth(KHz(FMfilter));
@@ -607,7 +610,6 @@ void RadioInterface::terminateProcess() {
 	stopFM();
     else
 	stopDAB();
-    usleep(1000);
 
     // save base settings
     settings->setValue(GEN_SERVICE_NAME, currentService.serviceName);
@@ -2055,6 +2057,7 @@ void RadioInterface::stopFM() {
     ficBlocks = 0;
     ficSuccess = 0;
     FMprocessor->stop();
+    usleep(1000);
     soundOut->stop();
     inputDevice->stopReader();
     playing = false;
