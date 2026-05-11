@@ -119,14 +119,27 @@ void RadioInterface::handleSettingsAction() {
 	settingsUi.presetList->setDefaultDropAction(Qt::MoveAction);
 	settingsUi.scanList->setDragEnabled(true);
 	settingsUi.stopScanButton->setIcon(style()->standardIcon(QStyle::SP_MediaStop));
+	settingsUi.playScanButton->setIcon(style()->standardIcon(QStyle::SP_MediaPlay));
+	settingsUi.playPresetButton->setIcon(style()->standardIcon(QStyle::SP_MediaPlay));
 	settingsUi.sortButton->setIcon(QIcon(":/sort.png"));
 	descendingOrder = false;
+	savePresets = false;
+	restoreRadio = false;
+	auto markPresetsChanged = [this]() { savePresets = true; };
+	settingsDialog->connect(settingsUi.presetList->model(), &QAbstractItemModel::rowsMoved,
+		this, markPresetsChanged);
+	settingsDialog->connect(settingsUi.presetList->model(), &QAbstractItemModel::rowsInserted,
+		this, markPresetsChanged);
+	settingsDialog->connect(settingsUi.presetList->model(), &QAbstractItemModel::rowsRemoved,
+		this, markPresetsChanged);
 	settingsDialog->connect(settingsUi.scanComboBox, SIGNAL(activated(int)),
 		this, SLOT(startFullScan()));
 	settingsDialog->connect(settingsUi.stopScanButton, SIGNAL(clicked()),
-		this, SLOT(stopFullScan()));
+		this, SLOT(stopScanOrPlay()));
 	settingsDialog->connect(settingsUi.copyButton, SIGNAL(clicked()),
 		this, SLOT(copyStation()));
+	settingsDialog->connect(settingsUi.playScanButton, SIGNAL(clicked()),
+		this, SLOT(playStation()));
 	settingsDialog->connect(settingsUi.sortButton, SIGNAL(clicked()),
 		this, SLOT(sortPresets()));
 	settingsDialog->connect(settingsUi.minusButton, SIGNAL(clicked()),
@@ -135,6 +148,8 @@ void RadioInterface::handleSettingsAction() {
 		this, SLOT(lowerPreset()));
 	settingsDialog->connect(settingsUi.upButton, SIGNAL(clicked()),
 		this, SLOT(liftPreset()));
+	settingsDialog->connect(settingsUi.playPresetButton, SIGNAL(clicked()),
+		this, SLOT(playPreset()));
 	settingsDialog->connect(settingsUi.clearButton, SIGNAL(clicked()),
 		this, SLOT(clearScanList()));
 
@@ -341,16 +356,8 @@ void ListWidget::dropEvent(QDropEvent *event) {
     QListWidget::dropEvent(event);
 }
 
-void RadioInterface::settingsClose(void) {
-    log(LOG_UI, LOG_MIN, "close settings");
-    if (scanning)
-	stopFullScan();
-
-    // Presets tab
-    if (settingsUi.presetList->count() > 0) {
-
-	// only reloaded if a scan is actually done because it is prone to segv
-	// if a skin is changed
+void RadioInterface::syncPresets(void) {
+    if (savePresets) {
 	QString p = presetSelector->itemText(0);
 
 	presetSelector->clear();
@@ -358,13 +365,22 @@ void RadioInterface::settingsClose(void) {
 	for (int i = 0; i < settingsUi.presetList->count(); i ++)
 	    presetSelector->addItem(settingsUi.presetList->item(i)->text());
     }
+    savePresets = false;
+}
+
+void RadioInterface::settingsClose(void) {
+    log(LOG_UI, LOG_MIN, "close settings");
+    if (scanning || restoreRadio)
+	stopScanOrPlay();
+
+    // Presets tab
+    syncPresets();
 
     // Ui tab
     settings->beginGroup(GROUP_UI);
     settings->setValue(UI_SKIN, skin);
     settings->setValue(UI_SKIN_LOCAL, skinIsLocal);
     settings->setValue(UI_THEME, theme);
-    settings->endGroup();
 
     // Sound tab
     settings->beginGroup(GROUP_SOUND);
@@ -472,25 +488,33 @@ void RadioInterface::startFullScan() {
     }
 }
 
-void RadioInterface::stopFullScan() {
+void RadioInterface::stopScanOrPlay() {
+    bool stopScan = scanning;
     if (scanTimer != nullptr && scanTimer->isActive())
 	scanTimer->stop();
     scanning = false;
     if (isFM) {
-	log(LOG_UI, LOG_MIN, "stop full FM scan");
-	disconnect(scanTimer, SIGNAL(timeout()),
-	    this, SLOT(nextFullScanFrequency()));
-	FMprocessor->stopFullScan();
+	if (stopScan) {
+	    log(LOG_UI, LOG_MIN, "stop full FM scan");
+	    disconnect(scanTimer, SIGNAL(timeout()),
+		this, SLOT(nextFullScanFrequency()));
+	    FMprocessor->stopFullScan();
+	} else
+	    log(LOG_UI, LOG_MIN, "stop FM play");
 	stopFM();
     } else {
 	if (saveDabDisplay == DD_SLIDES)
 	    handleSlidesAction();
-	log(LOG_UI, LOG_MIN, "stop full DAB scan");
+	if (stopScan) {
+	    log(LOG_UI, LOG_MIN, "stop full DAB scan");
+	    disconnect(scanTimer, SIGNAL(timeout()),
+		this, SLOT(nextFullDABScan()));
+	    disconnect(this, SIGNAL(advanceScan(int)),
+		this, SLOT(ensembleLoaded(int)));
+	} else
+	    log(LOG_UI, LOG_MIN, "stop DAB play");
 	stopDAB();
-	disconnect(scanTimer, SIGNAL(timeout()),
-	    this, SLOT(nextFullDABScan()));
-	disconnect(this, SIGNAL(advanceScan(int)),
-	    this, SLOT(ensembleLoaded(int)));
+	cleanScreen();
     }
     isFM = saveIsFM;
     FMfreq = saveFMfreq;
@@ -508,12 +532,13 @@ void RadioInterface::stopFullScan() {
     setRecording();
     setScanning();
     settingsUi.scanComboBox->setVisible(true);
+    restoreRadio = false;
 }
 
 void RadioInterface::nextFullScanFrequency(void) {
     log(LOG_EVENT, LOG_MIN, "fm full scan timer signal");
     if (FMfreq >= MAX_FM) {
-	stopFullScan();
+	stopScanOrPlay();
     } else {
 	FMprocessor->stopFullScan();
 	FMprocessor->stop();
@@ -549,7 +574,7 @@ void RadioInterface::nextFullDABScan(void) {
 	if (signalStrength->value() < MIN_SCAN_SIGNAL || ++scanRetryCount > scanRetry) {
 	    scanRetryCount = 0;
 	    if (scanIndex ==  channelSelector->count() - 1) {
-		stopFullScan();
+		stopScanOrPlay();
 		return;
 	    } else {
 		scanIndex++;
@@ -560,7 +585,7 @@ void RadioInterface::nextFullDABScan(void) {
 	    }
 	}
     } else if (++scanRetryCount > scanRetry) {
-        log(LOG_EVENT, LOG_CHATTY, "dab full scan timeout for %s", qPrintable(channelSelector->currentText()));
+	log(LOG_EVENT, LOG_CHATTY, "dab full scan timeout for %s", qPrintable(channelSelector->currentText()));
 	emit advanceScan(-1);
 	return;
     }
@@ -580,7 +605,7 @@ void RadioInterface::scanEnsembleLoaded() {
 	}
     }
     if (scanIndex ==  channelSelector->count() - 1) {
-	stopFullScan();
+	stopScanOrPlay();
     } else {
 	scanIndex++;
 	stopDAB();
@@ -594,6 +619,7 @@ void RadioInterface::scanEnsembleLoaded() {
 void RadioInterface::clearScanList() {
     log(LOG_UI, LOG_MIN, "clear scan list");
     settingsUi.scanList->clear();
+    savePresets = true;
 }
 
 void RadioInterface::copyStation() {
@@ -610,6 +636,75 @@ void RadioInterface::copyStation() {
 	    log(LOG_UI, LOG_MIN, "add station %s", qPrintable(station));
 	    settingsUi.presetList->addItem(settingsUi.scanList->currentItem()->text());
 	}
+	savePresets = true;
+    }
+}
+
+void RadioInterface::playStation() {
+    int row = settingsUi.scanList->currentRow();
+
+    if (row < 0) {
+	log(LOG_UI, LOG_MIN, "play station: no row selected");
+    } else {
+	QString station = settingsUi.scanList->currentItem()->text();
+
+	if (scanning || restoreRadio)
+	    stopScanOrPlay();
+	if (playing)
+	    handlePauseButton();
+	settingsUi.scanComboBox->setVisible(false);
+	saveIsFM = isFM;
+	saveFMfreq = FMfreq;
+	saveChannel = channelSelector->currentIndex();
+	saveService = currentService;
+	saveDabDisplay = dabDisplay;
+
+#if QT_VERSION >= 0x050e00 
+	QStringList list = station.split(":", Qt::SkipEmptyParts);
+#else
+	QStringList list = station.split(":", QString::SkipEmptyParts);
+#endif
+	if (list.length() != 2 && list.length() != 3) {
+	    log(LOG_UI, LOG_MIN, "unexpected station %s", qPrintable(station));
+	    return;
+	} 
+	if (list.at(0) == "FM") {
+	    bool ok;
+	    double newFreq;
+
+	    if (!isFM) {
+		stopDAB();
+		toFM();
+	    }
+
+	    newFreq = list.at(1).toDouble(&ok);
+	    if (ok && newFreq > MIN_FM && newFreq < MAX_FM) {
+		FMfreq = newFreq;
+		frequencyKnob->setValue(double(FMfreq));
+		frequencyLCD->display(qRound(KHz(FMfreq)));
+	    }
+	} else {
+	    QString channel = list.at(0);
+	    QString service = list.at(1);
+
+	    if (isFM)
+		toDAB();
+	    else
+		stopDAB();
+	    int k = channelSelector->findText(channel);
+	    if (k != -1) {
+		channelSelector->setCurrentIndex(k);
+		nextService.valid = true;
+		nextService.serviceName = service;
+		nextService.SId = 0;
+		nextService.SCIds = 0;
+
+		// the preset service will be picked up by the addToEnsemble() slot
+		startDAB();
+	    }
+	}
+	handlePlayButton();
+	restoreRadio = true;
     }
 }
 
@@ -621,6 +716,7 @@ void RadioInterface::dropPreset() {
     } else {
 	log(LOG_UI, LOG_MIN, "drop preset %s", qPrintable(settingsUi.presetList->currentItem()->text()));
 	settingsUi.presetList->takeItem(row);
+	savePresets = true;
     }
 }
 
@@ -637,6 +733,7 @@ void RadioInterface::lowerPreset() {
 	log(LOG_UI, LOG_MIN, "move preset down %s", qPrintable(item->text()));
 	settingsUi.presetList->insertItem(row+1, item);
 	settingsUi.presetList->setCurrentRow(row+1);
+	savePresets = true;
     }
 }
 
@@ -653,6 +750,27 @@ void RadioInterface::liftPreset() {
 	log(LOG_UI, LOG_MIN, "move preset up %s", qPrintable(item->text()));
 	settingsUi.presetList->insertItem(row-1, item);
 	settingsUi.presetList->setCurrentRow(row-1);
+	savePresets = true;
+    }
+}
+
+void RadioInterface::playPreset() {
+    int row = settingsUi.presetList->currentRow();
+    syncPresets();
+
+    if (row < 0) {
+	log(LOG_UI, LOG_MIN, "play preset: row is unset");
+    } else {
+	if (scanning || restoreRadio)
+	    stopScanOrPlay();
+	settingsUi.scanComboBox->setVisible(false);
+	saveIsFM = isFM;
+	saveFMfreq = FMfreq;
+	saveChannel = channelSelector->currentIndex();
+	saveService = currentService;
+	saveDabDisplay = dabDisplay;
+	handlePresetSelector(row+1);
+	restoreRadio = true;
     }
 }
 
@@ -663,6 +781,7 @@ void RadioInterface::sortPresets() {
     else
 	settingsUi.presetList->sortItems(Qt::AscendingOrder);
     descendingOrder = !descendingOrder;
+    savePresets = true;
 }
 
 void RadioInterface::setUiStyle(int index) {

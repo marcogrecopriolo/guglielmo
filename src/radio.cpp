@@ -281,6 +281,7 @@ RadioInterface::RadioInterface(QSettings *Si, QWidget *parent):
 	FMprocessor->setSquelchValue(AUDIO_SCALE-int(lastSquelch));
     }
 
+    amendPreset = false;
     playing = false;
     restorePlaying = false;
     recording = false;
@@ -1124,6 +1125,14 @@ void RadioInterface::showLabel(const QString s) {
     metadata["xesam:artist"] = s;
     player.setMetadata(metadata);
 #endif
+    if (isFM and amendPreset) {
+	int index = presetSelector->findText("FM:" + QString::number(FMfreq));
+	if (index >= 0 && s.trimmed().length() > 0) {
+	    presetSelector->setItemText(index, "FM:" + QString::number(FMfreq) + ":" + s.trimmed());
+	    log(LOG_UI, LOG_MIN, "amended preset %s", qPrintable(presetSelector->itemText(index)));
+	    amendPreset = false;
+	}
+    }
 }
 
 void RadioInterface::setProgramType(int code) {
@@ -1448,7 +1457,7 @@ void addPreset(QComboBox *presetSelector, QString preset, QString comment) {
 	    log(LOG_UI, LOG_MIN, "preset already there %s", qPrintable(preset));
 	    return;
 	}
-    if (comment != "")
+    if (comment.length() != 0)
 	preset = preset + ":" + comment;
     presetSelector->addItem(preset);
 }
@@ -1522,6 +1531,9 @@ void RadioInterface::handlePresetSelector(int index) {
 		warning(this, tr(BAD_PRESET));
 		deletePreset(presetSelector, preset);
 	}
+	amendPreset = (list.length() == 2);
+	if (amendPreset)
+	    log(LOG_UI, LOG_MIN, "preset name will be amended from %s", qPrintable(preset));
 	setPlaying();
 	setRecording();
 	return;
@@ -2047,6 +2059,7 @@ void RadioInterface::startFM(int32_t freq) {
     mprisLabelAndText("FM", QString().asprintf("%3.3f", FMfreq));
     player.setPlaybackStatus(Mpris::Playing);
 #endif
+    amendPreset = false;
 }
 
 void RadioInterface::stopFM() {

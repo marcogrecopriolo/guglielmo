@@ -181,6 +181,7 @@ private:
     bool skipPresetMode;
     QString currentPicFile;
 #endif
+    bool amendPreset;
 
 // devices, processors
     dabProcessor *DABprocessor;
@@ -227,6 +228,8 @@ private:
 
 // settings;
     bool descendingOrder;
+    bool savePresets;
+    bool restoreRadio;
     bool saveIsFM;
     double saveFMfreq;
     int saveChannel;
@@ -285,6 +288,9 @@ private:
 #ifdef HAVE_MPRIS
     void mprisLabelAndText(QString, QString);
 #endif
+
+// Settings
+   void syncPresets(void);
 
 // SW AGC
     void resetSwAgc(void);
@@ -351,13 +357,15 @@ private slots:
     void settingsClose(void);
 
     void startFullScan();
-    void stopFullScan();
+    void stopScanOrPlay();
     void dropPreset();
     void lowerPreset();
     void liftPreset();
+    void playPreset();
     void sortPresets();
     void clearScanList();
     void copyStation();
+    void playStation();
 
     void setUiStyle(int);
     void setUiSkin(int);

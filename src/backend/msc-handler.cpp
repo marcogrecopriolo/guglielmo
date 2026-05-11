@@ -144,7 +144,7 @@ void mscHandler::run() {
                 for (int i = 0; i < params->get_carriers(); i++) {
                     int16_t index = myMapper.mapIn(i);
                     if (index < 0)
-                        index += params.get_T_u();
+                        index += params->get_T_u();
 
                     std::complex<float> r1 =
                         fft_buffer[index] * conj(phaseReference[index]);
