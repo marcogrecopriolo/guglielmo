@@ -21,22 +21,38 @@
 
 #ifndef __KNOB_H__
 #define __KNOB_H__
+#include <QWheelEvent>
+#include <QTimer>
 #include <QKeyEvent>
 #include <qwt_knob.h>
 
-// QwtKnob with keyboard events
+// QwtKnob with keyboard and wheel events
 class Knob : public QwtKnob {
     Q_OBJECT
 
 public:
-    explicit Knob(QWidget *parent = nullptr) : QwtKnob(parent) {}
+    explicit Knob(QWidget *parent = nullptr) : QwtKnob(parent) {
+	setTracking(true);
+	wheelTimer.setSingleShot(true);
+	wheelTimer.setInterval(200);
+	connect(&wheelTimer, &QTimer::timeout, this, [this]() {
+	    emit wheelReleased();
+	});
+    }
 protected:
     void keyReleaseEvent(QKeyEvent *e) override {
         if (!e->isAutoRepeat())
             emit keyFinished();
         QwtKnob::keyReleaseEvent(e);
     }
+    void wheelEvent(QWheelEvent *e) override {
+	wheelTimer.start();
+	QwtKnob::wheelEvent(e);
+    }
+private:
+    QTimer wheelTimer;
 signals:
     void keyFinished();
+    void wheelReleased();
 };
 #endif /* __KNOB_H__ */

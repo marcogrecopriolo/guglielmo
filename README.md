@@ -99,6 +99,8 @@ There's no tweakable DAB settings on offer.
 
 The presets tab sports a presets editor (rearrange, delete or sort presets) and a station scan facility.
 
+You can play stations on either list using the play button at the bottom of eash list.
+
 Once a DAB or FM scan has been completed, even partially, stations can be dragged directly to the preset list, or moved there by selecting them and using the move (<) button.
 
 Scan lists can be added to with a new scan, are preserved across settings usages, and can be cleared.

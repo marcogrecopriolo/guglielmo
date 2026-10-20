@@ -260,7 +260,7 @@
       </rect>
      </property>
      <property name="toolTip">
-      <string extracomment="sort entries">sort entries</string>
+      <string extracomment="play preset">play preset</string>
      </property>
      <property name="text">
       <string>*</string>
@@ -282,7 +282,7 @@
       </rect>
      </property>
      <property name="toolTip">
-      <string extracomment="sort entries">sort entries</string>
+      <string extracomment="play scanned station">play scanned station</string>
      </property>
      <property name="text">
       <string>*</string>

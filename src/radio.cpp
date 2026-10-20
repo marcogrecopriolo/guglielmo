@@ -350,6 +350,8 @@ RadioInterface::RadioInterface(QSettings *Si, QWidget *parent):
 		this, SLOT(handleFMfrequencyRelease()));
     connect(frequencyKnob, SIGNAL(keyFinished()),
 		this, SLOT(handleFMfrequencyRelease()));
+    connect(frequencyKnob, SIGNAL(wheelReleased()),
+		this, SLOT(handleFMfrequencyRelease()));
     connect(scanBackButton, SIGNAL(clicked(void)),
 		this, SLOT(handleScanDown(void)));
     connect(scanForwardButton, SIGNAL(clicked(void)),
