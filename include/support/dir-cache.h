@@ -23,12 +23,15 @@
 #define __DIR_CACHE_H__
 
 #include <QHash>
+#include <QMap>
 #include <QMultiHash>
 #include <QDir>
 #include <QString>
 #include <QList>
 #include <QPixmap>
 #include <QRegularExpression>
+#include <QDateTime>
+#include <QVariant>
 
 struct ImageInfo {
     QString path;
@@ -44,6 +47,13 @@ struct ImageInfo {
     }
 };
 
+struct EPGInfo {
+    QString path;
+    QDateTime startTime;
+    QDateTime endTime;
+    int hash;
+};
+
 class ImageCache {
 public:
     ImageCache(const QString& cacheDir);
@@ -57,13 +67,17 @@ public:
     void addImage(int32_t SId, int width, int height, 
 		  const QString& imageType, const QByteArray& image);
     QPixmap loadImage(const QString& path);
+    void addEPG(quint32 SId, const QDateTime& startTime, const QDateTime& endTime,
+		int hash, const QVariantMap& epg);
     
 private:
     QString cacheDir;
     QHash<QString, QString> cache;
     QMultiHash<QString, ImageInfo> channelIndex;
+    QHash<QString, QList<EPGInfo>> epgIndex;
     
     void loadCache(void);
+    void removeStaleEPGs(const QString& serviceId);
     void removeFromChannelIndex(const QString& serviceId, int width, 
 				int height, const QString& imageType);
     QString hashKey(QString serviceId, int width, int height, const QString& imageType);

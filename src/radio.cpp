@@ -66,6 +66,7 @@
 #endif
 #include "logging.h"
 #ifdef USE_SPI
+#include <QDateTime>
 #include <cerrno>
 #include <cstring>
 #include "backend/data/spi/decoder.h"
@@ -1393,10 +1394,57 @@ void RadioInterface::handleSPI(QByteArray data, int contentType, QString picture
     }
     log(LOG_SPI, LOG_CHATTY, "SPI %s hash %08x", qPrintable(pictureName), (unsigned int)hash);
     dumpEPG(epg);
+    if (cache && getContentSubType((MOTContentType)contentType) == 1)
+	cacheEPG(epg, pictureName, hash);
 #endif
 }
 
 #ifdef USE_SPI
+// Find coverage in the decoded schedule.
+static void epgTimes(const QVariant& value, QDateTime& start, QDateTime& end) {
+    if (value.userType() == QMetaType::QVariantList) {
+	for (const QVariant& child : value.toList())
+	    epgTimes(child, start, end);
+    } else if (value.userType() == QMetaType::QVariantMap) {
+	QVariantMap map = value.toMap();
+	QDateTime first = QDateTime::fromString(map.value("startTime").toString(), Qt::ISODate);
+	QDateTime last = QDateTime::fromString(map.value("stopTime").toString(), Qt::ISODate);
+	QDateTime time = QDateTime::fromString(map.value("time").toString(), Qt::ISODate);
+	if (time.isValid() && map.contains("duration")) {
+	    first = time;
+	    last = time.addSecs(map.value("duration").toInt());
+	}
+	if (first.isValid() && (!start.isValid() || first < start))
+	    start = first;
+	if (last.isValid() && (!end.isValid() || last > end))
+	    end = last;
+	for (auto i = map.cbegin(); i != map.cend(); ++i)
+	    epgTimes(i.value(), start, end);
+    }
+}
+
+void RadioInterface::cacheEPG(const QVariantMap& epg, const QString& filename, int hash) {
+    QString name = filename.split('/').last().split('\\').last();
+    QRegularExpression pattern("(\\d{8})d([0-9a-f]{4}|[0-9a-f]{8})c[0-9a-f]+\\.[^.]+$",
+	QRegularExpression::CaseInsensitiveOption);
+    QRegularExpressionMatch match = pattern.match(name);
+    bool ok = false;
+    quint32 SId = match.captured(2).toUInt(&ok, 16);
+    QDateTime start(QDate::fromString(match.captured(1), "yyyyMMdd"), QTime(0, 0), Qt::LocalTime);
+    QDateTime first, end;
+
+    if (!match.hasMatch() || !ok || !start.isValid()) {
+	log(LOG_CACHE, LOG_MIN, "cannot cache EPG with unrecognised filename %s", qPrintable(filename));
+	return;
+    }
+    epgTimes(epg, first, end);
+    if (!end.isValid() || end < start) {
+	log(LOG_CACHE, LOG_MIN, "cannot cache EPG for %x without valid coverage dates", SId);
+	return;
+    }
+    cache->addEPG(SId, start, end, hash, epg);
+}
+
 void RadioInterface::dumpEPG(const QVariant &entry, const QString &path) {
     switch (entry.userType()) {
     case QMetaType::QVariantMap: {

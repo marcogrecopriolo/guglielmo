@@ -255,6 +255,7 @@ private:
     void handleSPI(QByteArray data, int contentType, QString pictureName, int dirs);
 #ifdef USE_SPI
     void dumpEPG(const QVariant &entry, const QString &path = "/");
+    void cacheEPG(const QVariantMap& epg, const QString& filename, int hash);
 #endif
     void startFM(int32_t);
     void stopFM();

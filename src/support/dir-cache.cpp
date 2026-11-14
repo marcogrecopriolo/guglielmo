@@ -21,6 +21,9 @@
 
 #include "dir-cache.h"
 #include "logging.h"
+#include <QDataStream>
+#include <QFileInfo>
+#include <QSaveFile>
 
 ImageCache::ImageCache(const QString& relativeCacheDir) {
     cacheDir = QDir::home().absoluteFilePath(relativeCacheDir);
@@ -30,11 +33,13 @@ ImageCache::ImageCache(const QString& relativeCacheDir) {
 ImageCache::~ImageCache() {
     cache.clear();
     channelIndex.clear();
+    epgIndex.clear();
 }
 
 void ImageCache::loadCache() {
     cache.clear();
     channelIndex.clear();
+    epgIndex.clear();
 
     QDir dir(cacheDir);
     if (!dir.exists()) {
@@ -43,6 +48,7 @@ void ImageCache::loadCache() {
     }
     log(LOG_CACHE, LOG_MIN, "loading %s", qPrintable(cacheDir));
 
+    QDate today = QDate::currentDate();
     QStringList channelDirs = dir.entryList(QDir::Dirs | QDir::NoDotAndDotDot);
 
     for (const QString& serviceId : channelDirs) {
@@ -52,6 +58,31 @@ void ImageCache::loadCache() {
 	QStringList files = channelDir.entryList(QDir::Files);
 
 	for (const QString& filename : files) {
+	    QRegularExpression epgPattern("^(\\d{8}T\\d{6}Z)-(\\d{8}T\\d{6}Z)-([0-9a-fA-F]{8})\\.epg$");
+	    QRegularExpressionMatch epgMatch = epgPattern.match(filename);
+
+	    if (epgMatch.hasMatch()) {
+		QDateTime startTime = QDateTime::fromString(epgMatch.captured(1), "yyyyMMddTHHmmss'Z'");
+		startTime.setTimeSpec(Qt::UTC);
+		QDateTime endTime = QDateTime::fromString(epgMatch.captured(2), "yyyyMMddTHHmmss'Z'");
+		endTime.setTimeSpec(Qt::UTC);
+		bool ok;
+		int hash = epgMatch.captured(3).toInt(&ok, 16);
+		if (ok && startTime.isValid() && endTime.isValid() && startTime <= endTime) {
+		    QString fullPath = channelPath + "/" + filename;
+		    if (endTime.toLocalTime().date() < today) {
+			if (QFile::remove(fullPath)) {
+			    log(LOG_CACHE, LOG_CHATTY, "removed stale EPG %s", qPrintable(fullPath));
+			} else {
+			    log(LOG_CACHE, LOG_MIN, "could not remove stale EPG %s", qPrintable(fullPath));
+			}
+			continue;
+		    }
+		    epgIndex[serviceId.toLower()].append(EPGInfo{fullPath, startTime, endTime, hash});
+		    log(LOG_CACHE, LOG_CHATTY, "found EPG %s", qPrintable(fullPath));
+		}
+		continue;
+	    }
 	    QRegularExpression pattern("^(\\d+)x(\\d+)-([0-9a-fA-F]{4})\\.(\\w+)$");
 	    QRegularExpressionMatch match = pattern.match(filename);
 
@@ -129,6 +160,8 @@ void ImageCache::addImage(int32_t SId, int width, int height,
     cache[key] = fullPath;
     ImageInfo info{fullPath, width, height, imageType, imageHash};
     channelIndex.insert(serviceId, info);
+    if (file.error() == QFile::NoError)
+	removeStaleEPGs(serviceId);
 }
 
 QPixmap ImageCache::loadImage(const QString& path) {
@@ -162,4 +195,73 @@ QString ImageCache::hashKey(QString serviceId, int width, int height, const QStr
 QString ImageCache::calculateHash(const QByteArray& data) {
     uint hash = qHash(data);
     return QString("%1").arg(hash & 0xFFFF, 4, 16, QChar('0'));
+}
+
+void ImageCache::addEPG(quint32 SId, const QDateTime& startTime, const QDateTime& endTime,
+		int hash, const QVariantMap& epg) {
+    if (hash < 0 || !startTime.isValid() || !endTime.isValid() || startTime > endTime)
+	return;
+    QString serviceId = QString::number(SId, 16).toLower();
+    QString period = startTime.toUTC().toString("yyyyMMddTHHmmss'Z'") + "-" +
+	endTime.toUTC().toString("yyyyMMddTHHmmss'Z'");
+    QString channelPath = cacheDir + "/" + serviceId;
+    QString filename = QString("%1-%2.epg").arg(period).arg(hash, 8, 16, QChar('0'));
+    QString fullPath = channelPath + "/" + filename;
+    auto &entries = epgIndex[serviceId];
+
+    for (const EPGInfo& entry : entries) {
+	if (entry.startTime == startTime && entry.endTime == endTime &&
+		entry.hash == hash && QFileInfo::exists(entry.path)) {
+	    log(LOG_CACHE, LOG_CHATTY, "skipping unchanged EPG %s", qPrintable(entry.path));
+	    return;
+	}
+    }
+    if (!QDir().mkpath(channelPath)) {
+	log(LOG_CACHE, LOG_MIN, "could not create EPG directory %s", qPrintable(channelPath));
+	return;
+    }
+    QSaveFile file(fullPath);
+    if (!file.open(QIODevice::WriteOnly)) {
+	log(LOG_CACHE, LOG_MIN, "could not open EPG %s for writing", qPrintable(fullPath));
+	return;
+    }
+    QDataStream stream(&file);
+    stream.setVersion(QDataStream::Qt_5_0);
+    stream << epg;
+    if (stream.status() != QDataStream::Ok || !file.commit()) {
+	log(LOG_CACHE, LOG_MIN, "could not write EPG %s", qPrintable(fullPath));
+	return;
+    }
+    for (auto i = entries.begin(); i != entries.end();) {
+	if (i->startTime == startTime && i->endTime == endTime) {
+	    if (i->path == fullPath || !QFileInfo::exists(i->path) || QFile::remove(i->path)) {
+		i = entries.erase(i);
+		continue;
+	    }
+	    log(LOG_CACHE, LOG_MIN, "could not remove replaced EPG %s", qPrintable(i->path));
+	}
+	++i;
+    }
+    entries.append(EPGInfo{fullPath, startTime, endTime, hash});
+    log(LOG_CACHE, LOG_MIN, "wrote EPG %s", qPrintable(fullPath));
+    removeStaleEPGs(serviceId);
+}
+
+void ImageCache::removeStaleEPGs(const QString& serviceId) {
+    auto service = epgIndex.find(serviceId);
+    if (service == epgIndex.end())
+	return;
+    QDate today = QDate::currentDate();
+    auto &entries = service.value();
+    for (auto i = entries.begin(); i != entries.end();) {
+	if (i->endTime.toLocalTime().date() < today) {
+	    if (!QFileInfo::exists(i->path) || QFile::remove(i->path)) {
+		log(LOG_CACHE, LOG_CHATTY, "removed stale EPG %s", qPrintable(i->path));
+		i = entries.erase(i);
+		continue;
+	    }
+	    log(LOG_CACHE, LOG_MIN, "could not remove stale EPG %s", qPrintable(i->path));
+	}
+	++i;
+    }
 }
