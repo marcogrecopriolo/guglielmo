@@ -65,6 +65,11 @@
 #include "pluto-handler.h"
 #endif
 #include "logging.h"
+#ifdef USE_SPI
+#include <cerrno>
+#include <cstring>
+#include "backend/data/spi/decoder.h"
+#endif
 
 // A few repeated Ui constants
 #define BAD_SERVICE	"cannot run this service"
@@ -1374,6 +1379,61 @@ void RadioInterface::showSlides(QPixmap p) {
 #endif
 }
 
+void RadioInterface::handleSPI(QByteArray data, int contentType, QString pictureName, int dirs) {
+#ifdef USE_SPI
+    QVariantMap epg;
+
+    log(LOG_SPI, LOG_MIN, "SPI %s 0x%x dir %i", qPrintable(pictureName), contentType, dirs);
+    int hash = spi_decode(&epg, data.constData(), data.size());
+    if (hash < 0) {
+	log(LOG_SPI, LOG_MIN, "cannot decode SPI %s: %s (%i bytes, prefix %s)",
+	    qPrintable(pictureName), std::strerror(errno), (int)data.size(),
+	    data.left(32).toHex().constData());
+	return;
+    }
+    log(LOG_SPI, LOG_CHATTY, "SPI %s hash %08x", qPrintable(pictureName), (unsigned int)hash);
+    dumpEPG(epg);
+#endif
+}
+
+#ifdef USE_SPI
+void RadioInterface::dumpEPG(const QVariant &entry, const QString &path) {
+    switch (entry.userType()) {
+    case QMetaType::QVariantMap: {
+	QVariantMap map = entry.toMap();
+	QString prefix = path.endsWith('/') ? path : path + '/';
+
+	log(LOG_EPG, LOG_CHATTY, "%s = {%i entries}", qPrintable(path), (int)map.size());
+	for (auto i = map.cbegin(); i != map.cend(); ++i)
+	    dumpEPG(i.value(), prefix + i.key());
+	break;
+    }
+    case QMetaType::QVariantList: {
+	QVariantList list = entry.toList();
+
+	log(LOG_EPG, LOG_CHATTY, "%s = {%i entries}", qPrintable(path), (int)list.size());
+	for (int i = 0; i < list.size(); i++)
+	    dumpEPG(list.at(i), path + '/' + QString::number(i));
+	break;
+    }
+    default: {
+	QString value;
+
+	if (entry.userType() == QMetaType::QString) {
+	    value = entry.toString();
+	    value.replace('\\', "\\\\").replace('\n', "\\n").replace('\r', "\\r").replace('\t', "\\t");
+	    value = '"' + value + '"';
+	} else if (entry.userType() == QMetaType::Double)
+	    value = QString::number(entry.toDouble(), 'g', 17);
+	else
+	    value = entry.toString();
+	log(LOG_EPG, LOG_CHATTY, "%s = %s", qPrintable(path), qPrintable(value));
+	break;
+    }
+    }
+}
+#endif
+
 void RadioInterface::handleMotObject(QByteArray result,
 					  QString name,
 					  int contentType, bool dirElement) {
@@ -1381,10 +1441,12 @@ void RadioInterface::handleMotObject(QByteArray result,
     log(LOG_EVENT, LOG_MIN, "MOT name %s cont 0x%x dir %i", qPrintable(name),
 	getContentBaseType((MOTContentType)contentType), dirElement);
 
-    // currently we only handle images
     switch (getContentBaseType((MOTContentType)contentType)) {
     case MOTBaseTypeImage:
 	handleSlides(result, contentType, name, dirElement);
+	break;
+    case MOTBaseTypeApplication:
+	handleSPI(result, contentType, name, dirElement);
 	break;
     default:
 	break;

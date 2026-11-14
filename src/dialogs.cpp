@@ -381,6 +381,7 @@ void RadioInterface::settingsClose(void) {
     settings->setValue(UI_SKIN, skin);
     settings->setValue(UI_SKIN_LOCAL, skinIsLocal);
     settings->setValue(UI_THEME, theme);
+    settings->endGroup();
 
     // Sound tab
     settings->beginGroup(GROUP_SOUND);

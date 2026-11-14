@@ -45,6 +45,9 @@
 #include "band-handler.h"
 #include "device-handler.h"
 #include "process-params.h"
+#ifdef USE_SPI
+#include <QVariant>
+#endif
 
 // UI
 #define ICON_LISTVIEW_SIZE 16, 16
@@ -249,6 +252,10 @@ private:
     void handleSlides(QByteArray data, int contentType, QString pictureName, int dirs);
     void showSlides(QPixmap p);
     void handleEPGPicture(QByteArray data, const char *type, QString pictureName);
+    void handleSPI(QByteArray data, int contentType, QString pictureName, int dirs);
+#ifdef USE_SPI
+    void dumpEPG(const QVariant &entry, const QString &path = "/");
+#endif
     void startFM(int32_t);
     void stopFM();
     void startFMscan(bool);

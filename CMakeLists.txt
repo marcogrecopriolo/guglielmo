@@ -591,23 +591,23 @@ endif ()
 	endif (PLUTO)
 
 	if (USE_SPI)
-	   find_package (Qt${QT_VERSION_MAJOR}Xml REQUIRED)
 	   include_directories (
-	     ./include/backend/data/epg
-	     ${Qt${QT_VERSION_MAJOR}Xml_INCLUDE_DIRS}
+	     ./include/backend/data/spi
+	     ./src/backend/data/spi
 	   )
 
 	   set ($(PROJECT_NAME)_HDRS
 	        ${${PROJECT_NAME}_HDRS}
-	        ./include/backend/data/epg/epgdec.h
+	        ./include/backend/data/spi/decoder.h
 	   )
 
 	   set (${PROJECT_NAME}_SRCS
 	        ${${PROJECT_NAME}_SRCS}
-	        ./src/backend/data/epg/epgdec.cpp
+	        ./src/backend/data/spi/decoder.cpp
+	   )
+	   list(APPEND ${PROJECT_NAME}_HDRS
 	   )
 	   add_definitions (-DUSE_SPI)
-	   list(APPEND extraLibs ${Qt${QT_VERSION_MAJOR}Xml_LIBRARIES})
 	endif (USE_SPI)
 
         find_package(Portaudio)

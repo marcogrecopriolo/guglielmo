@@ -385,12 +385,11 @@ fdk-aac	{
 
 use-spi	{
 	DEFINES		+= USE_SPI
-	QT		+= xml
-	DEPENDPATH	+= ./src/backend/data/epg \
-	                   ./include/backend/data/epg 
-	INCLUDEPATH	+= ./include/backend/data/epg 
-	HEADERS		+= ./include/backend/data/epg/epgdec.h 
-	SOURCES		+= ./src/backend/data/epg/epgdec.cpp 
+	DEPENDPATH	+= ./src/backend/data/spi
+	                   ./include/backend/data/spi 
+	INCLUDEPATH	+= ./include/backend/data/spi 
+	HEADERS		+= ./include/backend/data/spi/decoder.h
+	SOURCES		+= ./src/backend/data/spi/decoder.cpp
 }
 
 mpris {
