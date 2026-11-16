@@ -169,7 +169,7 @@ bool motObject::mergeObject(motObject *cached) {
     int lastSeg = cached->motMap.rbegin()->first;
     for (auto& it: cached->motMap)
 	if (addBodySegment(reinterpret_cast<uint8_t*>(it.second.data()), it.first,
-		cached->segmentSize, it.first==lastSeg && cached->numOfSegments != -1))
+		it.second.size(), it.first==lastSeg && cached->numOfSegments != -1))
 	    res = true;
     return res;
 }

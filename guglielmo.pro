@@ -9,8 +9,9 @@ DEFINES		+= TARGET=\\\"$$objectName\\\" CURRENT_VERSION=\\\"$$objectVersion\\\" 
 QT		+= widgets multimedia
 QMAKE_CXXFLAGS_RELEASE	-= -O2
 QMAKE_CFLAGS_RELEASE	-= -O2
-QMAKE_CXXFLAGS	+= -std=c++11 -O3 -isystem $$[QT_INSTALL_HEADERS]
+QMAKE_CXXFLAGS	+= -std=c++11 -flto -O3 -isystem $$[QT_INSTALL_HEADERS]
 QMAKE_CFLAGS	+= -flto -ffast-math -O3
+QMAKE_LFLAGS	+= -flto
 QMAKE_CXXFLAGS_DEBUG	+= -std=c++11 -g -O0 -isystem $$[QT_INSTALL_HEADERS]
 QMAKE_CFLAGS_DEBUG	+= -flto -ffast-math -g -O0
 RC_ICONS	= icons/guglielmo.ico
@@ -43,8 +44,6 @@ win32 {
     currDate		= $$system(date "+\"%Y-%m-%d %H:%M:%S %z\"")
     DEFINES		+= "CURRENT_DATE='\"$$currDate\"'"
 }
-
-CONFIG	+= use-spi
 
 linux {
 	DESTDIR		= ./linux-bin
@@ -176,6 +175,7 @@ DEPENDPATH += . \
 	      ./src/backend/data \
 	      ./src/backend/data/mot \
 	      ./src/backend/data/journaline \
+	      ./src/backend/data/spi \
 	      ./src/output \
 	      ./src/support \
 	      ./src/support/viterbi-spiral \
@@ -188,6 +188,7 @@ DEPENDPATH += . \
 	      ./include/backend/data \
 	      ./include/backend/data/mot \
 	      ./include/backend/data/journaline \
+	      ./include/backend/data/spi \
 	      ./include/output \
 	      ./include/support \
 	      ./devices 
@@ -205,6 +206,7 @@ INCLUDEPATH += . \
 	      ./include/backend/data \
 	      ./include/backend/data/mot \
 	      ./include/backend/data/journaline \
+	      ./include/backend/data/spi \
 	      ./include/output \
 	      ./include/support \
 	      ./include/support/viterbi-spiral \
@@ -274,6 +276,7 @@ HEADERS += ./include/radio.h \
 	   ./include/backend/data/journaline/dabdgdec_impl.h \
 	   ./include/backend/data/journaline/newsobject.h \
 	   ./include/backend/data/journaline/NML.h \
+	   ./include/backend/data/spi/decoder.h \
 	   ./include/output/audio-base.h \
 	   ./include/output/newconverter.h \
 	   ./include/output/audiosink.h \
@@ -350,6 +353,7 @@ SOURCES += ./src/main.cpp \
 	   ./src/backend/data/journaline/dabdgdec_impl.c \
 	   ./src/backend/data/journaline/newsobject.cpp \
 	   ./src/backend/data/journaline/NML.cpp \
+	   ./src/backend/data/spi/decoder.cpp \
 	   ./src/output/audio-base.cpp \
 	   ./src/output/newconverter.cpp \
 	   ./src/output/audiosink.cpp \
@@ -381,15 +385,6 @@ fdk-aac	{
 	HEADERS		+= ./include/backend/audio/fdk-aac.h
 	SOURCES		+= ./src/backend/audio/fdk-aac.cpp
 	LIBS		+= -lfdk-aac
-}
-
-use-spi	{
-	DEFINES		+= USE_SPI
-	DEPENDPATH	+= ./src/backend/data/spi
-	                   ./include/backend/data/spi 
-	INCLUDEPATH	+= ./include/backend/data/spi 
-	HEADERS		+= ./include/backend/data/spi/decoder.h
-	SOURCES		+= ./src/backend/data/spi/decoder.cpp
 }
 
 mpris {

@@ -25,6 +25,15 @@
 #include <QFileInfo>
 #include <QSaveFile>
 
+static bool removeEPG(const QString& path) {
+    if (QFileInfo::exists(path) && !QFile::remove(path)) {
+	log(LOG_CACHE, LOG_MIN, "could not remove EPG %s", qPrintable(path));
+	return false;
+    }
+    log(LOG_CACHE, LOG_CHATTY, "removed EPG %s", qPrintable(path));
+    return true;
+}
+
 ImageCache::ImageCache(const QString& relativeCacheDir) {
     cacheDir = QDir::home().absoluteFilePath(relativeCacheDir);
     loadCache();
@@ -68,19 +77,15 @@ void ImageCache::loadCache() {
 		endTime.setTimeSpec(Qt::UTC);
 		bool ok;
 		int hash = epgMatch.captured(3).toInt(&ok, 16);
-		if (ok && startTime.isValid() && endTime.isValid() && startTime <= endTime) {
-		    QString fullPath = channelPath + "/" + filename;
-		    if (endTime.toLocalTime().date() < today) {
-			if (QFile::remove(fullPath)) {
-			    log(LOG_CACHE, LOG_CHATTY, "removed stale EPG %s", qPrintable(fullPath));
-			} else {
-			    log(LOG_CACHE, LOG_MIN, "could not remove stale EPG %s", qPrintable(fullPath));
-			}
-			continue;
-		    }
-		    epgIndex[serviceId.toLower()].append(EPGInfo{fullPath, startTime, endTime, hash});
-		    log(LOG_CACHE, LOG_CHATTY, "found EPG %s", qPrintable(fullPath));
+		if (!ok || !startTime.isValid() || !endTime.isValid() || startTime > endTime)
+		    continue;
+		QString fullPath = channelPath + "/" + filename;
+		if (endTime.toLocalTime().date() < today) {
+		    removeEPG(fullPath);
+		    continue;
 		}
+		epgIndex[serviceId.toLower()].append(EPGInfo{fullPath, startTime, endTime, hash});
+		log(LOG_CACHE, LOG_CHATTY, "found EPG %s", qPrintable(fullPath));
 		continue;
 	    }
 	    QRegularExpression pattern("^(\\d+)x(\\d+)-([0-9a-fA-F]{4})\\.(\\w+)$");
@@ -233,14 +238,11 @@ void ImageCache::addEPG(quint32 SId, const QDateTime& startTime, const QDateTime
 	return;
     }
     for (auto i = entries.begin(); i != entries.end();) {
-	if (i->startTime == startTime && i->endTime == endTime) {
-	    if (i->path == fullPath || !QFileInfo::exists(i->path) || QFile::remove(i->path)) {
-		i = entries.erase(i);
-		continue;
-	    }
-	    log(LOG_CACHE, LOG_MIN, "could not remove replaced EPG %s", qPrintable(i->path));
-	}
-	++i;
+	if (i->startTime == startTime && i->endTime == endTime &&
+		(i->path == fullPath || removeEPG(i->path)))
+	    i = entries.erase(i);
+	else
+	    ++i;
     }
     entries.append(EPGInfo{fullPath, startTime, endTime, hash});
     log(LOG_CACHE, LOG_MIN, "wrote EPG %s", qPrintable(fullPath));
@@ -254,14 +256,9 @@ void ImageCache::removeStaleEPGs(const QString& serviceId) {
     QDate today = QDate::currentDate();
     auto &entries = service.value();
     for (auto i = entries.begin(); i != entries.end();) {
-	if (i->endTime.toLocalTime().date() < today) {
-	    if (!QFileInfo::exists(i->path) || QFile::remove(i->path)) {
-		log(LOG_CACHE, LOG_CHATTY, "removed stale EPG %s", qPrintable(i->path));
-		i = entries.erase(i);
-		continue;
-	    }
-	    log(LOG_CACHE, LOG_MIN, "could not remove stale EPG %s", qPrintable(i->path));
-	}
-	++i;
+	if (i->endTime.toLocalTime().date() < today && removeEPG(i->path))
+	    i = entries.erase(i);
+	else
+	    ++i;
     }
 }

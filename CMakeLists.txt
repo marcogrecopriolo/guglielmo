@@ -14,7 +14,6 @@ option(HACKRF "Enable HackRF support" ON)
 option(LIMESDR "Enable LimeSDR support" ON)
 option(PLUTO "Enable Pluto support" OFF)
 option(FDK_AAC "Use FDK AAC instead of FAAD2, for AAC decoding" OFF)
-option(USE_SPI "Enable SPI / EPG  support" ON)
 option(RPI "Enable Raspberry PI support" OFF)
 
 # The LINUX variable only came out in 3.25, but we need to support 3.12, used by Opensuse 15.2, which
@@ -201,6 +200,7 @@ endif ()
 	           ./include/backend/data
 	           ./include/backend/data/journaline
 	           ./include/backend/data/mot
+	           ./include/backend/data/spi
 	           ./include/support
 	           ./include/support/viterbi-spiral
 	           ./include/output
@@ -278,6 +278,7 @@ endif ()
 	     ./include/backend/data/mot/mot-handler.h
 	     ./include/backend/data/mot/mot-object.h
 	     ./include/backend/data/mot/mot-dir.h
+	     ./include/backend/data/spi/decoder.h
 	     ./include/backend/data/data-processor.h
 	     ./include/output/audio-base.h
 	     ./include/output/newconverter.h
@@ -352,6 +353,7 @@ endif ()
 	     ./src/backend/data/mot/mot-handler.cpp
 	     ./src/backend/data/mot/mot-object.cpp
 	     ./src/backend/data/mot/mot-dir.cpp
+	     ./src/backend/data/spi/decoder.cpp
 	     ./src/backend/data/data-processor.cpp
 	     ./src/output/audio-base.cpp
 	     ./src/output/newconverter.cpp
@@ -589,26 +591,6 @@ endif ()
 	   add_definitions (-DHAVE_PLUTO)
 	   list(APPEND extraLibs -liio  -lad9361)
 	endif (PLUTO)
-
-	if (USE_SPI)
-	   include_directories (
-	     ./include/backend/data/spi
-	     ./src/backend/data/spi
-	   )
-
-	   set ($(PROJECT_NAME)_HDRS
-	        ${${PROJECT_NAME}_HDRS}
-	        ./include/backend/data/spi/decoder.h
-	   )
-
-	   set (${PROJECT_NAME}_SRCS
-	        ${${PROJECT_NAME}_SRCS}
-	        ./src/backend/data/spi/decoder.cpp
-	   )
-	   list(APPEND ${PROJECT_NAME}_HDRS
-	   )
-	   add_definitions (-DUSE_SPI)
-	endif (USE_SPI)
 
         find_package(Portaudio)
         if (NOT PORTAUDIO_FOUND)

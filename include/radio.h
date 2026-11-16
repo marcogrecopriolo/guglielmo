@@ -45,9 +45,7 @@
 #include "band-handler.h"
 #include "device-handler.h"
 #include "process-params.h"
-#ifdef USE_SPI
 #include <QVariant>
-#endif
 
 // UI
 #define ICON_LISTVIEW_SIZE 16, 16
@@ -118,9 +116,7 @@ private:
     RingBuffer<float> responseBuffer;
     RingBuffer<uint8_t> frameBuffer;
     RingBuffer<int16_t> audioBuffer;
-#ifdef USE_SPI
     RingBuffer<uint8_t> dataBuffer;
-#endif
 
     dabService nextService;
     bandHandler DABband;
@@ -253,10 +249,8 @@ private:
     void showSlides(QPixmap p);
     void handleEPGPicture(QByteArray data, const char *type, QString pictureName);
     void handleSPI(QByteArray data, int contentType, QString pictureName, int dirs);
-#ifdef USE_SPI
     void dumpEPG(const QVariant &entry, const QString &path = "/");
     void cacheEPG(const QVariantMap& epg, const QString& filename, int hash);
-#endif
     void startFM(int32_t);
     void stopFM();
     void startFMscan(bool);

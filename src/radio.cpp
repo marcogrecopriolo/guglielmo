@@ -65,12 +65,10 @@
 #include "pluto-handler.h"
 #endif
 #include "logging.h"
-#ifdef USE_SPI
 #include <QDateTime>
 #include <cerrno>
 #include <cstring>
 #include "backend/data/spi/decoder.h"
-#endif
 
 // A few repeated Ui constants
 #define BAD_SERVICE	"cannot run this service"
@@ -91,9 +89,7 @@ RadioInterface::RadioInterface(QSettings *Si, QWidget *parent):
 	responseBuffer(32768),
 	frameBuffer(2 * 32768),
 	audioBuffer(8 * 32768),
-#ifdef USE_SPI
 	dataBuffer(32768),
-#endif
 	DABband() {
 
     QString presetName;
@@ -1250,19 +1246,19 @@ void RadioInterface::handleSlides(QByteArray data, int contentType, QString pict
     if (pictureName == QString(""))
 	return;
     switch (static_cast<MOTContentType>(contentType)) {
-    case MOTCTImageGIF:
+      case MOTCTImageGIF:
 	type = "gif";
 	break;
-    case MOTCTImageJFIF:
+      case MOTCTImageJFIF:
 	type = "jpg";
 	break;
-    case MOTCTImageBMP:
+      case MOTCTImageBMP:
 	type = "bmp";
 	break;
-    case MOTCTImagePNG:
+      case MOTCTImagePNG:
 	type = "png";
 	break;
-    default:
+      default:
 	return;
     }
 
@@ -1381,7 +1377,6 @@ void RadioInterface::showSlides(QPixmap p) {
 }
 
 void RadioInterface::handleSPI(QByteArray data, int contentType, QString pictureName, int dirs) {
-#ifdef USE_SPI
     QVariantMap epg;
 
     log(LOG_SPI, LOG_MIN, "SPI %s 0x%x dir %i", qPrintable(pictureName), contentType, dirs);
@@ -1396,30 +1391,23 @@ void RadioInterface::handleSPI(QByteArray data, int contentType, QString picture
     dumpEPG(epg);
     if (cache && getContentSubType((MOTContentType)contentType) == 1)
 	cacheEPG(epg, pictureName, hash);
-#endif
 }
 
-#ifdef USE_SPI
-// Find coverage in the decoded schedule.
-static void epgTimes(const QVariant& value, QDateTime& start, QDateTime& end) {
+// Find the latest end time in the decoded schedule.
+static void epgEnd(const QVariant& value, QDateTime& end) {
     if (value.userType() == QMetaType::QVariantList) {
 	for (const QVariant& child : value.toList())
-	    epgTimes(child, start, end);
+	    epgEnd(child, end);
     } else if (value.userType() == QMetaType::QVariantMap) {
 	QVariantMap map = value.toMap();
-	QDateTime first = QDateTime::fromString(map.value("startTime").toString(), Qt::ISODate);
 	QDateTime last = QDateTime::fromString(map.value("stopTime").toString(), Qt::ISODate);
 	QDateTime time = QDateTime::fromString(map.value("time").toString(), Qt::ISODate);
-	if (time.isValid() && map.contains("duration")) {
-	    first = time;
+	if (time.isValid() && map.contains("duration"))
 	    last = time.addSecs(map.value("duration").toInt());
-	}
-	if (first.isValid() && (!start.isValid() || first < start))
-	    start = first;
 	if (last.isValid() && (!end.isValid() || last > end))
 	    end = last;
 	for (auto i = map.cbegin(); i != map.cend(); ++i)
-	    epgTimes(i.value(), start, end);
+	    epgEnd(i.value(), end);
     }
 }
 
@@ -1431,13 +1419,13 @@ void RadioInterface::cacheEPG(const QVariantMap& epg, const QString& filename, i
     bool ok = false;
     quint32 SId = match.captured(2).toUInt(&ok, 16);
     QDateTime start(QDate::fromString(match.captured(1), "yyyyMMdd"), QTime(0, 0), Qt::LocalTime);
-    QDateTime first, end;
+    QDateTime end;
 
     if (!match.hasMatch() || !ok || !start.isValid()) {
 	log(LOG_CACHE, LOG_MIN, "cannot cache EPG with unrecognised filename %s", qPrintable(filename));
 	return;
     }
-    epgTimes(epg, first, end);
+    epgEnd(epg, end);
     if (!end.isValid() || end < start) {
 	log(LOG_CACHE, LOG_MIN, "cannot cache EPG for %x without valid coverage dates", SId);
 	return;
@@ -1446,27 +1434,27 @@ void RadioInterface::cacheEPG(const QVariantMap& epg, const QString& filename, i
 }
 
 void RadioInterface::dumpEPG(const QVariant &entry, const QString &path) {
+    QVariantMap map;
+    QVariantList list;
+    QString prefix, value;
+
     switch (entry.userType()) {
-    case QMetaType::QVariantMap: {
-	QVariantMap map = entry.toMap();
-	QString prefix = path.endsWith('/') ? path : path + '/';
+      case QMetaType::QVariantMap:
+	map = entry.toMap();
+	prefix = path.endsWith('/') ? path : path + '/';
 
 	log(LOG_EPG, LOG_CHATTY, "%s = {%i entries}", qPrintable(path), (int)map.size());
 	for (auto i = map.cbegin(); i != map.cend(); ++i)
 	    dumpEPG(i.value(), prefix + i.key());
 	break;
-    }
-    case QMetaType::QVariantList: {
-	QVariantList list = entry.toList();
+      case QMetaType::QVariantList:
+	list = entry.toList();
 
 	log(LOG_EPG, LOG_CHATTY, "%s = {%i entries}", qPrintable(path), (int)list.size());
 	for (int i = 0; i < list.size(); i++)
 	    dumpEPG(list.at(i), path + '/' + QString::number(i));
 	break;
-    }
-    default: {
-	QString value;
-
+      default:
 	if (entry.userType() == QMetaType::QString) {
 	    value = entry.toString();
 	    value.replace('\\', "\\\\").replace('\n', "\\n").replace('\r', "\\r").replace('\t', "\\t");
@@ -1478,9 +1466,7 @@ void RadioInterface::dumpEPG(const QVariant &entry, const QString &path) {
 	log(LOG_EPG, LOG_CHATTY, "%s = %s", qPrintable(path), qPrintable(value));
 	break;
     }
-    }
 }
-#endif
 
 void RadioInterface::handleMotObject(QByteArray result,
 					  QString name,
@@ -1490,13 +1476,13 @@ void RadioInterface::handleMotObject(QByteArray result,
 	getContentBaseType((MOTContentType)contentType), dirElement);
 
     switch (getContentBaseType((MOTContentType)contentType)) {
-    case MOTBaseTypeImage:
+      case MOTBaseTypeImage:
 	handleSlides(result, contentType, name, dirElement);
 	break;
-    case MOTBaseTypeApplication:
+      case MOTBaseTypeApplication:
 	handleSPI(result, contentType, name, dirElement);
 	break;
-    default:
+      default:
 	break;
     }
 }
@@ -1952,7 +1938,6 @@ void RadioInterface::startDAB() {
 }
 
 void RadioInterface::startDataService(QString serviceName, uint SId) {
-#ifdef USE_SPI
     packetdata pd;
 
     if (inputDevice == nullptr || DABprocessor == nullptr)
@@ -1969,14 +1954,9 @@ void RadioInterface::startDataService(QString serviceName, uint SId) {
     dataService.SId = SId;
     dataService.valid = true;
     DABprocessor->set_dataChannel(&pd, &dataBuffer);
-#else
-    (void) serviceName;
-    (void) SId;
-#endif
 }
 
 void RadioInterface::stopDataServices() {
-#ifdef USE_SPI
     packetdata pd;
 
     if (inputDevice == nullptr || DABprocessor == nullptr)
@@ -1987,7 +1967,6 @@ void RadioInterface::stopDataServices() {
     DABprocessor->dataforPacketService(dataService.serviceName, &pd, 0);
     DABprocessor->stopService(&pd);
     dataService.valid = false;
-#endif
 }
 
 void RadioInterface::stopDAB() {
