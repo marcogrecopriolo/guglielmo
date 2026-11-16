@@ -30,7 +30,7 @@ static bool removeEPG(const QString& path) {
 	log(LOG_CACHE, LOG_MIN, "could not remove EPG %s", qPrintable(path));
 	return false;
     }
-    log(LOG_CACHE, LOG_CHATTY, "removed EPG %s", qPrintable(path));
+    log(LOG_CACHE, LOG_MIN, "removed EPG %s", qPrintable(path));
     return true;
 }
 
@@ -148,7 +148,7 @@ void ImageCache::addImage(int32_t SId, int width, int height,
 	cache.remove(key);
 	removeFromChannelIndex(serviceId, width, height, imageType);
 	QFile::remove(existingPath);
-	log(LOG_CACHE, LOG_CHATTY, "replacing mage %s", qPrintable(existingPath));
+	log(LOG_CACHE, LOG_MIN, "replacing mage %s", qPrintable(existingPath));
     } else
 	log(LOG_CACHE, LOG_MIN, "writing image %s", qPrintable(fullPath));
     QDir dir;
