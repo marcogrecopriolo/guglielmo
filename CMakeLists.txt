@@ -488,12 +488,6 @@ endif ()
 	endif (SDRPLAY_V3)
 
 	if (AIRSPY)
-#           find_package(LibAIRSPY)
-#           if (NOT LIBAIRSPY_FOUND)
-#               message(FATAL_ERROR "please install airspy library")
-#           endif ()
-#	   ## include_directories (${AIRSPYLIB_INCLUDE_DIR})
-
 	   include_directories (
 	     ./devices/airspy-handler
 	     ./devices/airspy-handler/libairspy

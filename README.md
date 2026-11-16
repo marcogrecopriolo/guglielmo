@@ -306,9 +306,9 @@ The backends have wholesale lifted from Qt-dab and Sdr-j-fm by Jan van Katwijk a
 various other contributors.
 
 I have written the interface, integrated the two processors, rewritten the devices to work
-against the guglielmo interface rewritten EPG handling in its entirety, introduced logging
-and improved several areas and fixed several bugs, most notably around MOT handling, the FM
-and RDS subsystems, the DAB processor and gain management.
+against the guglielmo interface, rewritten EPG handling in its entirety, introduced logging,
+improved several areas and fixed several bugs, most notably around the FM and RDS subsystems,
+the DAB processor, MOT handling and gain management.
 
 Carl Laufer at rtl-sdr.com, Jon Hudson at sdrplay.com and Youssef Touil at AirSpy deserve
 a special mention for having provided hardware that I have used to develop the drivers.

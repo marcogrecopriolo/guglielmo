@@ -404,20 +404,20 @@ RPI	{
 	SOURCES		+= ./src/support/viterbi-spiral/spiral-neon.c
 }
 
-SSE	{
-#	DEFINES		+= __THREADED_BACKEND
-#	DEFINES		+= __MSC_THREAD__
-	DEFINES		+= SSE_AVAILABLE
-	HEADERS		+= ./src/support/viterbi-spiral/spiral-sse.h
-	SOURCES		+= ./src/support/viterbi-spiral/spiral-sse.c
-}
-
 NEON	{
 #	DEFINES		+= __MSC_THREAD__
 #	DEFINES		+= __THREADED_BACKEND
 	DEFINES		+= NEON_AVAILABLE
 	HEADERS		+= ./src/support/viterbi-spiral/spiral-neon.h
 	SOURCES		+= ./src/support/viterbi-spiral/spiral-neon.c
+}
+
+SSE	{
+#	DEFINES		+= __THREADED_BACKEND
+#	DEFINES		+= __MSC_THREAD__
+	DEFINES		+= SSE_AVAILABLE
+	HEADERS		+= ./src/support/viterbi-spiral/spiral-sse.h
+	SOURCES		+= ./src/support/viterbi-spiral/spiral-sse.c
 }
 
 NO_SSE	{
