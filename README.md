@@ -286,7 +286,8 @@ At this moment in time, the only devices tested are the RTL SDR stick (both V3 a
 and the AirSpy Mini and R2..
 
 The RTL SDR stick and the Airspy R2 and Mini have been successfully tested on Linux (OpenSuse Leap 15.2
-and 15.5, Ubuntu 22.04, Raspberry Pi OS Bookworm), macOS High Sierra x86_64 and Windows 11, and the RSP1a with Linux and Windows.
+and 15.5, Ubuntu 22.04, Raspberry Pi OS Bookworm), macOS High Sierra x86_64 and Windows 11, and the
+RSP1a with Linux and Windows.
 
 Windows does build with Visual Studio, and Mingw plus Msys or Msys2, but the process needs a fair
 amount of manual intervention.
@@ -305,8 +306,9 @@ The backends have wholesale lifted from Qt-dab and Sdr-j-fm by Jan van Katwijk a
 various other contributors.
 
 I have written the interface, integrated the two processors, rewritten the devices to work
-against the guglielmo interface, improved several things and fixed several bugs, most
-notably MOT handling, the FM and RDS subsystems, the DAB processor, gain management and logging.
+against the guglielmo interface rewritten EPG handling in its entirety, introduced logging
+and improved several areas and fixed several bugs, most notably around MOT handling, the FM
+and RDS subsystems, the DAB processor and gain management.
 
 Carl Laufer at rtl-sdr.com, Jon Hudson at sdrplay.com and Youssef Touil at AirSpy deserve
 a special mention for having provided hardware that I have used to develop the drivers.
