@@ -91,7 +91,8 @@ enum agcMode {
 enum dabDisplay {
     DD_STATIONS =	0,
     DD_SLIDES =		1,
-    DD_COUNT  = 	2
+    DD_SCHEDULE =	2,
+    DD_COUNT  = 	3
 };
 
 class deviceDescriptor {
@@ -159,6 +160,7 @@ private:
     QAction *settingsAction;
     QAction *stationsAction;
     QAction *slidesAction;
+    QAction *scheduleAction;
     QStandardItemModel ensembleModel;
     QString stereoStyle;
     QString originalTitle;
@@ -251,6 +253,7 @@ private:
     void handleSPI(QByteArray data, int contentType, QString pictureName, int dirs);
     void dumpEPG(const QVariant &entry, const QString &path = "/");
     void cacheEPG(const QVariantMap& epg, const QString& filename, int hash);
+    void showSchedule();
     void startFM(int32_t);
     void stopFM();
     void startFMscan(bool);
@@ -347,6 +350,7 @@ private slots:
     void handleSettingsAction();
     void handleStationsAction();
     void handleSlidesAction();
+    void handleScheduleAction();
     void handleLeftDisplayButton();
     void handleRightDisplayButton();
 

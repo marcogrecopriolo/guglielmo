@@ -32,11 +32,14 @@ select, or the previous or next channel if already at either end of the service 
 
 Or you can switch service or channel using the appropriate selectors.
 
-The central display can switch between the services list for the current channel and the slide show
-for the current service using the "stations" and "slides" menus accessible from the burger menu, or the
-left and right arrows on the top left section of the DAB panel.
+The central display can switch between the services list for the current channel, the slide show
+for the current service, or the schedule for the current service, using the "stations", "slides" and
+"schedule" menus accessible from the burger menu, or the left and right arrows on the top left
+section of the DAB panel.
 
 ![DAB screen](/images/dab_logo.png)
+
+![DAB screen](/images/dab_schedule.png)
 
 ### FM
 

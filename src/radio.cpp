@@ -100,6 +100,7 @@ RadioInterface::RadioInterface(QSettings *Si, QWidget *parent):
     QPalette p;
 
     settings = Si;
+    cache = nullptr;
 
     // UI
     setupUi(this);
@@ -120,12 +121,15 @@ RadioInterface::RadioInterface(QSettings *Si, QWidget *parent):
     stationsAction->setShortcut(QKeySequence(KEY_MODIFIER | Qt::Key_T));
     slidesAction = new QAction(QIcon(":/slides.png"), "sLides");
     slidesAction->setShortcut(QKeySequence(KEY_MODIFIER | Qt::Key_L));
+    scheduleAction = new QAction(QIcon(":/schedule.png"), "sChedule");
+    scheduleAction->setShortcut(QKeySequence(KEY_MODIFIER | Qt::Key_C));
     aboutAction = new QAction(QIcon(":/copyright.png"), "About");
     aboutAction->setShortcut(QKeySequence(KEY_MODIFIER | Qt::Key_A));
     settingsAction = new QAction(QIcon(":/settings.png"), "Settings");
     settingsAction->setShortcut(QKeySequence(KEY_MODIFIER | Qt::Key_S));
     menu->addAction(stationsAction);
     menu->addAction(slidesAction);
+    menu->addAction(scheduleAction);
     menu->addAction(settingsAction);
     menu->addAction(aboutAction);
     menu->setLayoutDirection(Qt::LeftToRight);
@@ -289,11 +293,16 @@ RadioInterface::RadioInterface(QSettings *Si, QWidget *parent):
     recording = false;
     scanning = false;
     isFM = (settings->value(GEN_TUNER_MODE, GEN_DEF_TUNER_MODE).toString() == GEN_FM);
-    if (settings->value(GEN_DAB_MODE, GEN_DEF_DAB_MODE).toString() == GEN_DAB_SLIDES)
-	dabDisplay = DD_SLIDES;
-    else
-	dabDisplay = DD_STATIONS;
-    dabDisplayOff();
+    {
+	QString display = settings->value(GEN_DAB_MODE, GEN_DEF_DAB_MODE).toString();
+	if (display == GEN_DAB_SLIDES)
+	    dabDisplay = DD_SLIDES;
+	else if (display == GEN_DAB_SCHEDULE)
+	    dabDisplay = DD_SCHEDULE;
+	else
+	    dabDisplay = DD_STATIONS;
+	dabDisplayOff();
+    }
     if (isFM)
 	toFM();
     else
@@ -328,6 +337,8 @@ RadioInterface::RadioInterface(QSettings *Si, QWidget *parent):
 		this, SLOT(handleStationsAction()));
     connect(slidesAction, SIGNAL(triggered(bool)),
 		this, SLOT(handleSlidesAction()));
+    connect(scheduleAction, SIGNAL(triggered(bool)),
+		this, SLOT(handleScheduleAction()));
     connect(leftDisplayButton, SIGNAL(clicked(void)),
 		this, SLOT(handleLeftDisplayButton()));
     connect(rightDisplayButton, SIGNAL(clicked(void)),
@@ -621,7 +632,8 @@ void RadioInterface::terminateProcess() {
     settings->setValue(GEN_CHANNEL, channelSelector->currentText());
     settings->setValue(GEN_FM_FREQUENCY, FMfreq);
     settings->setValue(GEN_TUNER_MODE, isFM? GEN_FM: GEN_DAB);
-    settings->setValue(GEN_DAB_MODE, dabDisplay == DD_SLIDES? GEN_DAB_SLIDES: GEN_DAB_STATIONS);
+    settings->setValue(GEN_DAB_MODE, dabDisplay == DD_SLIDES? GEN_DAB_SLIDES:
+				(dabDisplay == DD_SCHEDULE? GEN_DAB_SCHEDULE: GEN_DAB_STATIONS));
     settings->setValue(GEN_VOLUME, int(volumeKnob->value()));
     settings->setValue(GEN_SQUELCH, int(squelchKnob->value()));
     settings->setValue(GEN_DEVICE_TYPE, deviceType);
@@ -1430,7 +1442,86 @@ void RadioInterface::cacheEPG(const QVariantMap& epg, const QString& filename, i
 	log(LOG_CACHE, LOG_MIN, "cannot cache EPG for %x without valid coverage dates", SId);
 	return;
     }
-    cache->addEPG(SId, start, end, hash, epg);
+    if (cache->addEPG(SId, start, end, hash, epg) &&
+	    playing && currentService.valid && currentService.SId == SId)
+	showSchedule();
+}
+
+static QString epgText(const QVariant &names) {
+    for (const QVariant &name : names.toList()) {
+	QString text = name.toMap().value("text").toString();
+
+	if (!text.isEmpty())
+	    return text;
+    }
+    return QString();
+}
+
+static void epgProgrammes(const QVariantMap &epg, QMultiMap<QDateTime, QVariantMap> &programmes) {
+    QVariantMap guide = epg.value("epg").toMap();
+
+    for (const QVariant &scheduleEntry : guide.value("schedule").toList()) {
+	QVariantMap schedule = scheduleEntry.toMap();
+
+	for (const QVariant &programmeEntry : schedule.value("programme").toList()) {
+	    QVariantMap programme = programmeEntry.toMap();
+
+	    for (const QVariant &locationEntry : programme.value("location").toList()) {
+		QVariantMap location = locationEntry.toMap();
+
+		for (const QVariant &timeEntry : location.value("time").toList()) {
+		    QVariantMap time = timeEntry.toMap();
+		    QDateTime start = QDateTime::fromString(time.value("time").toString(), Qt::ISODate);
+
+		    if (start.isValid())
+			programmes.insert(start.toLocalTime(), programme);
+		}
+	    }
+	}
+    }
+}
+
+void RadioInterface::showSchedule() {
+    QMultiMap<QDateTime, QVariantMap> programmes;
+    QDate date;
+
+    if (isFM || dabDisplay != DD_SCHEDULE)
+	return;
+    epgDisplay->clearSpans();
+    epgDisplay->setRowCount(0);
+    if (playing && currentService.valid && cache)
+	for (const QString &path : cache->getEPGsForChannel(currentService.SId))
+	    epgProgrammes(cache->loadEPG(path), programmes);
+
+    if (programmes.isEmpty()) {
+	epgDisplay->setRowCount(1);
+	epgDisplay->setItem(0, 0, new QTableWidgetItem(tr("no epg available")));
+	epgDisplay->setSpan(0, 0, 1, 2);
+	return;
+    }
+    for (auto i = programmes.cbegin(); i != programmes.cend(); ++i) {
+	const QVariantMap &programme = i.value();
+	QTableWidgetItem *name = new QTableWidgetItem(epgText(programme.value("mediumName")));
+	int row = epgDisplay->rowCount();
+
+	if (date != i.key().date()) {
+	    QTableWidgetItem *heading = new QTableWidgetItem(i.key().date().toString("ddd d MMM yyyy"));
+	    QFont font = heading->font();
+
+	    date = i.key().date();
+	    font.setBold(true);
+	    heading->setFont(font);
+	    epgDisplay->insertRow(row);
+	    epgDisplay->setItem(row, 0, heading);
+	    epgDisplay->setSpan(row, 0, 1, 2);
+	    row++;
+	}
+	epgDisplay->insertRow(row);
+	epgDisplay->setItem(row, 0, new QTableWidgetItem(i.key().toString("HH:mm")));
+	name->setToolTip(epgText(programme.value("longName")));
+	epgDisplay->setItem(row, 1, name);
+    }
+    epgDisplay->scrollToTop();
 }
 
 void RadioInterface::dumpEPG(const QVariant &entry, const QString &path) {
@@ -1737,6 +1828,7 @@ void RadioInterface::stopDABService() {
     serviceLabel->setToolTip("");
     currentService.valid = false;
     cleanScreen();
+    showSchedule();
 #ifdef HAVE_MPRIS
     mprisLabelAndText("DAB", currentService.serviceName.trimmed());
     player.setPlaybackStatus(Mpris::Stopped);
@@ -1801,6 +1893,15 @@ void RadioInterface::handleSlidesAction() {
     dabDisplayOn();
 }
 
+void RadioInterface::handleScheduleAction() {
+    if (dabDisplay == DD_SCHEDULE)
+	return;
+    log(LOG_UI, LOG_MIN, "switching to dab schedule");
+    dabDisplayOff();
+    dabDisplay = DD_SCHEDULE;
+    dabDisplayOn();
+}
+
 void RadioInterface::handleLeftDisplayButton() {
     dabDisplayOff();
     dabDisplay = dabDisplay > 0? dabDisplay - 1: DD_COUNT - 1;
@@ -1817,9 +1918,11 @@ void RadioInterface::handleRightDisplayButton() {
 
 void RadioInterface::dabDisplayOff() {
     slidesAction->setVisible(false);
+    scheduleAction->setVisible(false);
     stationsAction->setVisible(false);
     slidesLabel->setVisible(false);
     ensembleDisplay->setVisible(false);
+    epgDisplay->setVisible(false);
     stationSelector->setVisible(false);
     channelSelector->setVisible(false);
 }
@@ -1829,10 +1932,19 @@ void RadioInterface::dabDisplayOn() {
       case DD_SLIDES:
 	slidesLabel->setVisible(true);
 	stationSelector->setVisible(true);
+	scheduleAction->setVisible(true);
 	stationsAction->setVisible(true);
+	break;
+      case DD_SCHEDULE:
+	showSchedule();
+	stationSelector->setVisible(true);
+	slidesAction->setVisible(true);
+	stationsAction->setVisible(true);
+	epgDisplay->setVisible(true);
 	break;
       case DD_STATIONS:
 	slidesAction->setVisible(true);
+	scheduleAction->setVisible(true);
 	channelSelector->setVisible(true);
 	ensembleDisplay->setVisible(true);
 	break;
@@ -1908,6 +2020,7 @@ void RadioInterface::startDABService(dabService *s) {
 		    showSlides(p);
 		}
 		playing = true;
+		showSchedule();
 		setPlaying();
 		setRecording();
 #ifdef HAVE_MPRIS
@@ -2010,6 +2123,7 @@ void RadioInterface::stopDAB() {
 	delete cache;
 	cache = nullptr;
     }
+    showSchedule();
 }
 
 void RadioInterface::handleSelectChannel(int index) {

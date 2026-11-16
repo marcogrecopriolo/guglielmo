@@ -27,6 +27,7 @@
 #include <QMultiHash>
 #include <QDir>
 #include <QString>
+#include <QStringList>
 #include <QList>
 #include <QPixmap>
 #include <QRegularExpression>
@@ -67,7 +68,9 @@ public:
     void addImage(int32_t SId, int width, int height, 
 		  const QString& imageType, const QByteArray& image);
     QPixmap loadImage(const QString& path);
-    void addEPG(quint32 SId, const QDateTime& startTime, const QDateTime& endTime,
+    QStringList getEPGsForChannel(quint32 SId);
+    QVariantMap loadEPG(const QString& path);
+    bool addEPG(quint32 SId, const QDateTime& startTime, const QDateTime& endTime,
 		int hash, const QVariantMap& epg);
     
 private:

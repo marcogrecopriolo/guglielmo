@@ -202,10 +202,37 @@ QString ImageCache::calculateHash(const QByteArray& data) {
     return QString("%1").arg(hash & 0xFFFF, 4, 16, QChar('0'));
 }
 
-void ImageCache::addEPG(quint32 SId, const QDateTime& startTime, const QDateTime& endTime,
+QStringList ImageCache::getEPGsForChannel(quint32 SId) {
+    QStringList paths;
+
+    for (const EPGInfo& entry : epgIndex.value(QString::number(SId, 16)))
+	paths.append(entry.path);
+    paths.sort();
+    return paths;
+}
+
+QVariantMap ImageCache::loadEPG(const QString& path) {
+    QVariantMap epg;
+    QFile file(path);
+
+    if (!file.open(QIODevice::ReadOnly)) {
+	log(LOG_CACHE, LOG_MIN, "could not open EPG %s for reading", qPrintable(path));
+	return epg;
+    }
+    QDataStream stream(&file);
+    stream.setVersion(QDataStream::Qt_5_0);
+    stream >> epg;
+    if (stream.status() != QDataStream::Ok) {
+	log(LOG_CACHE, LOG_MIN, "could not read EPG %s", qPrintable(path));
+	epg.clear();
+    }
+    return epg;
+}
+
+bool ImageCache::addEPG(quint32 SId, const QDateTime& startTime, const QDateTime& endTime,
 		int hash, const QVariantMap& epg) {
     if (hash < 0 || !startTime.isValid() || !endTime.isValid() || startTime > endTime)
-	return;
+	return false;
     QString serviceId = QString::number(SId, 16).toLower();
     QString period = startTime.toUTC().toString("yyyyMMddTHHmmss'Z'") + "-" +
 	endTime.toUTC().toString("yyyyMMddTHHmmss'Z'");
@@ -218,24 +245,24 @@ void ImageCache::addEPG(quint32 SId, const QDateTime& startTime, const QDateTime
 	if (entry.startTime == startTime && entry.endTime == endTime &&
 		entry.hash == hash && QFileInfo::exists(entry.path)) {
 	    log(LOG_CACHE, LOG_CHATTY, "skipping unchanged EPG %s", qPrintable(entry.path));
-	    return;
+	    return false;
 	}
     }
     if (!QDir().mkpath(channelPath)) {
 	log(LOG_CACHE, LOG_MIN, "could not create EPG directory %s", qPrintable(channelPath));
-	return;
+	return false;
     }
     QSaveFile file(fullPath);
     if (!file.open(QIODevice::WriteOnly)) {
 	log(LOG_CACHE, LOG_MIN, "could not open EPG %s for writing", qPrintable(fullPath));
-	return;
+	return false;
     }
     QDataStream stream(&file);
     stream.setVersion(QDataStream::Qt_5_0);
     stream << epg;
     if (stream.status() != QDataStream::Ok || !file.commit()) {
 	log(LOG_CACHE, LOG_MIN, "could not write EPG %s", qPrintable(fullPath));
-	return;
+	return false;
     }
     for (auto i = entries.begin(); i != entries.end();) {
 	if (i->startTime == startTime && i->endTime == endTime &&
@@ -247,6 +274,7 @@ void ImageCache::addEPG(quint32 SId, const QDateTime& startTime, const QDateTime
     entries.append(EPGInfo{fullPath, startTime, endTime, hash});
     log(LOG_CACHE, LOG_MIN, "wrote EPG %s", qPrintable(fullPath));
     removeStaleEPGs(serviceId);
+    return true;
 }
 
 void ImageCache::removeStaleEPGs(const QString& serviceId) {

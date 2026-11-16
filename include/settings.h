@@ -62,6 +62,7 @@
 #define GEN_DAB			"DAB"
 #define GEN_DAB_STATIONS	"stations"
 #define GEN_DAB_SLIDES		"slides"
+#define GEN_DAB_SCHEDULE	"schedule"
 
 // ui
 #define UI_THEME		"theme"
