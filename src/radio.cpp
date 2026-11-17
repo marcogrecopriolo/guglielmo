@@ -2446,7 +2446,7 @@ void RadioInterface::handleRecordButton() {
     else
 	baseFileName = "output";
     if ((outputFileName = chooseFileName(this, settings, tr("Record to"),
-		tr("Waveform Audio File(*.wav);;Free Lossless Audio Codec(*.flac);;Ogg Vorbis(*.ogg)"),
+		tr("Waveform Audio File (*.wav);; Free Lossless Audio Codec (*.flac);; Ogg Vorbis (*.ogg)"),
 		DIALOGS_RECORDING, baseFileName.trimmed())) != "") {
 	memset(&sfInfo, 0, sizeof(sfInfo));
 	sfInfo.samplerate = audioRate;

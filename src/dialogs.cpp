@@ -66,9 +66,15 @@ QString chooseFileName(QWidget *parent, QSettings *settings, QString what, QStri
     settings->endGroup();
     saveDialog->setDirectory("");
     saveDialog->restoreState(saveState);
-    QString selectedFilter = filters.split(";;").filter("*." + ext + ")").value(0).trimmed();
+    QStringList nameFilters = filters.split(";;");
+    QString selectedFilter = nameFilters.filter("*." + ext + ")").value(0, nameFilters.first());
+    // Put the default filter first to avoid KDE's pre-show selection bug:
+    // https://bugs.kde.org/show_bug.cgi?id=516399
+    nameFilters.removeOne(selectedFilter);
+    nameFilters.prepend(selectedFilter);
+    filters = nameFilters.join(";;");
     QString out = saveDialog->directory().filePath(fileName + "." + ext);
-    while ((out = saveDialog->getSaveFileName(parent, what, out, filters, &selectedFilter)) != "") {
+    while ((out = saveDialog->getSaveFileName(parent, what, out, filters)) != "") {
 	ext = QFileInfo(out).suffix().toLower();
 	if (ext == "wav" || ext == "flac" || ext == "ogg")
 	    break;
