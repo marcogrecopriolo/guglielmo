@@ -153,4 +153,7 @@
 
 // dialogs
 #define DIALOGS_RECORDING	"recording"
+#define DIALOGS_RECORDING_TYPE	"recordingType"
+
+#define DIALOGS_DEF_RECORDING_TYPE	"wav"
 #endif		// __SETTINGS_H__

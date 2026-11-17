@@ -27,6 +27,7 @@
 #include <QFile>
 #include <QTextStream>
 #include <QFileDialog>
+#include <QFileInfo>
 #include <QDropEvent>
 #include <QMimeData>
 #include <QString>
@@ -61,13 +62,24 @@ QString chooseFileName(QWidget *parent, QSettings *settings, QString what, QStri
     log(LOG_UI, LOG_MIN, "choose file dialog");
     settings->beginGroup(GROUP_DIALOGS);
     QByteArray saveState = settings->value(state, "").toByteArray();
+    QString ext = settings->value(DIALOGS_RECORDING_TYPE, DIALOGS_DEF_RECORDING_TYPE).toString();
     settings->endGroup();
+    saveDialog->setDirectory("");
     saveDialog->restoreState(saveState);
-    QString selectedFilter = saveDialog->selectedNameFilter();
-    QString out = saveDialog->getSaveFileName(parent, what, saveDialog->directory().filePath(fileName), filters, &selectedFilter);
+    QString selectedFilter = filters.split(";;").filter("*." + ext + ")").value(0).trimmed();
+    QString out = saveDialog->directory().filePath(fileName + "." + ext);
+    while ((out = saveDialog->getSaveFileName(parent, what, out, filters, &selectedFilter)) != "") {
+	ext = QFileInfo(out).suffix().toLower();
+	if (ext == "wav" || ext == "flac" || ext == "ogg")
+	    break;
+	warning(parent, QWidget::tr("Please use a filename specifying a supported sound format"));
+    }
 
-    // FIXME the current filter is not saved
     settings->beginGroup(GROUP_DIALOGS);
+    if (!out.isEmpty()) {
+	saveDialog->setDirectory(QFileInfo(out).absolutePath());
+	settings->setValue(DIALOGS_RECORDING_TYPE, ext);
+    }
     saveState = saveDialog->saveState();
     settings->setValue(state, saveState);
     settings->endGroup();

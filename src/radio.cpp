@@ -2407,7 +2407,9 @@ void RadioInterface::setIconAndTitle() {
     QIcon icon;
 
     if (isMinimized()) {
-	if (playing)
+	if (recording)
+	    icon = RECORD_ICON_PATH;
+	else if (playing)
 	    icon = PLAY_ICON_PATH;
 	else
 	    icon = PAUSE_ICON_PATH;
@@ -2439,12 +2441,12 @@ void RadioInterface::handleRecordButton() {
 
     if (isFM)
 	baseFileName = "FM:" + QString::number(KHz(FMfreq));
-    else if (currentService.valid)
+    else if (currentService.valid || currentService.serviceName != "")
 	baseFileName = currentService.serviceName;
     else
-	baseFileName = "";
+	baseFileName = "output";
     if ((outputFileName = chooseFileName(this, settings, tr("Record to"),
-		tr("Waveform Audio File (*.wav);; Free Lossless Audio Codec (*.flac);; Ogg Vorbis (*.ogg)"),
+		tr("Waveform Audio File(*.wav);;Free Lossless Audio Codec(*.flac);;Ogg Vorbis(*.ogg)"),
 		DIALOGS_RECORDING, baseFileName.trimmed())) != "") {
 	memset(&sfInfo, 0, sizeof(sfInfo));
 	sfInfo.samplerate = audioRate;
@@ -2457,8 +2459,6 @@ void RadioInterface::handleRecordButton() {
 	else if (ext == "ogg")
 	    sfInfo.format = SF_FORMAT_OGG | SF_FORMAT_VORBIS;
 
-	// sf_open fails if the format wasn't set properly
-	// we use this for unknown extension types
 	recordingFile = sf_open(outputFileName.toUtf8().data(), SFM_WRITE, &sfInfo);
 	if (recordingFile != nullptr) {
 	    if (!playing)

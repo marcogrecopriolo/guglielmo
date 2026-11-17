@@ -161,5 +161,6 @@ typedef std::complex<DSPFLOAT> DSPCOMPLEX;
 
 #define MAIN_ICON_PATH QIcon(":/" TARGET ".ico")
 #define PLAY_ICON_PATH QIcon(":/" TARGET "_play.ico")
+#define RECORD_ICON_PATH QIcon(":/" TARGET "_record.ico")
 #define PAUSE_ICON_PATH QIcon(":/" TARGET "_pause.ico")
 #endif

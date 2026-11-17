@@ -3,6 +3,7 @@
 	<file alias="AUTHORS">AUTHORS</file>
 	<file alias="guglielmo.ico">icons/guglielmo.ico</file>
 	<file alias="guglielmo_play.ico">icons/guglielmo_play.ico</file>
+	<file alias="guglielmo_record.ico">icons/guglielmo_record.ico</file>
 	<file alias="guglielmo_pause.ico">icons/guglielmo_pause.ico</file>
 	<file alias="guglielmo_dimmed.png">icons/guglielmo_dimmed.png</file>
 	<file alias="menubutton.png">icons/menubutton.png</file>
