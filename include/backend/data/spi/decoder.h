@@ -232,10 +232,10 @@ typedef struct {
 typedef struct {
     const unsigned char *data;
     size_t length;
-} string_view;
+} token_list;
 
 typedef struct {
-    string_view tokens[0x14];
+    token_list tokens[0x14];
     char *language;
 } decoder;
 

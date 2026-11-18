@@ -132,7 +132,7 @@ static int is_token(unsigned int byte) {
 static char *decode_string(decoder *state, const tlv *item, int expand) {
     size_t i, length = 0, n;
     char *text, *out;
-    const string_view *token;
+    const token_list *token;
 
     for (i = 0; i < item->length; ++i) {
 	token = expand && is_token(item->data[i]) ? &state->tokens[item->data[i]] : NULL;
