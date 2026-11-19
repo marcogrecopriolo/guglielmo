@@ -102,7 +102,7 @@ There's no tweakable DAB settings on offer.
 
 The presets tab sports a presets editor (rearrange, delete or sort presets) and a station scan facility.
 
-You can play stations on either list using the play button at the bottom of eash list.
+You can play stations on either list using the play button at the bottom of each list. Playback can be stopped with the stop button in between the two lists.
 
 Once a DAB or FM scan has been completed, even partially, stations can be dragged directly to the preset list, or moved there by selecting them and using the move (<) button.
 
